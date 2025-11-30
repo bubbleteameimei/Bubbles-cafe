@@ -24,34 +24,80 @@ const createAuthStub = () => ({
   },
 });
 
-// Eager init using VITE_ env when present, else lazy via /api/config/public
+// Eager init using VITE_ or NEXT_PUBLIC_ env when present, else lazy via /api/config/public
 function eagerInitFromEnv(): boolean {
   try {
-    const url = (import.meta as any)?.env?.VITE_SUPABASE_URL as string | undefined;
-    const anonKey = (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+    const envAny: any = (import.meta as any)?.env || {};
+    const url =
+      (envAny.VITE_SUPABASE_URL as string | undefined) ||
+      (envAny.NEXT_PUBLIC_SUPABASE_URL as string | undefined);
+    const anonKey =
+      (envAny.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+      (envAny.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined);
+
     if (url && anonKey) {
+      if (import.meta.env?.DEV) {
+        console.log('[Supabase] Eager init from env', {
+          hasUrl: !!url,
+          hasAnonKey: !!anonKey,
+          source: {
+            VITE_SUPABASE_URL: !!envAny.VITE_SUPABASE_URL,
+            NEXT_PUBLIC_SUPABASE_URL: !!envAny.NEXT_PUBLIC_SUPABASE_URL,
+          },
+        });
+      }
       client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
-  } catch {}
+
+    if (import.meta.env?.DEV) {
+      console.log('[Supabase] Env missing or incomplete for eager init', {
+        hasViteUrl: !!envAny.VITE_SUPABASE_URL,
+        hasViteAnon: !!envAny.VITE_SUPABASE_ANON_KEY,
+        hasNextUrl: !!envAny.NEXT_PUBLIC_SUPABASE_URL,
+        hasNextAnon: !!envAny.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      });
+    }
+  } catch (e) {
+    console.error('[Supabase] Eager init from env failed:', e);
+  }
   return false;
 }
 
 async function lazyInitFromServer(): Promise<boolean> {
   try {
     const res = await fetch('/api/config/public', { credentials: 'include' });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      if (import.meta.env?.DEV) {
+        console.warn('[Supabase] /api/config/public responded with non-OK status', res.status);
+      }
+      return false;
+    }
     const data = await res.json().catch(() => ({}));
     const sup = (data as any)?.supabase || {};
     const url = sup.url as string | undefined;
     const anonKey = sup.anonKey as string | undefined;
     if (url && anonKey) {
+      if (import.meta.env?.DEV) {
+        console.log('[Supabase] Lazy init from /api/config/public', {
+          hasUrl: !!url,
+          hasAnonKey: !!anonKey,
+        });
+      }
       client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
-  } catch {}
+    if (import.meta.env?.DEV) {
+      console.log('[Supabase] Supabase config from /api/config/public is missing or incomplete', {
+        url,
+        anonKeyPresent: !!anonKey,
+      });
+    }
+  } catch (e) {
+    console.error('[Supabase] Lazy init from /api/config/public failed:', e);
+  }
   return false;
 }
 
@@ -75,5 +121,5 @@ export const supabase: any = new Proxy({ auth: createAuthStub() } as any, {
     }
     const value = (target as any)[prop];
     return typeof value === 'function' ? value.bind(target) : value;
-  }
+  },
 });

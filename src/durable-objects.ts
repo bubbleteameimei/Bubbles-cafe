@@ -48,12 +48,16 @@ export class RateLimitObject {
   }
 }
 
+interface IdempotencyEntry {
+  status: 'pending' | 'completed';
+  response?: any;
+  expiresAt: number;
+}
+
 /**
  * Simple idempotency helper that tracks whether a key has been seen recently.
  *
  * Notes:
- * - The current Worker-side usage only checks the `cached` flag; the stored
- *   `response` value is not relied on.
  * - Entries are kept in memory only and cleared with `setTimeout`, which is
  *   best-effort in the Workers runtime and may not survive instance restarts.
  * - For stronger guarantees, move this state into Durable Object storage and
@@ -61,7 +65,7 @@ export class RateLimitObject {
  */
 export class IdempotencyObject {
   private state: DurableObjectState;
-  private responses: Map<string, { response: any; timestamp: number }>;
+  private responses: Map<string, IdempotencyEntry>;
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -69,22 +73,90 @@ export class IdempotencyObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    const { key, response, ttl } = (await request.json()) as any;
-
-    if (this.responses.has(key)) {
-      return json({ cached: true, response: this.responses.get(key)!.response });
+    let payload: any;
+    try {
+      payload = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    this.responses.set(key, { response, timestamp: Date.now() });
+    const operation = payload?.operation;
+    const keyValue = payload?.key;
+    const key = typeof keyValue === 'string' ? keyValue : String(keyValue || '');
+    const ttlMsRaw = payload?.ttlMs ?? payload?.ttl;
+    const ttlMs =
+      typeof ttlMsRaw === 'number' && ttlMsRaw > 0 ? ttlMsRaw : 86_400_000; // default 24h
 
-    // Note: setTimeout is not reliable for long TTLs; for production,
-    // consider using Durable Object storage + alarms for expiration instead.
-    const ttlMs = typeof ttl === "number" ? ttl : 86_400_000; // default 24h
-    setTimeout(() => {
-      this.responses.delete(key);
-    }, ttlMs);
+    if (!key) {
+      return json({ error: 'Missing key' }, { status: 400 });
+    }
 
-    return json({ cached: false });
+    const now = Date.now();
+
+    if (operation === 'check') {
+      const entry = this.responses.get(key);
+
+      if (entry && entry.expiresAt <= now) {
+        this.responses.delete(key);
+      } else if (entry && entry.status === 'completed' && entry.response != null) {
+        return json({ state: 'completed', response: entry.response });
+      } else if (entry && entry.status === 'pending') {
+        return json({ state: 'pending' });
+      }
+
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'pending', expiresAt });
+
+      // Best-effort cleanup
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ state: 'new' });
+    }
+
+    if (operation === 'store') {
+      const response = payload?.response;
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'completed', response, expiresAt });
+
+      // Best-effort cleanup
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ stored: true });
+    }
+
+    // Backwards-compatible behavior: if no explicit operation is provided,
+    // behave like a simple \"seen\" cache keyed by `key` and `ttlMs`.
+    if (!operation) {
+      const existing = this.responses.get(key);
+      const isValid = existing && existing.expiresAt > now;
+      if (isValid) {
+        return json({ cached: true, response: existing.response ?? null });
+      }
+
+      const expiresAt = now + ttlMs;
+      this.responses.set(key, { status: 'completed', response: payload?.response, expiresAt });
+
+      setTimeout(() => {
+        const current = this.responses.get(key);
+        if (current && current.expiresAt <= Date.now()) {
+          this.responses.delete(key);
+        }
+      }, ttlMs);
+
+      return json({ cached: false });
+    }
+
+    return json({ error: 'Invalid operation' }, { status: 400 });
   }
 }
 

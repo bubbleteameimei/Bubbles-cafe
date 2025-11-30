@@ -377,21 +377,155 @@ async function checkRateLimit(
   return result.allowed !== false;
 }
 
-async function getOrCheckIdempotency(
+interface SerializedResponse {
+  status: number;
+  headers?: Record<string, string>;
+  bodyJson?: any;
+}
+
+interface IdempotencyCheckResult {
+  state: 'new' | 'pending' | 'completed';
+  response?: SerializedResponse;
+}
+
+async function serializeResponse(response: Response): Promise<SerializedResponse> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  let bodyJson: any | undefined;
+  try {
+    const cloned = response.clone();
+    bodyJson = await cloned.json();
+  } catch {
+    bodyJson = undefined;
+  }
+
+  const result: SerializedResponse = {
+    status: response.status,
+    headers,
+  };
+  if (bodyJson !== undefined) {
+    result.bodyJson = bodyJson;
+  }
+  return result;
+}
+
+function deserializeResponse(data: SerializedResponse): Response {
+  const headers: Record<string, string> = data.headers ? { ...data.headers } : {};
+  const hasContentTypeHeader =
+    Object.keys(headers).some((h) => h.toLowerCase() === 'content-type') && !!data.bodyJson;
+
+  if (data.bodyJson === undefined) {
+    return new Response(null, {
+      status: data.status,
+      headers,
+    });
+  }
+
+  if (!hasContentTypeHeader) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  return new Response(JSON.stringify(data.bodyJson), {
+    status: data.status,
+    headers,
+  });
+}
+
+async function deriveIdempotencyScope(req: Request, env: Env): Promise<string> {
+  const token = getBearerToken(req);
+  if (token && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    try {
+      const userId = await getSupabaseUserIdFromJwt(env, token);
+      if (typeof userId === 'number' && Number.isFinite(userId)) {
+        return `user:${userId}`;
+      }
+    } catch {
+      // ignore and fall back to IP-based scope
+    }
+  }
+
+  const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+  return `ip:${ip}`;
+}
+
+async function withIdempotency(
+  req: Request,
   env: Env,
-  key: string,
-  ttl: number,
-): Promise<{ isNew: boolean; cached?: any }> {
-  const id = env.IDEMPOTENCY_DO.idFromName(key);
-  const obj = env.IDEMPOTENCY_DO.get(id);
-  const response = await obj.fetch(
-    new Request('https://worker', {
-      method: 'POST',
-      body: JSON.stringify({ key, ttl }),
-    }),
-  );
-  const result = (await response.json()) as any;
-  return { isNew: !result.cached, cached: result.cached };
+  routeKey: string,
+  ttlMs: number,
+  handler: () => Promise<Response>,
+): Promise<Response> {
+  const rawHeader =
+    req.headers.get('Idempotency-Key') || req.headers.get('idempotency-key') || '';
+  const idempotencyKey = rawHeader.trim();
+  if (!idempotencyKey) {
+    return handler();
+  }
+
+  // If the Durable Object binding is not available, fall back to non-idempotent behavior.
+  if (!env.IDEMPOTENCY_DO) {
+    return handler();
+  }
+
+  let scope = 'anonymous';
+  try {
+    scope = await deriveIdempotencyScope(req, env);
+  } catch {
+    // ignore scope resolution errors; use default
+  }
+  const composedKey = `${routeKey}:${scope}:${idempotencyKey}`;
+
+  // First, attempt to check for an existing idempotent response.
+  try {
+    const id = env.IDEMPOTENCY_DO.idFromName(composedKey);
+    const stub = env.IDEMPOTENCY_DO.get(id);
+    const checkRes = await stub.fetch(
+      new Request('https://idempotency', {
+        method: 'POST',
+        body: JSON.stringify({ operation: 'check', key: composedKey, ttlMs }),
+      }),
+    );
+    const checkData = (await checkRes.json().catch(() => null)) as IdempotencyCheckResult | null;
+
+    if (checkData && checkData.state === 'completed' && checkData.response) {
+      return deserializeResponse(checkData.response);
+    }
+    if (checkData && checkData.state === 'pending') {
+      return json(
+        { error: 'A request with this Idempotency-Key is already processing' },
+        { status: 409 },
+      );
+    }
+  } catch {
+    // Best-effort idempotency; on any DO error, fall back to non-idempotent behavior.
+  }
+
+  // No completed entry found; process the request and then attempt to store the response.
+  const response = await handler();
+
+  try {
+    const serialized = await serializeResponse(response);
+    const id = env.IDEMPOTENCY_DO.idFromName(composedKey);
+    const stub = env.IDEMPOTENCY_DO.get(id);
+    await stub.fetch(
+      new Request('https://idempotency', {
+        method: 'POST',
+        body: JSON.stringify({
+          operation: 'store',
+          key: composedKey,
+          ttlMs,
+          response: serialized,
+        }),
+      }),
+    );
+  } catch {
+    // Ignore storage errors; the main response has already been produced.
+  }
+
+  return response;
 }
 
 /**
@@ -1673,7 +1807,10 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
 
 router.post(
   "/api/contact",
-  async (req: Request, env: Env) => handleContactSubmit(req, env),
+  async (req: Request, env: Env) =>
+    withIdempotency(req, env, "contact", 60 * 60 * 1000, () =>
+      handleContactSubmit(req, env),
+    ),
 );
 
 // EMAIL SERVICE
@@ -3673,190 +3810,192 @@ router.get('/api/posts/:postId/comments', async (req: Request, env: Env) => {
 });
 
 // POST /api/posts/:postId/comments - create a new comment or reply
-router.post('/api/posts/:postId/comments', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const urlObj = new URL(req.url);
-    const segments = urlObj.pathname.split('/');
-    const idSegment = segments.length >= 2 ? segments[segments.length - 2] : '';
-    const rawPostId = parseInt(decodeURIComponent(idSegment || ''), 10);
-    if (!Number.isFinite(rawPostId) || rawPostId <= 0) {
-      return json({ error: 'Invalid post id' }, { status: 400 });
-    }
-
-    const body = (await (req as any).json?.()) || {};
-    const rawContent = typeof body.content === 'string' ? body.content : '';
-    const content = rawContent.trim();
-    if (!content) {
-      return json({ error: 'Content is required' }, { status: 400 });
-    }
-
-    const localPostId = await resolveLocalPostIdFromExternal(env, rawPostId);
-    if (!Number.isFinite(localPostId || NaN)) {
-      return json({ error: 'Post not found' }, { status: 404 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const headers: Record<string, string> = {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    const token = getBearerToken(req);
-    let userId: number | null = null;
-    if (token) {
-      const uid = await getSupabaseUserIdFromJwt(env, token);
-      if (Number.isFinite(uid || NaN)) {
-        userId = Number(uid);
-      }
-    }
-
-    const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-    let anonId = getAnonCommentIdFromCookie(cookieHeader);
-    let setAnonCookie = false;
-    if (!userId) {
-      if (!anonId) {
-        anonId = makeAnonCommentId();
-        setAnonCookie = true;
-      }
-    }
-
-    const userKey = userId != null && Number.isFinite(userId) ? String(userId) : `anon:${anonId}`;
-
-    const authorFromBody = typeof body.author === 'string' ? body.author.trim() : '';
-    const author = authorFromBody || (userId != null ? 'User' : 'Guest');
-
-    const needsModeration = Boolean(body.needsModeration === true);
-    const moderationStatus = String(body.moderationStatus || '').toLowerCase();
-    const holdForReview =
-      needsModeration || moderationStatus === 'flagged' || moderationStatus === 'under_review';
-
-    const isApproved = !holdForReview;
-
-    const selectionStart =
-      typeof body.selectionStart === 'number'
-        ? body.selectionStart
-        : Number.isFinite(Number(body.selectionStart))
-          ? Number(body.selectionStart)
-          : undefined;
-    const selectionEnd =
-      typeof body.selectionEnd === 'number'
-        ? body.selectionEnd
-        : Number.isFinite(Number(body.selectionEnd))
-          ? Number(body.selectionEnd)
-          : undefined;
-    const anchorParagraphIndex =
-      typeof body.anchorParagraphIndex === 'number'
-        ? body.anchorParagraphIndex
-        : Number.isFinite(Number(body.anchorParagraphIndex))
-          ? Number(body.anchorParagraphIndex)
-          : undefined;
-    const selectionText = typeof body.selectionText === 'string' ? body.selectionText : undefined;
-
-    const metadata: any = {
-      author,
-      isAnonymous: !userId,
-      moderated: holdForReview,
-      originalContent: content,
-      replyCount: 0,
-      ownerKey: userKey,
-    };
-
-    if (selectionText && selectionStart != null && selectionEnd != null) {
-      metadata.selectionAnchor = {
-        startOffset: Number(selectionStart),
-        endOffset: Number(selectionEnd),
-        paragraphIndex: anchorParagraphIndex != null ? Number(anchorParagraphIndex) : undefined,
-        text: selectionText,
-      };
-    }
-
-    const parentIdRaw = (body as any).parentId;
-    const parentId =
-      typeof parentIdRaw === 'number'
-        ? parentIdRaw
-        : Number.isFinite(Number(parentIdRaw))
-          ? Number(parentIdRaw)
-          : null;
-
-    const insertBody: Record<string, any> = {
-      post_id: Number(localPostId),
-      user_id: userId != null && Number.isFinite(userId) ? userId : null,
-      content,
-      parent_id: parentId,
-      is_approved: isApproved,
-      metadata,
-      created_at: new Date().toISOString(),
-    };
-
-    const insertRes = await fetch(`${baseUrl}/rest/v1/comments`, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(insertBody),
-    });
-
-    if (insertRes.status === 401 || insertRes.status === 403) {
+router.post('/api/posts/:postId/comments', async (req: Request, env: Env) =>
+  withIdempotency(req, env, 'comment-create', 30 * 60 * 1000, async () => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return proxyToBackend(req, env);
     }
-    if (!insertRes.ok) {
-      return json({ error: 'Failed to create comment' }, { status: 500 });
-    }
 
-    const rows = (await insertRes.json().catch(() => [])) as any[];
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return json({ error: 'Failed to create comment' }, { status: 500 });
-    }
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.split('/');
+      const idSegment = segments.length >= 2 ? segments[segments.length - 2] : '';
+      const rawPostId = parseInt(decodeURIComponent(idSegment || ''), 10);
+      if (!Number.isFinite(rawPostId) || rawPostId <= 0) {
+        return json({ error: 'Invalid post id' }, { status: 400 });
+      }
 
-    const row = rows[0] as any;
-    let metaOut = row.metadata;
-    if (metaOut && typeof metaOut === 'string') {
-      try {
-        metaOut = JSON.parse(metaOut);
-      } catch {
+      const body = (await (req as any).json?.()) || {};
+      const rawContent = typeof body.content === 'string' ? body.content : '';
+      const content = rawContent.trim();
+      if (!content) {
+        return json({ error: 'Content is required' }, { status: 400 });
+      }
+
+      const localPostId = await resolveLocalPostIdFromExternal(env, rawPostId);
+      if (!Number.isFinite(localPostId || NaN)) {
+        return json({ error: 'Post not found' }, { status: 404 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+      const headers: Record<string, string> = {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      const token = getBearerToken(req);
+      let userId: number | null = null;
+      if (token) {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(uid || NaN)) {
+          userId = Number(uid);
+        }
+      }
+
+      const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
+      let anonId = getAnonCommentIdFromCookie(cookieHeader);
+      let setAnonCookie = false;
+      if (!userId) {
+        if (!anonId) {
+          anonId = makeAnonCommentId();
+          setAnonCookie = true;
+        }
+      }
+
+      const userKey = userId != null && Number.isFinite(userId) ? String(userId) : `anon:${anonId}`;
+
+      const authorFromBody = typeof body.author === 'string' ? body.author.trim() : '';
+      const author = authorFromBody || (userId != null ? 'User' : 'Guest');
+
+      const needsModeration = Boolean(body.needsModeration === true);
+      const moderationStatus = String(body.moderationStatus || '').toLowerCase();
+      const holdForReview =
+        needsModeration || moderationStatus === 'flagged' || moderationStatus === 'under_review';
+
+      const isApproved = !holdForReview;
+
+      const selectionStart =
+        typeof body.selectionStart === 'number'
+          ? body.selectionStart
+          : Number.isFinite(Number(body.selectionStart))
+            ? Number(body.selectionStart)
+            : undefined;
+      const selectionEnd =
+        typeof body.selectionEnd === 'number'
+          ? body.selectionEnd
+          : Number.isFinite(Number(body.selectionEnd))
+            ? Number(body.selectionEnd)
+            : undefined;
+      const anchorParagraphIndex =
+        typeof body.anchorParagraphIndex === 'number'
+          ? body.anchorParagraphIndex
+          : Number.isFinite(Number(body.anchorParagraphIndex))
+            ? Number(body.anchorParagraphIndex)
+            : undefined;
+      const selectionText = typeof body.selectionText === 'string' ? body.selectionText : undefined;
+
+      const metadata: any = {
+        author,
+        isAnonymous: !userId,
+        moderated: holdForReview,
+        originalContent: content,
+        replyCount: 0,
+        ownerKey: userKey,
+      };
+
+      if (selectionText && selectionStart != null && selectionEnd != null) {
+        metadata.selectionAnchor = {
+          startOffset: Number(selectionStart),
+          endOffset: Number(selectionEnd),
+          paragraphIndex: anchorParagraphIndex != null ? Number(anchorParagraphIndex) : undefined,
+          text: selectionText,
+        };
+      }
+
+      const parentIdRaw = (body as any).parentId;
+      const parentId =
+        typeof parentIdRaw === 'number'
+          ? parentIdRaw
+          : Number.isFinite(Number(parentIdRaw))
+            ? Number(parentIdRaw)
+            : null;
+
+      const insertBody: Record<string, any> = {
+        post_id: Number(localPostId),
+        user_id: userId != null && Number.isFinite(userId) ? userId : null,
+        content,
+        parent_id: parentId,
+        is_approved: isApproved,
+        metadata,
+        created_at: new Date().toISOString(),
+      };
+
+      const insertRes = await fetch(`${baseUrl}/rest/v1/comments`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify(insertBody),
+      });
+
+      if (insertRes.status === 401 || insertRes.status === 403) {
+        return proxyToBackend(req, env);
+      }
+      if (!insertRes.ok) {
+        return json({ error: 'Failed to create comment' }, { status: 500 });
+      }
+
+      const rows = (await insertRes.json().catch(() => [])) as any[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return json({ error: 'Failed to create comment' }, { status: 500 });
+      }
+
+      const row = rows[0] as any;
+      let metaOut = row.metadata;
+      if (metaOut && typeof metaOut === 'string') {
+        try {
+          metaOut = JSON.parse(metaOut);
+        } catch {
+          metaOut = {};
+        }
+      }
+      if (!metaOut || typeof metaOut !== 'object') {
         metaOut = {};
       }
+
+      const baseApproved = row.is_approved === true;
+      const approved = baseApproved || true;
+
+      const responseComment = {
+        id: row.id,
+        content: row.content ?? content,
+        createdAt: row.created_at ?? insertBody.created_at,
+        metadata: metaOut,
+        is_approved: row.is_approved === true,
+        approved,
+        parentId: row.parent_id != null ? Number(row.parent_id) : insertBody.parent_id,
+        isOwner: true,
+      };
+
+      const headersInit: Record<string, string> = {};
+      if (setAnonCookie && !userId && anonId) {
+        headersInit['Set-Cookie'] = `anon_comment_id=${encodeURIComponent(
+          anonId,
+        )}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      }
+
+      return json(responseComment, {
+        status: 201,
+        headers: headersInit,
+      });
+    } catch {
+      return proxyToBackend(req, env);
     }
-    if (!metaOut || typeof metaOut !== 'object') {
-      metaOut = {};
-    }
-
-    const baseApproved = row.is_approved === true;
-    const approved = baseApproved || true;
-
-    const responseComment = {
-      id: row.id,
-      content: row.content ?? content,
-      createdAt: row.created_at ?? insertBody.created_at,
-      metadata: metaOut,
-      is_approved: row.is_approved === true,
-      approved,
-      parentId: row.parent_id != null ? Number(row.parent_id) : insertBody.parent_id,
-      isOwner: true,
-    };
-
-    const headersInit: Record<string, string> = {};
-    if (setAnonCookie && !userId && anonId) {
-      headersInit['Set-Cookie'] = `anon_comment_id=${encodeURIComponent(
-        anonId,
-      )}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    }
-
-    return json(responseComment, {
-      status: 201,
-      headers: headersInit,
-    });
-  } catch {
-    return proxyToBackend(req, env);
-  }
-});
+  }),
+);
 
 // POST /api/comments/:id/flag - flag a comment for moderation
 router.post('/api/comments/:id/flag', async (req: Request, env: Env) => {
@@ -5346,76 +5485,78 @@ router.get('/api/notifications', async (req: Request, env: Env) => {
 });
 
 // POST /api/notifications - create a notification for current user
-router.post('/api/notifications', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  const token = getBearerToken(req);
-  if (!token) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const userId = await getSupabaseUserIdFromJwt(env, token);
-    if (!Number.isFinite(userId || NaN)) {
-      return json({ error: 'Authentication required' }, { status: 401 });
+router.post('/api/notifications', async (req: Request, env: Env) =>
+  withIdempotency(req, env, 'notification-create', 3 * 60 * 60 * 1000, async () => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
     }
 
-    let body: any;
+    const token = getBearerToken(req);
+    if (!token) {
+      return proxyToBackend(req, env);
+    }
+
     try {
-      body = (await (req as any).json?.().catch(() => ({}))) || {};
+      const userId = await getSupabaseUserIdFromJwt(env, token);
+      if (!Number.isFinite(userId || NaN)) {
+        return json({ error: 'Authentication required' }, { status: 401 });
+      }
+
+      let body: any;
+      try {
+        body = (await (req as any).json?.().catch(() => ({}))) || {};
+      } catch {
+        body = {};
+      }
+
+      const type = typeof body.type === 'string' && body.type.trim() ? body.type.trim() : null;
+      const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim() : null;
+      const message =
+        typeof body.message === 'string' && body.message.trim() ? body.message.trim() : null;
+      const metadata =
+        body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
+
+      if (!type || !title || !message) {
+        return json({ error: 'Invalid payload' }, { status: 400 });
+      }
+
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+      const res = await fetch(`${baseUrl}/rest/v1/user_notifications`, {
+        method: 'POST',
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+          user_id: Number(userId),
+          type,
+          title,
+          message,
+          metadata,
+          is_read: false,
+          created_at: new Date().toISOString(),
+        }),
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        return json({ error: 'Authentication required' }, { status: 401 });
+      }
+      if (!res.ok) {
+        return json({ error: 'Failed to create notification' }, { status: 500 });
+      }
+
+      const rows = (await res.json().catch(() => [])) as any[];
+      const created = Array.isArray(rows) && rows.length ? rows[0] : null;
+
+      return json({ notification: created }, { status: 201 });
     } catch {
-      body = {};
-    }
-
-    const type = typeof body.type === 'string' && body.type.trim() ? body.type.trim() : null;
-    const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim() : null;
-    const message =
-      typeof body.message === 'string' && body.message.trim() ? body.message.trim() : null;
-    const metadata =
-      body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
-
-    if (!type || !title || !message) {
-      return json({ error: 'Invalid payload' }, { status: 400 });
-    }
-
-    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-    const res = await fetch(`${baseUrl}/rest/v1/user_notifications`, {
-      method: 'POST',
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify({
-        user_id: Number(userId),
-        type,
-        title,
-        message,
-        metadata,
-        is_read: false,
-        created_at: new Date().toISOString(),
-      }),
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-    if (!res.ok) {
       return json({ error: 'Failed to create notification' }, { status: 500 });
     }
-
-    const rows = (await res.json().catch(() => [])) as any[];
-    const created = Array.isArray(rows) && rows.length ? rows[0] : null;
-
-    return json({ notification: created }, { status: 201 });
-  } catch {
-    return json({ error: 'Failed to create notification' }, { status: 500 });
-  }
-});
+  }),
+);
 
 // PATCH /api/notifications/:id/read - mark as read/unread for current user
 router.patch('/api/notifications/:id/read', async (req: Request, env: Env) => {
@@ -6105,164 +6246,170 @@ function buildFeedbackSuggestionsPayload(row: any): {
 }
 
 // POST /api/feedback - user feedback submission (general/bug/feature/content)
-router.post('/api/feedback', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return proxyToBackend(req, env);
-  }
-
-  try {
-    const body = (await (req as any).json?.().catch(() => ({}))) || {};
-
-    const rawContent = typeof body.content === 'string' ? body.content.trim() : '';
-    if (!rawContent || rawContent.length < 5) {
-      return json({ error: 'Feedback content must be at least 5 characters' }, { status: 400 });
+router.post('/api/feedback', async (req: Request, env: Env) =>
+  withIdempotency(req, env, 'feedback-submit', 60 * 60 * 1000, async () => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
     }
 
-    const rawType = typeof body.type === 'string' ? body.type.trim().toLowerCase() : 'general';
-    const allowedTypes = new Set(['general', 'bug', 'feature', 'content']);
-    const type = allowedTypes.has(rawType) ? rawType : 'general';
+    try {
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
 
-    const page = typeof body.page === 'string' && body.page.trim() ? body.page.trim() : undefined;
-    const category =
-      typeof body.category === 'string' && body.category.trim() ? body.category.trim() : undefined;
-    const browser =
-      typeof body.browser === 'string' && body.browser.trim() ? body.browser.trim() : undefined;
-    const operatingSystem =
-      typeof body.operatingSystem === 'string' && body.operatingSystem.trim()
-        ? body.operatingSystem.trim()
-        : undefined;
-    const screenResolution =
-      typeof body.screenResolution === 'string' && body.screenResolution.trim()
-        ? body.screenResolution.trim()
-        : undefined;
-    const userAgentFromBody =
-      typeof body.userAgent === 'string' && body.userAgent.trim()
-        ? body.userAgent.trim()
-        : undefined;
-
-    const metadata =
-      body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
-
-    const headerUa = req.headers.get('User-Agent') || req.headers.get('user-agent') || undefined;
-    const userAgent = userAgentFromBody || headerUa;
-
-    const token = getBearerToken(req);
-    let userId: number | null = null;
-    if (token) {
-      const uid = await getSupabaseUserIdFromJwt(env, token);
-      if (Number.isFinite(uid || NaN)) {
-        userId = Number(uid);
+      const rawContent = typeof body.content === 'string' ? body.content.trim() : '';
+      if (!rawContent || rawContent.length < 5) {
+        return json({ error: 'Feedback content must be at least 5 characters' }, { status: 400 });
       }
-    }
 
-    const row = await insertFeedbackRow(env, {
-      type,
-      content: rawContent,
-      page,
-      category,
-      browser,
-      operatingSystem,
-      screenResolution,
-      userAgent,
-      metadata,
-      userId,
-    });
+      const rawType = typeof body.type === 'string' ? body.type.trim().toLowerCase() : 'general';
+      const allowedTypes = new Set(['general', 'bug', 'feature', 'content']);
+      const type = allowedTypes.has(rawType) ? rawType : 'general';
 
-    if (!row) {
+      const page = typeof body.page === 'string' && body.page.trim() ? body.page.trim() : undefined;
+      const category =
+        typeof body.category === 'string' && body.category.trim()
+          ? body.category.trim()
+          : undefined;
+      const browser =
+        typeof body.browser === 'string' && body.browser.trim() ? body.browser.trim() : undefined;
+      const operatingSystem =
+        typeof body.operatingSystem === 'string' && body.operatingSystem.trim()
+          ? body.operatingSystem.trim()
+          : undefined;
+      const screenResolution =
+        typeof body.screenResolution === 'string' && body.screenResolution.trim()
+          ? body.screenResolution.trim()
+          : undefined;
+      const userAgentFromBody =
+        typeof body.userAgent === 'string' && body.userAgent.trim()
+          ? body.userAgent.trim()
+          : undefined;
+
+      const metadata =
+        body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
+
+      const headerUa = req.headers.get('User-Agent') || req.headers.get('user-agent') || undefined;
+      const userAgent = userAgentFromBody || headerUa;
+
+      const token = getBearerToken(req);
+      let userId: number | null = null;
+      if (token) {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(uid || NaN)) {
+          userId = Number(uid);
+        }
+      }
+
+      const row = await insertFeedbackRow(env, {
+        type,
+        content: rawContent,
+        page,
+        category,
+        browser,
+        operatingSystem,
+        screenResolution,
+        userAgent,
+        metadata,
+        userId,
+      });
+
+      if (!row) {
+        return json({ error: 'Failed to submit feedback' }, { status: 500 });
+      }
+
+      const feedback = mapFeedbackRowToApiItem(row);
+      return json({ success: true, feedback }, { status: 201 });
+    } catch {
       return json({ error: 'Failed to submit feedback' }, { status: 500 });
     }
-
-    const feedback = mapFeedbackRowToApiItem(row);
-    return json({ success: true, feedback }, { status: 201 });
-  } catch {
-    return json({ error: 'Failed to submit feedback' }, { status: 500 });
-  }
-});
+  }),
+);
 
 // POST /api/user-feedback - lightweight endpoint used by global error boundary
-router.post('/api/user-feedback', async (req: Request, env: Env) => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    // No persistent store; best-effort log and acknowledge
-    try {
-      const body = await req.json().catch(() => ({}));
-      console.warn('[UserFeedback] received without Supabase', body);
-    } catch {
-      // ignore
-    }
-    return json({ success: true, stored: false });
-  }
-
-  try {
-    const body = (await (req as any).json?.().catch(() => ({}))) || {};
-
-    const rawContent = typeof body.content === 'string' ? body.content.trim() : '';
-    if (!rawContent) {
-      return json({ error: 'Feedback content is required' }, { status: 400 });
-    }
-
-    const rawType = typeof body.type === 'string' ? body.type.trim().toLowerCase() : 'bug';
-    const type = rawType || 'bug';
-
-    const metadataInput =
-      body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
-
-    let page: string | undefined;
-    const urlValue =
-      typeof (metadataInput as any).url === 'string' ? (metadataInput as any).url : undefined;
-    if (typeof body.page === 'string' && body.page.trim()) {
-      page = body.page.trim();
-    } else if (urlValue) {
+router.post('/api/user-feedback', async (req: Request, env: Env) =>
+  withIdempotency(req, env, 'user-feedback', 60 * 60 * 1000, async () => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      // No persistent store; best-effort log and acknowledge
       try {
-        const urlObj = new URL(urlValue);
-        page = urlObj.pathname || undefined;
+        const body = await req.json().catch(() => ({}));
+        console.warn('[UserFeedback] received without Supabase', body);
       } catch {
-        page = urlValue;
+        // ignore
       }
+      return json({ success: true, stored: false });
     }
 
-    const uaFromMeta =
-      typeof (metadataInput as any).userAgent === 'string'
-        ? (metadataInput as any).userAgent
-        : undefined;
-    const headerUa = req.headers.get('User-Agent') || req.headers.get('user-agent') || undefined;
-    const userAgent = uaFromMeta || headerUa;
+    try {
+      const body = (await (req as any).json?.().catch(() => ({}))) || {};
 
-    const category =
-      typeof body.category === 'string' && body.category.trim() ? body.category.trim() : 'bug';
-
-    const token = getBearerToken(req);
-    let userId: number | null = null;
-    if (token) {
-      const uid = await getSupabaseUserIdFromJwt(env, token);
-      if (Number.isFinite(uid || NaN)) {
-        userId = Number(uid);
+      const rawContent = typeof body.content === 'string' ? body.content.trim() : '';
+      if (!rawContent) {
+        return json({ error: 'Feedback content is required' }, { status: 400 });
       }
-    }
 
-    const metadata = {
-      source: 'error-boundary',
-      ...metadataInput,
-    };
+      const rawType = typeof body.type === 'string' ? body.type.trim().toLowerCase() : 'bug';
+      const type = rawType || 'bug';
 
-    const row = await insertFeedbackRow(env, {
-      type,
-      content: rawContent,
-      page,
-      category,
-      userAgent,
-      metadata,
-      userId,
-    });
+      const metadataInput =
+        body && typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : {};
 
-    if (!row) {
+      let page: string | undefined;
+      const urlValue =
+        typeof (metadataInput as any).url === 'string' ? (metadataInput as any).url : undefined;
+      if (typeof body.page === 'string' && body.page.trim()) {
+        page = body.page.trim();
+      } else if (urlValue) {
+        try {
+          const urlObj = new URL(urlValue);
+          page = urlObj.pathname || undefined;
+        } catch {
+          page = urlValue;
+        }
+      }
+
+      const uaFromMeta =
+        typeof (metadataInput as any).userAgent === 'string'
+          ? (metadataInput as any).userAgent
+          : undefined;
+      const headerUa = req.headers.get('User-Agent') || req.headers.get('user-agent') || undefined;
+      const userAgent = uaFromMeta || headerUa;
+
+      const category =
+        typeof body.category === 'string' && body.category.trim() ? body.category.trim() : 'bug';
+
+      const token = getBearerToken(req);
+      let userId: number | null = null;
+      if (token) {
+        const uid = await getSupabaseUserIdFromJwt(env, token);
+        if (Number.isFinite(uid || NaN)) {
+          userId = Number(uid);
+        }
+      }
+
+      const metadata = {
+        source: 'error-boundary',
+        ...metadataInput,
+      };
+
+      const row = await insertFeedbackRow(env, {
+        type,
+        content: rawContent,
+        page,
+        category,
+        userAgent,
+        metadata,
+        userId,
+      });
+
+      if (!row) {
+        return json({ error: 'Failed to submit feedback' }, { status: 500 });
+      }
+
+      return json({ success: true, id: row.id }, { status: 201 });
+    } catch {
       return json({ error: 'Failed to submit feedback' }, { status: 500 });
     }
-
-    return json({ success: true, id: row.id }, { status: 201 });
-  } catch {
-    return json({ error: 'Failed to submit feedback' }, { status: 500 });
-  }
-});
+  }),
+);
 
 // GET /api/feedback - admin list with Supabase JWT, fallback to legacy Express for cookie-based admin
 router.get('/api/feedback', async (req: Request, env: Env) => {

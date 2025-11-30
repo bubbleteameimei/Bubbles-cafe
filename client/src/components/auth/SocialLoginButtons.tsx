@@ -1,122 +1,73 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import './SocialLoginButtons.css';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { initSupabase, supabase } from '@/lib/supabase';
 
 interface SocialLoginButtonsProps {
   onSuccess?: (userData: any) => void;
   onError?: (error: Error) => void;
 }
 
-interface GoogleConfig {
-  clientId: string | null;
-  redirectUri: string;
-}
-
 export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
-  const [status, setStatus] = useState<string | null>(null);
-  const [googleConfig, setGoogleConfig] = useState<GoogleConfig | null>(null);
-  const [configLoaded, setConfigLoaded] = useState(false);
-
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const res = await fetch('/api/config/public', { credentials: 'include' });
-        let next: GoogleConfig = { clientId: null, redirectUri: '' };
-
-        if (res.ok) {
-          const data = await res.json();
-          const fromServer = (data && data.googleOAuth) as GoogleConfig | undefined;
-          if (fromServer && (fromServer.clientId || fromServer.redirectUri)) {
-            next = {
-              clientId: fromServer.clientId,
-              redirectUri: fromServer.redirectUri,
-            };
-          }
-        }
-
-        // Fallback to Vite-provided env config when server config is missing/partial
-        try {
-          const envAny: any = (import.meta as any)?.env || {};
-          const viteClientId = envAny.VITE_GOOGLE_CLIENT_ID as string | undefined;
-          const viteRedirectUri = envAny.VITE_GOOGLE_LOGIN_URI as string | undefined;
-
-          if (!next.clientId && typeof viteClientId === 'string' && viteClientId.trim()) {
-            next.clientId = viteClientId.trim();
-          }
-
-          if (!next.redirectUri) {
-            if (typeof viteRedirectUri === 'string' && viteRedirectUri.trim()) {
-              next.redirectUri = viteRedirectUri.trim();
-            } else if (typeof window !== 'undefined' && window.location?.origin) {
-              next.redirectUri = `${window.location.origin}/api/auth/callback`;
-            }
-          }
-        } catch {
-          // Ignore env access issues
-        }
-
-        setGoogleConfig(next);
-      } catch (e) {
-        console.error('[SocialLoginButtons] Failed to fetch config:', e);
-        // Last-resort: try to build config purely from Vite env
-        try {
-          const envAny: any = (import.meta as any)?.env || {};
-          const viteClientId = envAny.VITE_GOOGLE_CLIENT_ID as string | undefined;
-          const viteRedirectUri = envAny.VITE_GOOGLE_LOGIN_URI as string | undefined;
-          const fallback: GoogleConfig = {
-            clientId: viteClientId && viteClientId.trim() ? viteClientId.trim() : null,
-            redirectUri:
-              (viteRedirectUri && viteRedirectUri.trim()) ||
-              (typeof window !== 'undefined' && window.location?.origin
-                ? `${window.location.origin}/api/auth/callback`
-                : ''),
-          };
-          setGoogleConfig(fallback);
-        } catch {
-          // keep googleConfig as null
-        }
-      } finally {
-        setConfigLoaded(true);
-      }
-    };
-    fetchConfig();
-  }, []);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
-      setStatus('Starting Google sign-in…');
+      setIsLaunching(true);
 
-      if (!googleConfig?.clientId) {
-        const msg = 'Google login not configured.';
-        setStatus(msg);
-        throw new Error(msg);
+      const ready = await initSupabase();
+      if (!ready) {
+        const msg =
+          'Supabase is not configured for Google sign-in. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
+        const err = new Error(msg);
+        if (onError) onError(err);
+        if (import.meta.env?.DEV) {
+          console.error('[SocialLoginButtons] Supabase init failed for Google OAuth');
+        }
+        return;
       }
 
-      const params = new URLSearchParams({
-        client_id: googleConfig.clientId,
-        redirect_uri: googleConfig.redirectUri,
-        response_type: 'code',
-        scope: 'openid email profile',
-        prompt: 'consent',
+      const redirectTo =
+        typeof window !== 'undefined' && window.location?.origin
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+
+      if (import.meta.env?.DEV) {
+        console.log('[SocialLoginButtons] Launching Supabase Google OAuth', {
+          redirectTo,
+        });
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
 
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-      setStatus('Redirecting to Google…');
-      window.location.href = authUrl;
+      if (error) {
+        throw error;
+      }
+
+      // Supabase will redirect the browser; normally we don't render anything else here.
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Google login failed');
-      setStatus(err.message);
       if (onError) {
         onError(err);
       } else {
         console.error('[SocialLoginButtons] Google login error:', err);
       }
+    } finally {
+      setIsLaunching(false);
     }
-  }, [googleConfig, onError]);
+  }, [onError]);
 
   const disabled = useMemo(() => {
-    return !configLoaded || !googleConfig?.clientId;
-  }, [configLoaded, googleConfig]);
+    return isLaunching;
+  }, [isLaunching]);
 
   return (
     <div className="social-auth-buttons">
@@ -136,14 +87,6 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         />
         Sign in with Google
       </button>
-      {status && (
-        <div className="mt-2">
-          <Alert variant={status.toLowerCase().includes('error') ? 'destructive' : 'default'}>
-            <AlertTitle>Google Sign-in</AlertTitle>
-            <AlertDescription>{status}</AlertDescription>
-          </Alert>
-        </div>
-      )}
     </div>
   );
 }

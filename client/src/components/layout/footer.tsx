@@ -74,7 +74,7 @@ export default function Footer() {
             <h4 className="text-sm font-semibold tracking-wide">Quick Links</h4>
             <ul className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap justify-start sm:justify-start">
               <li>
-                <Link href="/" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
+                <Link href="/home" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Home</Link>
               </li>
               <li>
                 <Link href="/reader" className="inline-flex px-2 py-1 rounded-md border border-border/40 bg-muted/20 text-[11px] font-medium hover:bg-muted/40 hover:border-primary/40 transition-colors">Reader</Link>

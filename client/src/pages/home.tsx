@@ -18,14 +18,46 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   
-  // Basic setup for homepage without background images
+  // Setup for homepage background using the IMG_5890.jpeg asset from public.
+  // Apply the background to the <body> element so it isn't covered by the
+  // theme's solid html background color.
   useEffect(() => {
-    // Set body to default background
-    document.body.style.backgroundColor = "hsl(var(--background))";
-    
+    const body = document.body;
+    const previousImage = body.style.backgroundImage;
+    const previousSize = body.style.backgroundSize;
+    const previousPosition = body.style.backgroundPosition;
+    const previousRepeat = body.style.backgroundRepeat;
+    const previousAttachment = body.style.backgroundAttachment;
+    const previousColor = body.style.backgroundColor;
+
+    const src = "/IMG_5890.jpeg";
+    const img = new Image();
+    let cancelled = false;
+
+    img.onload = () => {
+      if (cancelled) return;
+      console.log("[Home] Using homepage background image:", src);
+      body.style.backgroundImage = `url(${src})`;
+      body.style.backgroundSize = "cover";
+      body.style.backgroundPosition = "center top";
+      body.style.backgroundRepeat = "no-repeat";
+      body.style.backgroundAttachment = "fixed";
+      // Keep the theme background color behind the image for fallback/edges.
+      body.style.backgroundColor = "hsl(var(--background))";
+    };
+    img.onerror = () => {
+      console.warn("[Home] Failed to load homepage background image:", src);
+    };
+    img.src = src;
+
     return () => {
-      // Clean up styling
-      document.body.style.backgroundColor = "";
+      cancelled = true;
+      body.style.backgroundImage = previousImage;
+      body.style.backgroundSize = previousSize;
+      body.style.backgroundPosition = previousPosition;
+      body.style.backgroundRepeat = previousRepeat;
+      body.style.backgroundAttachment = previousAttachment;
+      body.style.backgroundColor = previousColor;
     };
   }, []);
 
@@ -213,7 +245,8 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
-                <span className="hero-bubbles">BUBBLE'S</span>
+                {/* Keep BUBBLE'S text white in all themes; CAFE in red as before */}
+                <span className="hero-bubbles text-white">BUBBLE'S</span>
                 <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
