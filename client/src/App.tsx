@@ -182,9 +182,9 @@ const AppContent = () => {
   
 
   // Basic SEO: set canonical and defaults site-wide
-  const canonical = locationStr || '/';
+  const canonical = locationStr || '/home';
   const isReaderLike = locationStr.includes('/reader');
-  const isHome = locationStr === '/';
+  const isHome = locationStr === '/home' || locationStr === '/';
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -312,7 +312,7 @@ const AppContent = () => {
     const run = () => {
       try {
         const path = locationStr;
-        if (path === '/') {
+        if (path === '/' || path === '/home') {
           void import('./pages/home');
         } else if (path.startsWith('/stories') || path.startsWith('/index')) {
           void import('./pages/index');
@@ -462,6 +462,7 @@ const AppContent = () => {
                 <React.Suspense fallback={routeFallback}>
                   <Switch>
                     {/* Main Pages */}
+                    <Route path="/home" component={HomePage} />
                     <Route path="/" component={HomePage} />
                     <Route path="/stories" component={StoriesPage} />
                     <Route path="/index" component={StoriesPage} />
@@ -563,6 +564,7 @@ const AppContent = () => {
                   <div key={locationStr} className="page-content">
                     <Switch>
                       {/* Main Pages */}
+                      <Route path="/home" component={HomePage} />
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
                       <Route path="/index" component={StoriesPage} />
