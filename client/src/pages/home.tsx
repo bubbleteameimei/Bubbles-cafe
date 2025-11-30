@@ -18,9 +18,7 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   
-  // Setup for homepage background using the IMG_4918 asset from public.
-  // We don't know the exact extension at build time, so we probe a few likely
-  // candidates at runtime and apply the first one that successfully loads.
+  // Setup for homepage background using the IMG_5890.jpeg asset from public.
   useEffect(() => {
     const root = document.documentElement;
     const previous = root.style.backgroundImage;
@@ -30,46 +28,28 @@ export default function Home() {
     const previousAttachment = root.style.backgroundAttachment;
     const previousColor = root.style.backgroundColor;
 
-    const candidates = [
-      "/IMG_4918",
-      "/IMG_4918.jpg",
-      "/IMG_4918.jpeg",
-      "/IMG_4918.JPEG",
-      "/IMG_4918.png",
-      "/IMG_4918.PNG",
-    ];
-
+    const src = "/IMG_5890.jpeg";
+    const img = new Image();
     let cancelled = false;
-    let applied = false;
 
-    const tryNext = (index: number) => {
-      if (cancelled || index >= candidates.length || applied) return;
-      const src = candidates[index];
-      const img = new Image();
-      img.onload = () => {
-        if (cancelled || applied) return;
-        applied = true;
-        if (import.meta.env?.DEV) {
-          console.log("[Home] Using homepage background image:", src);
-        }
-        root.style.backgroundImage = `url(${src})`;
-        root.style.backgroundSize = "cover";
-        root.style.backgroundPosition = "center top";
-        root.style.backgroundRepeat = "no-repeat";
-        root.style.backgroundAttachment = "fixed";
-        root.style.backgroundColor = "hsl(var(--background))";
-      };
-      img.onerror = () => {
-        if (cancelled) return;
-        if (import.meta.env?.DEV) {
-          console.warn("[Home] Failed to load background candidate:", src);
-        }
-        tryNext(index + 1);
-      };
-      img.src = src;
+    img.onload = () => {
+      if (cancelled) return;
+      if (import.meta.env?.DEV) {
+        console.log("[Home] Using homepage background image:", src);
+      }
+      root.style.backgroundImage = `url(${src})`;
+      root.style.backgroundSize = "cover";
+      root.style.backgroundPosition = "center top";
+      root.style.backgroundRepeat = "no-repeat";
+      root.style.backgroundAttachment = "fixed";
+      root.style.backgroundColor = "hsl(var(--background))";
     };
-
-    tryNext(0);
+    img.onerror = () => {
+      if (import.meta.env?.DEV) {
+        console.warn("[Home] Failed to load homepage background image:", src);
+      }
+    };
+    img.src = src;
 
     return () => {
       cancelled = true;

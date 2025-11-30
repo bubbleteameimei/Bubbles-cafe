@@ -448,7 +448,7 @@ const AppContent = () => {
         Skip to content
       </a>
       <div
-        className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden bg-background text-foreground 
+        className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden bg-background/60 text-foreground 
           m-0 mx-0 flex flex-col site-gutters`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
