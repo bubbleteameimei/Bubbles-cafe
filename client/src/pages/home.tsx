@@ -29,7 +29,7 @@ export default function Home() {
     const previousAttachment = root.style.backgroundAttachment;
     const previousColor = root.style.backgroundColor;
 
-    root.style.backgroundImage = "url(/IMG_4918.jpg)";
+    root.style.backgroundImage = "url(/IMG_4918)";
     root.style.backgroundSize = "cover";
     root.style.backgroundPosition = "center top";
     root.style.backgroundRepeat = "no-repeat";
