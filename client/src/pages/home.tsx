@@ -213,9 +213,9 @@ export default function Home() {
                 transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
                 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
               >
-                {/* Keep BUBBLE'S text white regardless of accent changes */}
+                {/* Keep BUBBLE'S text white in all themes; CAFE in red as before */}
                 <span className="hero-bubbles text-white">BUBBLE'S</span>
-                <span className="mt-1 md:mt-2 text-foreground relative">CAFE</span>
+                <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
               </motion.h1>
             </div>
           
