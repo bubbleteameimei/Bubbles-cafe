@@ -558,13 +558,27 @@ export default function Navigation() {
                     size="icon"
                     className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
                     aria-label="Account menu"
-                    title="Account"
+                    title={user.fullName || user.username || user.email}
                   >
-                    <User className="h-5 w-5" />
+                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                      {(user.fullName || user.username || user.email || "?")
+                        .trim()
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="min-w-[200px]">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {user.fullName || user.username || "Signed in"}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <button
                     className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
