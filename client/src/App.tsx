@@ -189,6 +189,11 @@ const AppContent = () => {
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
+
+  // Use a transparent container background on the homepage so the global
+  // background image is visible; use a semi-opaque theme background on
+  // all other routes for readability.
+  const containerBgClass = isHome ? 'bg-transparent' : 'bg-background/60';
   // Check if current route is an error page
   const isErrorPage =
     locationStr.includes('/errors/403') ||
@@ -448,7 +453,7 @@ const AppContent = () => {
         Skip to content
       </a>
       <div
-        className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden bg-background/60 text-foreground 
+        className={`page-transition-container w-full min-w-full max-w-full overflow-x-hidden ${containerBgClass} text-foreground 
           m-0 mx-0 flex flex-col site-gutters`}
          style={{ width: '100%', minWidth: '100%', maxWidth: '100%', margin: '0 auto', paddingTop: isReaderLike ? 'calc(var(--navbar-height, 56px) + 15px)' : 'calc(var(--navbar-height, 56px) + 12px)' }}>
         {/* Main navigation bar */}
