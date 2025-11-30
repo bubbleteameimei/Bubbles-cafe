@@ -18,9 +18,10 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   
-  // Setup for homepage background
+  // Setup for homepage background using the IMG_4918 asset from public.
+  // We don't know the exact extension at build time, so we probe a few likely
+  // candidates at runtime and apply the first one that successfully loads.
   useEffect(() => {
-    // Use the IMG_4918 asset from public as the homepage background
     const root = document.documentElement;
     const previous = root.style.backgroundImage;
     const previousSize = root.style.backgroundSize;
@@ -29,14 +30,49 @@ export default function Home() {
     const previousAttachment = root.style.backgroundAttachment;
     const previousColor = root.style.backgroundColor;
 
-    root.style.backgroundImage = "url(/IMG_4918)";
-    root.style.backgroundSize = "cover";
-    root.style.backgroundPosition = "center top";
-    root.style.backgroundRepeat = "no-repeat";
-    root.style.backgroundAttachment = "fixed";
-    root.style.backgroundColor = "hsl(var(--background))";
+    const candidates = [
+      "/IMG_4918",
+      "/IMG_4918.jpg",
+      "/IMG_4918.jpeg",
+      "/IMG_4918.JPEG",
+      "/IMG_4918.png",
+      "/IMG_4918.PNG",
+    ];
+
+    let cancelled = false;
+    let applied = false;
+
+    const tryNext = (index: number) => {
+      if (cancelled || index >= candidates.length || applied) return;
+      const src = candidates[index];
+      const img = new Image();
+      img.onload = () => {
+        if (cancelled || applied) return;
+        applied = true;
+        if (import.meta.env?.DEV) {
+          console.log("[Home] Using homepage background image:", src);
+        }
+        root.style.backgroundImage = `url(${src})`;
+        root.style.backgroundSize = "cover";
+        root.style.backgroundPosition = "center top";
+        root.style.backgroundRepeat = "no-repeat";
+        root.style.backgroundAttachment = "fixed";
+        root.style.backgroundColor = "hsl(var(--background))";
+      };
+      img.onerror = () => {
+        if (cancelled) return;
+        if (import.meta.env?.DEV) {
+          console.warn("[Home] Failed to load background candidate:", src);
+        }
+        tryNext(index + 1);
+      };
+      img.src = src;
+    };
+
+    tryNext(0);
 
     return () => {
+      cancelled = true;
       root.style.backgroundImage = previous;
       root.style.backgroundSize = previousSize;
       root.style.backgroundPosition = previousPosition;
