@@ -312,7 +312,8 @@ body:has(main:has([data-reader-page])) div[class*="container"] {
   border: none !important;
 }
 
-/* Homepage container needs to be transparent */
+/* Homepage container (and wrapper) needs to be transparent so the global background image shows through */
+.home-page,
 .home-page .container,
 .home-page main,
 .home-page section,
