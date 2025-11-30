@@ -354,6 +354,21 @@ function getBearerToken(req: Request): string | null {
 }
 
 /**
+ * Decode a hex string (e.g. HMAC signature header) into a Uint8Array.
+ */
+function hexToUint8Array(hex: string): Uint8Array {
+  const clean = hex.trim().toLowerCase();
+  const len = clean.length;
+  const size = Math.floor(len / 2) || 0;
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    const byte = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+    bytes[i] = Number.isFinite(byte) && byte >= 0 ? byte : 0;
+  }
+  return bytes;
+}
+
+/**
  * Resolve numeric user id from Supabase JWT via the users table.
  * RLS on users ensures we only see the current user row.
  */
@@ -433,9 +448,10 @@ async function getSupabaseCurrentUser(
 /**
  * Resolve a local posts.id from an external WordPress post ID.
  * Strategy:
- *   1) Try direct posts.id match
- *   2) Try metadata.wordpressId mapping
- *   3) Fetch the WordPress post, upsert via RPC, then resolve by slug
+ *   1) Check KV cache for a previously resolved mapping
+ *   2) Try direct posts.id match
+ *   3) Try metadata.wordpressId mapping
+ *   4) Fetch the WordPress post, upsert via RPC, then resolve by slug
  */
 async function resolveLocalPostIdFromExternal(
   env: Env,
@@ -445,12 +461,38 @@ async function resolveLocalPostIdFromExternal(
     return null;
   }
 
+  // Fast path: KV cache mapping external (WordPress) ID -> local posts.id
+  try {
+    const cached = await env.CACHE_KV.get(`wp-map:${externalId}`);
+    if (cached) {
+      const id = Number(cached);
+      if (Number.isFinite(id) && id > 0) {
+        return id;
+      }
+    }
+  } catch {
+    // ignore cache failures
+  }
+
   const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
   const serviceHeaders: Record<string, string> = {
     apikey: env.SUPABASE_ANON_KEY,
     Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
     Accept: 'application/json',
     'Content-Type': 'application/json',
+  };
+
+  const cacheResolved = async (id: number): Promise<number> => {
+    try {
+      if (Number.isFinite(id) && id > 0) {
+        await env.CACHE_KV.put(`wp-map:${externalId}`, String(id), {
+          expirationTtl: 86400, // 24h
+        });
+      }
+    } catch {
+      // best-effort; ignore KV write failures
+    }
+    return id;
   };
 
   // 1) Direct posts.id
@@ -466,7 +508,7 @@ async function resolveLocalPostIdFromExternal(
       if (Array.isArray(rows) && rows.length > 0 && rows[0]?.id != null) {
         const id = Number(rows[0].id);
         if (Number.isFinite(id)) {
-          return id;
+          return cacheResolved(id);
         }
       }
     }
@@ -487,7 +529,7 @@ async function resolveLocalPostIdFromExternal(
       if (Array.isArray(rows) && rows.length > 0 && rows[0]?.id != null) {
         const id = Number(rows[0].id);
         if (Number.isFinite(id)) {
-          return id;
+          return cacheResolved(id);
         }
       }
     }
@@ -538,7 +580,7 @@ async function resolveLocalPostIdFromExternal(
             if (Array.isArray(rows) && rows.length > 0 && rows[0]?.id != null) {
               const id = Number(rows[0].id);
               if (Number.isFinite(id)) {
-                return id;
+                return cacheResolved(id);
               }
             }
           }
@@ -3001,9 +3043,42 @@ router.post('/api/email-service/send', async (req: Request, env: Env) => {
 
 // PAYMENTS: Paystack integration (initialize, verify, plans, subscription status, webhook)
 router.post('/api/payments/webhook', async (req: Request, env: Env) => {
-  // This webhook is designed for Paystack, but we keep idempotency protection
+  // This webhook is designed for Paystack, with HMAC verification and idempotency protection
   try {
     const rawBody = await req.text();
+
+    // Verify Paystack signature when secret is configured
+    if (env.PAYSTACK_SECRET_KEY) {
+      const sigHeader =
+        req.headers.get('x-paystack-signature') ||
+        req.headers.get('X-Paystack-Signature') ||
+        '';
+      if (!sigHeader) {
+        return json({ status: false, message: 'Missing Paystack signature' }, { status: 401 });
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(env.PAYSTACK_SECRET_KEY);
+        const bodyData = encoder.encode(rawBody);
+
+        const cryptoKey = await crypto.subtle.importKey(
+          'raw',
+          keyData,
+          { name: 'HMAC', hash: 'SHA-512' },
+          false,
+          ['verify'],
+        );
+        const sigBytes = hexToUint8Array(sigHeader);
+        const ok = await crypto.subtle.verify('HMAC', cryptoKey, sigBytes, bodyData);
+        if (!ok) {
+          return json({ status: false, message: 'Invalid signature' }, { status: 401 });
+        }
+      } catch {
+        return json({ status: false, message: 'Failed to verify signature' }, { status: 401 });
+      }
+    }
+
     let parsed: any;
     try {
       parsed = JSON.parse(rawBody);
@@ -3403,6 +3478,56 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
       return json({ error: 'Sync already in progress' }, { status: 409 });
     }
 
+    // Determine incremental "after" cursor from last successful sync
+    let afterIso: string | null = null;
+    try {
+      if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY && env.SUPABASE_SERVICE_ROLE_KEY) {
+        const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+        const url = new URL(`${baseUrl}/rest/v1/site_settings`);
+        url.searchParams.set('select', 'key,value');
+        url.searchParams.set('key', 'eq.last_wordpress_sync');
+        url.searchParams.set('limit', '1');
+
+        const res = await fetch(url.toString(), {
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (res.ok) {
+          const rows = (await res.json().catch(() => [])) as any[];
+          if (Array.isArray(rows) && rows.length > 0) {
+            const raw = rows[0].value;
+            const ts = typeof raw === 'string' ? parseInt(raw, 10) : Number(raw);
+            if (Number.isFinite(ts) && ts > 0) {
+              const d = new Date(ts);
+              if (!Number.isNaN(d.getTime())) {
+                afterIso = d.toISOString();
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore Supabase read failures; fall back to KV
+    }
+
+    if (!afterIso) {
+      try {
+        const last = await env.SYNC_METADATA_KV.get('last_sync_timestamp');
+        if (last) {
+          const d = new Date(last);
+          if (!Number.isNaN(d.getTime())) {
+            afterIso = d.toISOString();
+          }
+        }
+      } catch {
+        // ignore KV failures; full sync will run
+      }
+    }
+
     // Mark sync as running in KV so UIs can reflect real-time status
     try {
       await env.SYNC_METADATA_KV.put('last_sync_status', 'running');
@@ -3412,7 +3537,15 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
     }
 
     try {
-      const wpRes = await fetch(`${env.WORDPRESS_API}?per_page=100&orderby=modified&order=desc`);
+      const wpBaseUrl = new URL(env.WORDPRESS_API);
+      wpBaseUrl.searchParams.set('per_page', '100');
+      wpBaseUrl.searchParams.set('orderby', 'modified');
+      wpBaseUrl.searchParams.set('order', 'desc');
+      if (afterIso) {
+        wpBaseUrl.searchParams.set('after', afterIso);
+      }
+
+      const wpRes = await fetch(wpBaseUrl.toString());
       if (!wpRes.ok) throw new Error('WordPress API failed');
 
       const posts = (await wpRes.json()) as any[];
@@ -3454,6 +3587,7 @@ router.post('/api/wordpress/sync/manual', async (req: Request, env: Env) => {
         postsProcessed,
         startedAt: startedAt.toISOString(),
         finishedAt: finishedAt.toISOString(),
+        incremental: Boolean(afterIso),
       });
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
@@ -7314,11 +7448,11 @@ router.get('/api/search', async (req: Request, env: Env) => {
     let fromDate: Date | null = null;
     if (fromParam && fromParam.trim()) {
       const days = parseInt(fromParam, 10);
-      if (!isNaN(days) && days > 0) {
+      if (!Number.isNaN(days) && days > 0) {
         fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       } else {
         const d = new Date(fromParam);
-        if (!isNaN(d.getTime())) fromDate = d;
+        if (!Number.isNaN(d.getTime())) fromDate = d;
       }
     }
 
@@ -7366,97 +7500,228 @@ router.get('/api/search', async (req: Request, env: Env) => {
     }
 
     let results: any[] = [];
+    let totalMatches = 0;
 
+    // Primary path: Supabase-backed search using ilike filters, with fetchSupabasePosts as a fallback.
     if (contentTypes.includes('posts') || !contentTypes.length) {
-      const allPosts = await fetchSupabasePosts(env);
-      if (allPosts.length) {
-        const qLower = searchQuery.toLowerCase();
-        const categoryNormalized = categoryParam ? categoryParam.trim().toLowerCase() : '';
+      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+      const qLower = searchQuery.toLowerCase();
+      const categoryNormalized = categoryParam ? categoryParam.trim().toLowerCase() : '';
+      const likePattern = `*${searchQuery}*`;
 
-        const filtered = allPosts.filter((post) => {
-          if (post.isSecret) return false;
+      try {
+        const url = new URL(`${baseUrl}/rest/v1/posts`);
+        url.searchParams.set(
+          'select',
+          'id,title,content,excerpt,slug,created_at,is_secret,theme_category,metadata',
+        );
+        url.searchParams.set(
+          'or',
+          `(title.ilike.${likePattern},excerpt.ilike.${likePattern},content.ilike.${likePattern})`,
+        );
+        url.searchParams.set('is_secret', 'eq.false');
+        if (categoryNormalized) {
+          url.searchParams.set('theme_category', `eq.${categoryNormalized}`);
+        }
+        if (fromDate) {
+          url.searchParams.set('created_at', `gte.${fromDate.toISOString()}`);
+        }
+        url.searchParams.set('order', 'created_at.desc');
+        url.searchParams.set('limit', String(resultLimit));
+        url.searchParams.set('offset', String(offset));
 
-          if (categoryNormalized) {
-            const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
-            const theme = String(
-              post.themeCategory || (meta as any).themeCategory || '',
-            ).toLowerCase();
-            if (theme !== categoryNormalized) return false;
-          }
-
-          if (fromDate) {
-            const created = new Date(post.createdAt || 0);
-            if (isNaN(created.getTime()) || created < fromDate) {
-              return false;
-            }
-          }
-
-          const titleText = stripHtml(post.title || '');
-          const excerptText = stripHtml(post.excerpt || '');
-          const contentText = stripHtml(post.content || '');
-          const haystack = `${titleText} ${excerptText} ${contentText}`.toLowerCase();
-          return haystack.includes(qLower);
-        });
-
-        const totalMatches = filtered.length;
-        const paged = offset < totalMatches ? filtered.slice(offset, offset + resultLimit) : [];
-
-        results = paged.map((post: any) => {
-          const plainContent = stripHtml(post.content || '');
-          const baseExcerpt =
-            stripHtml(post.excerpt || '') ||
-            (plainContent.length > 160 ? `${plainContent.slice(0, 160)}...` : plainContent);
-
-          let matches: { text: string; context: string }[] = [];
-          const idx = plainContent.toLowerCase().indexOf(qLower);
-          if (idx >= 0) {
-            const start = Math.max(0, idx - 60);
-            const end = Math.min(plainContent.length, idx + searchQuery.length + 60);
-            const context = plainContent.slice(start, end).trim();
-            matches = [{ text: searchQuery, context }];
-          }
-
-          return {
-            id: Number(post.id),
-            title: post.title,
-            excerpt: baseExcerpt,
-            type: 'post',
-            url: `/reader/${post.slug || post.id}`,
-            matches,
-            createdAt: post.createdAt,
-          };
-        });
-
-        const totalPages = Math.max(Math.ceil(totalMatches / resultLimit), 1);
-        const payload = {
-          results,
-          meta: {
-            query: searchQuery,
-            total: totalMatches,
-            page: pageNum,
-            pages: totalPages,
-            limit: resultLimit,
-            types: contentTypes,
-            from: fromDate ? fromDate.toISOString() : null,
-            category: categoryParam || null,
-            tags: tagFilters,
-            didYouMean: null,
+        const res = await fetch(url.toString(), {
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+            Accept: 'application/json',
+            Prefer: 'count=exact',
           },
-        };
+        });
 
-        recordTrendingQuery(searchQuery);
-        searchCache.set(cacheKey, { ts: Date.now(), data: payload });
-        return json(payload);
+        if (res.ok) {
+          const rows = (await res.json().catch(() => [])) as any[];
+          const range = res.headers.get('Content-Range');
+          if (range && range.includes('/')) {
+            const totalStr = range.split('/')[1];
+            const parsedTotal = parseInt(totalStr, 10);
+            totalMatches = Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal : rows.length;
+          } else {
+            totalMatches = rows.length;
+          }
+
+          const plainQuery = stripHtml(searchQuery);
+
+          results = rows.map((row: any) => {
+            const id = Number(row.id);
+            const title = row.title ?? '';
+            const contentHtml = typeof row.content === 'string' ? row.content : '';
+            const contentText = stripHtml(contentHtml);
+            const excerptHtml = typeof row.excerpt === 'string' ? row.excerpt : '';
+            const excerptTextSource =
+              stripHtml(excerptHtml) ||
+              (contentText.length > 160 ? `${contentText.slice(0, 160)}...` : contentText);
+
+            const baseExcerpt =
+              excerptTextSource.length > 0 ? excerptTextSource : contentText.slice(0, 160);
+
+            let matches: { text: string; context: string }[] = [];
+            const haystack = contentText.toLowerCase();
+            const idx = haystack.indexOf(qLower);
+            if (idx >= 0) {
+              const start = Math.max(0, idx - 60);
+              const end = Math.min(contentText.length, idx + plainQuery.length + 60);
+              const context = contentText.slice(start, end).trim();
+              matches = [{ text: searchQuery, context }];
+            }
+
+            return {
+              id,
+              title,
+              excerpt: baseExcerpt,
+              type: 'post',
+              url: `/reader/${row.slug || id}`,
+              matches,
+              createdAt: row.created_at || new Date().toISOString(),
+            };
+          });
+        } else {
+          // Fall back to in-memory search if Supabase query fails
+          const allPosts = await fetchSupabasePosts(env);
+          if (allPosts.length) {
+            const filtered = allPosts.filter((post) => {
+              if (post.isSecret) return false;
+
+              if (categoryNormalized) {
+                const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
+                const theme = String(
+                  post.themeCategory || (meta as any).themeCategory || '',
+                ).toLowerCase();
+                if (theme !== categoryNormalized) return false;
+              }
+
+              if (fromDate) {
+                const created = new Date(post.createdAt || 0);
+                if (Number.isNaN(created.getTime()) || created < fromDate) {
+                  return false;
+                }
+              }
+
+              const titleText = stripHtml(post.title || '');
+              const excerptText = stripHtml(post.excerpt || '');
+              const contentText = stripHtml(post.content || '');
+              const haystack = `${titleText} ${excerptText} ${contentText}`.toLowerCase();
+              return haystack.includes(qLower);
+            });
+
+            totalMatches = filtered.length;
+            const paged =
+              offset < totalMatches ? filtered.slice(offset, offset + resultLimit) : [];
+
+            results = paged.map((post: any) => {
+              const plainContent = stripHtml(post.content || '');
+              const baseExcerpt =
+                stripHtml(post.excerpt || '') ||
+                (plainContent.length > 160
+                  ? `${plainContent.slice(0, 160)}...`
+                  : plainContent);
+
+              let matches: { text: string; context: string }[] = [];
+              const idx = plainContent.toLowerCase().indexOf(qLower);
+              if (idx >= 0) {
+                const start = Math.max(0, idx - 60);
+                const end = Math.min(plainContent.length, idx + searchQuery.length + 60);
+                const context = plainContent.slice(start, end).trim();
+                matches = [{ text: searchQuery, context }];
+              }
+
+              return {
+                id: Number(post.id),
+                title: post.title,
+                excerpt: baseExcerpt,
+                type: 'post',
+                url: `/reader/${post.slug || post.id}`,
+                matches,
+                createdAt: post.createdAt,
+              };
+            });
+          }
+        }
+      } catch {
+        // On unexpected failure, fall back to legacy in-memory search
+        const allPosts = await fetchSupabasePosts(env);
+        if (allPosts.length) {
+          const qLower = searchQuery.toLowerCase();
+          const categoryNormalized = categoryParam ? categoryParam.trim().toLowerCase() : '';
+
+          const filtered = allPosts.filter((post) => {
+            if (post.isSecret) return false;
+
+            if (categoryNormalized) {
+              const meta = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
+              const theme = String(
+                post.themeCategory || (meta as any).themeCategory || '',
+              ).toLowerCase();
+              if (theme !== categoryNormalized) return false;
+            }
+
+            if (fromDate) {
+              const created = new Date(post.createdAt || 0);
+              if (Number.isNaN(created.getTime()) || created < fromDate) {
+                return false;
+              }
+            }
+
+            const titleText = stripHtml(post.title || '');
+            const excerptText = stripHtml(post.excerpt || '');
+            const contentText = stripHtml(post.content || '');
+            const haystack = `${titleText} ${excerptText} ${contentText}`.toLowerCase();
+            return haystack.includes(qLower);
+          });
+
+          totalMatches = filtered.length;
+          const paged =
+            offset < totalMatches ? filtered.slice(offset, offset + resultLimit) : [];
+
+          results = paged.map((post: any) => {
+            const plainContent = stripHtml(post.content || '');
+            const baseExcerpt =
+              stripHtml(post.excerpt || '') ||
+              (plainContent.length > 160
+                ? `${plainContent.slice(0, 160)}...`
+                : plainContent);
+
+            let matches: { text: string; context: string }[] = [];
+            const idx = plainContent.toLowerCase().indexOf(qLower);
+            if (idx >= 0) {
+              const start = Math.max(0, idx - 60);
+              const end = Math.min(plainContent.length, idx + searchQuery.length + 60);
+              const context = plainContent.slice(start, end).trim();
+              matches = [{ text: searchQuery, context }];
+            }
+
+            return {
+              id: Number(post.id),
+              title: post.title,
+              excerpt: baseExcerpt,
+              type: 'post',
+              url: `/reader/${post.slug || post.id}`,
+              matches,
+              createdAt: post.createdAt,
+            };
+          });
+        }
       }
     }
 
+    const totalPages = Math.max(Math.ceil((totalMatches || 0) / resultLimit), 1);
     const payload = {
       results,
       meta: {
         query: searchQuery,
-        total: 0,
+        total: totalMatches,
         page: pageNum,
-        pages: 1,
+        pages: totalPages,
         limit: resultLimit,
         types: contentTypes,
         from: fromDate ? fromDate.toISOString() : null,
@@ -7470,6 +7735,8 @@ router.get('/api/search', async (req: Request, env: Env) => {
     return json(payload);
   } catch {
     return json({ error: 'An error occurred during search', results: [] }, { status: 500 });
+  }
+});
   }
 });
 

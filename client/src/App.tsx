@@ -2,6 +2,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { queryClient } from './lib/queryClient';
+import { useRouteSeo } from './hooks/useRouteSeo';
+import { useRoutePrefetch } from './hooks/useRoutePrefetch';
 const Toaster = React.lazy(() => import('./components/ui/toaster').then(m => ({ default: m.Toaster })));
 const Sonner = React.lazy(() => import('./components/ui/sonner').then(m => ({ default: m.Sonner })));
 import { ThemeProvider } from '@/components/theme-provider';
@@ -183,16 +185,8 @@ const AppContent = () => {
   const routeFallback = needRouteLoader ? (
     <RouteLoader label="Loading" minHeight="60vh" />
   ) : null;
-  
 
-  // Basic SEO: set canonical and defaults site-wide
-  const canonical = locationStr || '/';
   const isReaderLike = locationStr.includes('/reader');
-  const isHome = locationStr === '/';
-  const prefersReducedMotion =
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
   // Check if current route is an error page
   const isErrorPage =
     locationStr.includes('/errors/403') ||
@@ -202,98 +196,14 @@ const AppContent = () => {
     locationStr.includes('/errors/503') ||
     locationStr.includes('/errors/504');
 
-  // Derive route-aware SEO defaults (title/description and robots)
-  const pathForSeo = locationStr || '/';
-  let seoTitle: string | undefined = undefined;
-  let seoDescription: string | undefined = undefined;
-  let seoNoindex = false;
-  let seoNofollow = false;
-
-  if (pathForSeo === '/') {
-    seoTitle = 'Bubble’s Cafe';
-    seoDescription = "Bubble's Cafe publishes dark, psychological, and experimental fiction — intimate stories of identity, obsessions, decay, and the violence of the human mind.";
-  } else if (pathForSeo.startsWith('/stories') || pathForSeo.startsWith('/index')) {
-    seoTitle = 'Index';
-    seoDescription = 'Browse the index of short fiction from Bubble’s Cafe — psychological and experimental stories of identity, obsession, and the strange grace of decay.';
-  } else if (pathForSeo.startsWith('/reader')) {
-    // Reader page sets its own page-level SEO (Article)
-    // Provide only canonical here via global SEO
-  } else if (pathForSeo.startsWith('/about')) {
-    seoTitle = 'About';
-    seoDescription = 'Bubble’s Cafe publishes dark psychological and experimental short fiction. We explore stories that examine the mind, memory, and the complexities of human emotion.';
-  } else if (pathForSeo.startsWith('/contact')) {
-    seoTitle = 'Contact';
-    seoDescription = 'Reach Bubble’s Cafe. For inquiries, collaborations, or permissions, contact me.';
-  } else if (pathForSeo.startsWith('/privacy')) {
-    seoTitle = 'Privacy Policy';
-    seoDescription = 'Privacy Policy for Bubble’s Cafe.';
-  } else if (pathForSeo.startsWith('/install')) {
-    seoTitle = 'Install App';
-    seoDescription = 'Install the Bubble’s Cafe app for a fast, immersive reading experience.';
-  } else if (pathForSeo.startsWith('/community')) {
-    seoTitle = 'Community';
-    seoDescription = 'Explore and engage with the Bubble’s Cafe community.';
-  } else if (pathForSeo.startsWith('/submit-story')) {
-    seoTitle = 'Submit Story';
-    seoDescription = 'Submit your short fiction to Bubble’s Cafe. We welcome macabre works that explore identity, emotion, and the horror.';
-  } else if (pathForSeo.startsWith('/edit-story')) {
-    seoTitle = 'Edit Story';
-    seoDescription = 'Edit your submitted story.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/search')) {
-    seoTitle = 'Search';
-    seoDescription = 'Search Bubble’s Cafe for short fiction by theme, tone, or title.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/admin')) {
-    seoTitle = 'Admin';
-    seoDescription = 'Site administration.';
-    seoNoindex = true;
-    seoNofollow = true;
-  } else if (pathForSeo.startsWith('/auth')) {
-    seoTitle = 'Sign In';
-    seoDescription = 'Authenticate to Bubble’s Cafe.';
-    seoNoindex = true;
-    seoNofollow = true;
-  } else if (pathForSeo.startsWith('/reset-password')) {
-    seoTitle = 'Reset Password';
-    seoDescription = 'Reset your Bubble’s Cafe password.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/profile')) {
-    seoTitle = 'Profile';
-    seoDescription = 'Manage your Bubble’s Cafe account — track your reading activity, bookmarks, and preferences.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/bookmarks')) {
-    seoTitle = 'Bookmarks';
-    seoDescription = 'Your saved short fiction from Bubble’s Cafe — revisit stories you’ve marked as favourites.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/notifications')) {
-    seoTitle = 'Notifications';
-    seoDescription = 'View personalized story recommendations and updates from Bubble’s Cafe.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/recommendations')) {
-    seoTitle = 'Recommendations';
-    seoDescription = 'View personalized story recommendations and updates from Bubble’s Cafe.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/settings/')) {
-    seoTitle = 'Settings';
-    seoDescription = 'Adjust your Bubble’s Cafe reading experience — update display settings, preferences, and saved data.';
-    seoNoindex = true;
-  } else if (pathForSeo.startsWith('/legal/copyright')) {
-    seoTitle = 'Copyright';
-    seoDescription = 'Copyright information.';
-  } else if (pathForSeo.startsWith('/legal/terms')) {
-    seoTitle = 'Terms of Service';
-    seoDescription = 'Terms of service for Bubble’s Cafe.';
-  } else if (pathForSeo.startsWith('/legal/cookie-policy')) {
-    seoTitle = 'Cookie Policy';
-    seoDescription = 'Cookie policy for Bubble’s Cafe.';
-  }
-
-  
-
-  
-
-  
+  // Route-aware SEO configuration
+  const {
+    title: seoTitle,
+    description: seoDescription,
+    canonical,
+    noindex: seoNoindex,
+    nofollow: seoNofollow,
+  } = useRouteSeo(locationStr);
 
   // Simplified location tracking - no loading delays
   useEffect(() => {
@@ -309,113 +219,8 @@ const AppContent = () => {
     }
   }, [location, isErrorPage]);
 
-  
-
   // Prefetch the current route component to avoid Suspense blank frames
-  useEffect(() => {
-    const run = () => {
-      try {
-        const path = locationStr;
-        if (path === '/') {
-          void import('./pages/home');
-        } else if (path.startsWith('/stories') || path.startsWith('/index')) {
-          void import('./pages/index');
-        } else if (path.startsWith('/best-stories')) {
-          void import('./pages/best-stories');
-        } else if (path.startsWith('/curated')) {
-          void import('./pages/curated');
-        } else if (path.startsWith('/editors-picks')) {
-          void import('./pages/editors-picks');
-        } else if (path.startsWith('/edens-hollow')) {
-          void import('./pages/edens-hollow');
-        } else if (path.startsWith('/community-story/')) {
-          void import('./pages/story-view');
-        } else if (path.startsWith('/reader')) {
-          void import('./pages/reader');
-        } else if (path.startsWith('/story/')) {
-          void import('./pages/reader');
-        } else if (path.startsWith('/about')) {
-          void import('./pages/about');
-        } else if (path.startsWith('/contact')) {
-          void import('./pages/contact');
-        } else if (path.startsWith('/privacy')) {
-          void import('./pages/privacy');
-        } else if (path.startsWith('/report-bug')) {
-          void import('./pages/report-bug');
-        } else if (path.startsWith('/install')) {
-          void import('./pages/install-app');
-        } else if (path.startsWith('/auth')) {
-          void import('./pages/auth');
-          void import('./pages/auth-success');
-          void import('./pages/auth-callback');
-        } else if (path.startsWith('/reset-password')) {
-          void import('./pages/reset-password');
-        } else if (path.startsWith('/profile')) {
-          void import('./pages/profile');
-        } else if (path.startsWith('/bookmarks')) {
-          void import('./pages/bookmarks');
-        } else if (path.startsWith('/notifications')) {
-          void import('./pages/notifications');
-        } else if (path.startsWith('/recommendations')) {
-          void import('./pages/recommendations');
-        } else if (path.startsWith('/settings/')) {
-          if (path.includes('/fonts')) {
-            void import('./pages/settings/fonts');
-          } else if (path.includes('/accessibility')) {
-            void import('./pages/settings/accessibility');
-          } else if (path.includes('/notifications')) {
-            void import('./pages/settings/notifications');
-          } else if (path.includes('/privacy')) {
-            void import('./pages/settings/privacy');
-          } else if (path.includes('/cookie-management')) {
-            void import('./pages/settings/cookie-management');
-          } else if (path.includes('/quick-settings')) {
-            void import('./pages/settings/quick-settings');
-          } else if (path.includes('/connected-accounts')) {
-            void import('./pages/settings/connected-accounts');
-          } else {
-            void import('./pages/settings/profile');
-          }
-        } else if (path.startsWith('/community')) {
-          void import('./pages/community');
-        } else if (path.startsWith('/submit-story')) {
-          void import('./pages/submit-story');
-        } else if (path.startsWith('/edit-story')) {
-          void import('./pages/edit-story');
-        } else if (path.startsWith('/feedback')) {
-          void import('./pages/feedback');
-        } else if (path.startsWith('/user/feedback-dashboard')) {
-          void import('./pages/user/feedback-dashboard');
-        } else if (path.startsWith('/support/guidelines')) {
-          void import('./pages/support/guidelines');
-        } else if (path.startsWith('/legal/copyright')) {
-          void import('./pages/legal/copyright');
-        } else if (path.startsWith('/legal/terms')) {
-          void import('./pages/legal/terms');
-        } else if (path.startsWith('/legal/cookie-policy')) {
-          void import('./pages/legal/cookie-policy');
-        } else if (path.startsWith('/admin')) {
-          // Preload admin index for snappy nav
-          void import('./pages/admin/index');
-        } else if (path.startsWith('/search')) {
-          void import('./pages/search-results');
-        }
-      } catch {}
-    };
-
-    const ric = (window as any)?.requestIdleCallback as any;
-    if (typeof ric === 'function') {
-      ric(() => run(), { timeout: 1200 });
-    } else {
-      setTimeout(run, 50);
-    }
-  }, [locationStr]);
-
-  
-
-  
-
-  
+  useRoutePrefetch(locationStr);
 
   // If we're on an error page, render only the error page with proper landmark structure
   if (isErrorPage) {
