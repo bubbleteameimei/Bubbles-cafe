@@ -1062,6 +1062,38 @@ router.get('/', async () => {
   return json({ error: 'Not Found' }, { status: 404 });
 });
 
+// Basic CORS support for API routes
+function getCorsHeaders(req: Request, env: Env): Record<string, string> {
+  const origin =
+    req.headers.get('Origin') ||
+    req.headers.get('origin') ||
+    '';
+
+  const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
+
+  const allowOrigin = origin && origin !== 'null' ? origin : frontendBase;
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers':
+      'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
+    Vary: 'Origin',
+  };
+
+  if (allowOrigin !== '*') {
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+
+  return headers;
+}
+
+// CORS preflight handler for API routes
+router.options('/api/*', (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+  return new Response(null, { status: 204, headers });
+});
+
 // CSRF TOKEN: compatibility endpoint for legacy clients
 // Note: Worker APIs are JWT-based and do not require CSRF protection.
 // This endpoint returns a stateless token so clients expecting /api/csrf-token
@@ -8967,7 +8999,28 @@ export { RateLimitObject, IdempotencyObject, LocksObject } from './durable-objec
 export default {
   // itty-router v5 uses `router.fetch` (v4 used `router.handle`)
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    return router.fetch(request, env, ctx);
+    // Let the router handle the request first
+    const response = await router.fetch(request, env, ctx);
+
+    // Apply CORS headers for API routes
+    try {
+      const url = new URL(request.url);
+      if (url.pathname.startsWith('/api/')) {
+        const cors = getCorsHeaders(request, env);
+        const headers = new Headers(response.headers);
+        for (const [key, value] of Object.entries(cors)) {
+          headers.set(key, value);
+        }
+        return new Response(response.body, {
+          status: response.status,
+          headers,
+        });
+      }
+    } catch {
+      // If URL parsing fails, fall through and return original response
+    }
+
+    return response;
   },
 
   async scheduled(_event: ScheduledEvent, env: Env) {

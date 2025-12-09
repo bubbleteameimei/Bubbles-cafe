@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileInput } from "@/components/ui/file-input";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiJson } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 
@@ -57,16 +57,49 @@ export default function ReportBugPage() {
 
   const bugReportMutation = useMutation({
     mutationFn: async (data: BugReportForm) => {
-      const formData = new FormData();
-      formData.append("affectedPage", data.affectedPage);
-      formData.append("description", data.description);
-      if (data.email) {
-        formData.append("email", data.email);
+      const metadata: any = {
+        email: data.email || undefined,
+      };
+
+      if (data.screenshot && data.screenshot.length > 0) {
+        const file = data.screenshot[0];
+        metadata.screenshot = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        };
       }
-      if (data.screenshot && data.screenshot[0]) {
-        formData.append("screenshot", data.screenshot[0]);
+
+      try {
+        if (typeof window !== "undefined") {
+          metadata.location = {
+            path: window.location.pathname,
+            href: window.location.href,
+          };
+          metadata.screenResolution = `${window.screen.width}x${window.screen.height}`;
+          metadata.device = {
+            type: window.innerWidth <= 768 ? "mobile" : "desktop",
+          };
+          metadata.userAgent = navigator.userAgent;
+          metadata.operatingSystem = navigator.platform || undefined;
+        }
+      } catch {
+        // best-effort metadata collection
       }
-      return apiRequest("/api/bug-report", { method: 'POST', body: formData });
+
+      const payload = {
+        type: "bug",
+        content: data.description,
+        page: data.affectedPage,
+        category: "bug",
+        browser: metadata.browser || undefined,
+        operatingSystem: metadata.operatingSystem || undefined,
+        screenResolution: metadata.screenResolution || undefined,
+        userAgent: metadata.userAgent || undefined,
+        metadata,
+      };
+
+      return apiJson("POST", "/api/feedback", payload);
     },
     onSuccess: () => {
       toast({
