@@ -55,6 +55,16 @@ export default function ReportBugPage() {
     },
   });
 
+  // Helper to read a File as a data URL for lightweight screenshot uploads
+  async function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  }
+
   const bugReportMutation = useMutation({
     mutationFn: async (data: BugReportForm) => {
       const metadata: any = {
@@ -63,11 +73,22 @@ export default function ReportBugPage() {
 
       if (data.screenshot && data.screenshot.length > 0) {
         const file = data.screenshot[0];
+
+        // Always include basic file metadata
         metadata.screenshot = {
           name: file.name,
           size: file.size,
           type: file.type,
         };
+
+        // Best-effort: include a base64 data URL so the image is actually stored
+        try {
+          const dataUrl = await fileToDataUrl(file);
+          // Keep the data separate so admin tooling can choose how to render it
+          metadata.screenshot.dataUrl = dataUrl;
+        } catch {
+          // If reading fails, we still keep name/size/type so nothing breaks
+        }
       }
 
       try {
