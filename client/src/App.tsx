@@ -745,7 +745,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <CookieConsentProvider>
-            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            {/* Default to dark theme for first-time visitors; users can still switch */}
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
               <SidebarProvider>
                 <NotificationProvider>
                   <ScrollEffectsProvider>

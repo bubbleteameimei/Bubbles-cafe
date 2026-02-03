@@ -117,11 +117,8 @@ body {
     min-width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    padding: 0;
-    width: 100%;
     /* Avoid forcing full viewport height on non-home pages to prevent bottom band */
     min-height: auto;
-    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     background-color: hsl(var(--background));
