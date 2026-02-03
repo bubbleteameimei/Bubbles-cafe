@@ -512,9 +512,9 @@ body.error-page-active footer.site-footer {
    With scrollbar-gutter: stable both-edges already set on html/body, Radix's compensation is safe.
    If further issues arise, consider using a custom overlay class to scope adjustments instead of touching body. */
 
-/* Sidebar: ensure the first group sits flush to the top */
+/* Sidebar: give the first group consistent breathing room from the very top */
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
-  padding-top: 0 !important;
+  padding-top: 8px !important;
   margin-top: 0 !important;
 }
 

@@ -56,6 +56,7 @@ const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
 const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
+const ComingSoonPage = React.lazy(() => import('./pages/coming-soon'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting

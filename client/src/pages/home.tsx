@@ -42,8 +42,8 @@ export default function Home() {
       body.style.backgroundPosition = "center top";
       body.style.backgroundRepeat = "no-repeat";
       body.style.backgroundAttachment = "fixed";
-      // Keep the theme background color behind the image for fallback/edges.
-      body.style.backgroundColor = "hsl(var(--background))";
+      // Make the homepage use the photograph itself as the background without a theme color wash.
+      body.style.backgroundColor = "transparent";
     };
     img.onerror = () => {
       console.warn("[Home] Failed to load homepage background image:", src);
