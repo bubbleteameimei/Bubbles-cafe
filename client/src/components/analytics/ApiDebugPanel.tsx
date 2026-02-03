@@ -63,7 +63,7 @@ export const ApiDebugPanel: React.FC = () => {
       <Card className="p-3 bg-background/95 border border-dashed border-primary/40 shadow-lg space-y-2">
         <div className="flex items-center justify-between gap-2">
           <span className="font-semibold">API Diagnostics</span>
-          <Button size="xs" variant="outline" onClick={runCheck} disabled={loading}>
+          <Button size="sm" variant="outline" onClick={runCheck} disabled={loading}>
             {loading ? 'Checking…' : 'Check CORS'}
           </Button>
         </div>

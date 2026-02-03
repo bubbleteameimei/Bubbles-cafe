@@ -382,7 +382,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
 
-  const submenuItemClass = "px-3 py-2 pr-8 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[34px] flex items-center mb-1.5 rounded-md transition-colors duration-200 ease-out hover:bg-background/6 focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/50";
+  const submenuItemClass = "px-3 py-1.5 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center mb-0.5 rounded-md transition-colors duration-150 ease-out hover:bg-background/6 focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/50";
 
   return (
     <motion.div 
