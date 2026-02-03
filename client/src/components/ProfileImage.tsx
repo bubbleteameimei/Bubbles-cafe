@@ -19,7 +19,7 @@ export default function ProfileImage() {
             loading="lazy"
             decoding="async"
             fetchPriority="high"
-            className="w-[110%] h-[110%] object-cover rounded-full -translate-x-[5%] -translate-y-[5%]"
+            className="w-[140%] h-[140%] object-cover rounded-full -translate-x-[20%] -translate-y-[10%]"
           />
         </div>
       </div>

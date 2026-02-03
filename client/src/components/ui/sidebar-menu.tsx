@@ -412,8 +412,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }}
       >
         {/* Main Navigation */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}>
-          <SidebarGroup className="space-y-1 -mt-2 p-0 pt-0">
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}>
+          <SidebarGroup className="space-y-1 mt-1 p-0 pt-0">
             <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-4 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
               Navigation
             </SidebarGroupLabel>
@@ -536,6 +536,23 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   {renderActiveIndicator('/edens-hollow')}
                   <Gamepad2 className="h-6 w-6 sm:h-7 sm:w-7" />
                   <span className="text-[14px] sm:text-[15px] font-semibold">Eden - Experimental Game</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location === '/coming-soon'}
+                  onClick={() => handleNavigation('/coming-soon')}
+                  tooltip="Upcoming book collections"
+                  className={menuItemClass}
+                  aria-current={location === '/coming-soon' ? 'page' : undefined}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-semibold align-middle">
+                      ★
+                    </span>
+                    <span className="text-[13px] font-semibold">Coming Soon</span>
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
