@@ -227,8 +227,8 @@ export default function Home() {
       ) : (
         <div className="homepage-content">
         <div 
-          className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
-          style={{}}
+          className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-transparent"
+          style={{ backgroundColor: "transparent" }}
         >
           {/* Background overlay removed per request */}
           

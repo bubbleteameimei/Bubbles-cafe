@@ -91,10 +91,10 @@
 
 /* Enhanced menu button styles with optimized spacing and typography */
 .sidebar-menu-button-enhanced {
-  height: 24px;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  height: 28px;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 8px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 12px;
   font-weight: 500;
