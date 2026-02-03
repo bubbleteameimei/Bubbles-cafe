@@ -49,8 +49,21 @@ const BackToTopButton: React.FC = () => {
     ].join(','))?.forEach(el => {
       // Heuristic: consider only elements that can actually scroll
       const styles = getComputedStyle(el);
+
+      // className can be non-string for some elements (e.g. SVGAnimatedString on SVG)
+      // Normalize to a plain string before checking for utility classes.
+      let className = '';
+      const rawClass: any = (el as any).className;
+      if (typeof rawClass === 'string') {
+        className = rawClass;
+      } else if (rawClass && typeof rawClass.baseVal === 'string') {
+        className = rawClass.baseVal;
+      }
+
+      const hasOverflowClass = className.includes('overflow-y');
+
       const canScrollY =
-        (styles.overflowY === 'auto' || styles.overflowY === 'scroll' || el.className.includes('overflow-y')) &&
+        (styles.overflowY === 'auto' || styles.overflowY === 'scroll' || hasOverflowClass) &&
         el.scrollHeight > el.clientHeight + 8;
       if (canScrollY) candidates.add(el);
     });
