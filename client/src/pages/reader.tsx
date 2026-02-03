@@ -30,14 +30,13 @@ import RouteLoader from "@/components/ui/RouteLoader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
-import { apiJson } from "@/lib/api";
+import { apiJson, getJson } from "@/lib/api";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
 
 import SEO from "@/components/SEO";
-import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
-import type { WordPressPost } from "@/lib/wordpress-api";
+import type { Post } from "@shared/schema";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
   Dialog,
@@ -124,11 +123,7 @@ const getRenderedText = (value: any): string => {
     }
     return '';
   } catch {
-    return '';
-  }
-};
-
-interface ReaderPageProps {
+  </old_code><new_code>interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
   isCommunityContent?: boolean;
@@ -502,11 +497,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     })();
   }, []);
 
-  // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
+  // Read tracking: compute current post id/link and gate by time-on-page and scroll depth.
   const currentPostId = useMemo(() => {
     try {
-      const post = posts?.[currentIndex];
-      return post?.id as number | undefined;
+      const post = posts?.[currentIndex] as any;
+      if (!post) return undefined;
+      const meta = post.metadata || {};
+      const wordpressId = typeof meta.wordpressId === 'number' ? meta.wordpressId : undefined;
+      return (wordpressId && wordpressId > 0 ? wordpressId : post.id) as number | undefined;
     } catch {
       return undefined;
     }
@@ -514,8 +512,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   const currentPostLink = useMemo(() => {
     try {
-      const post = posts?.[currentIndex];
-      return (post as any)?.link as string | undefined;
+      const post = posts?.[currentIndex] as any;
+      const meta = post?.metadata || {};
+      return (meta.wordpressLink || meta.link) as string | undefined;
     } catch {
       return undefined;
     }
@@ -548,12 +547,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Determine current slug and fetch full post content by slug (prefer full content for the active story)
   const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
-  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<WordPressPost | null>({
-    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<Post | null>({
+    queryKey: ['posts', 'reader', 'post', currentSlugToUse || ''],
     queryFn: async () => {
       if (!currentSlugToUse) return null as any;
       try {
-        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+        return await getJson<Post>(`/api/posts/slug/${encodeURIComponent(String(currentSlugToUse))}`);
       } catch (err) {
         try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
         return null as any;
@@ -606,7 +605,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
-  const published = currentPost.date || new Date().toISOString();
+  const published = (currentPost as any).createdAt || (currentPost as any).date || new Date().toISOString();
   const plainText = stripHtml(rawContent);
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
