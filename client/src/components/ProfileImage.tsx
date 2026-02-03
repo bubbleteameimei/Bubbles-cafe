@@ -1,5 +1,3 @@
-import OptimizedImage from '@/components/ui/OptimizedImage';
-
 export default function ProfileImage() {
   const src = '/images/author-profile.jpg';
 
@@ -15,15 +13,13 @@ export default function ProfileImage() {
           style={{ animation: 'pulse-slow 4s ease-in-out infinite' }}
         />
         <div className="relative h-48 w-48 mx-auto rounded-full overflow-hidden border-2 border-[#8B0000]/30 dark:border-[#8B0000]/40 shadow-lg ring-1 ring-[#660000]/20 dark:ring-[#660000]/30 ring-offset-1 ring-offset-background bg-background/70">
-          <OptimizedImage
+          <img
             src={src}
             alt="Author Profile"
-            width={192}
-            height={192}
-            priority={true}
-            loadingStrategy="eager"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="high"
             className="w-full h-full object-cover rounded-full"
-            showPlaceholder={true}
           />
         </div>
       </div>
