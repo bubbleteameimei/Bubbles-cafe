@@ -8846,6 +8846,30 @@ router.post('/api/contact', async (req: Request, env: Env) => {
   }
 });
 
+// GET /api/debug/cors - lightweight CORS/health diagnostics
+router.get('/api/debug/cors', async (req: Request, env: Env) => {
+  const url = new URL(req.url);
+  const origin = req.headers.get('Origin') || req.headers.get('origin') || null;
+
+  // Very small payload so this stays cheap to call from the browser
+  const body = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    origin,
+    url: url.toString(),
+    hostname: url.hostname,
+    cors: {
+      frontendUrl: env.FRONTEND_URL || null,
+      // Whether the Worker believes this is an API route (for CORS wrapping)
+      isApiPath: url.pathname.startsWith('/api/'),
+    },
+  };
+
+  // Attach CORS headers like other /api routes
+  const headers = getCorsHeaders(req, env);
+  return json(body, { headers });
+});
+
 // POST /api/csrf-test - test CSRF protection (for testing only)
 router.post('/api/csrf-test', async (req: Request) => {
   try {

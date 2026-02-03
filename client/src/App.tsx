@@ -46,6 +46,7 @@ import Footer from './components/layout/footer';
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
 import GA4 from './components/GA4';
+import { ApiDebugPanel } from './components/analytics/ApiDebugPanel';
 
 // Import essential pages lazily to keep main bundle small
 import HomePage from './pages/home';
@@ -779,6 +780,8 @@ function App() {
                         <ConsentAwareVercelAnalytics />
                         {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
                         <GA4 />
+                        {/* Dev-only API diagnostics for CORS/base URL debugging */}
+                        {import.meta.env.DEV && <ApiDebugPanel />}
                       </RefreshProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
