@@ -50,6 +50,19 @@ export default function ComingSoonCollectionsPage() {
                 own minds. Each story dissects a different way a person can become the monster
                 they fear.
               </p>
+              <ul className="mt-4 space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                <li>The Final Shape of a Dead Man&apos;s Dream</li>
+                <li>The First Hunger of an Unborn Child</li>
+                <li>The Vanishing Point of Identity</li>
+                <li>The Ending Logic of a Failing idea</li>
+                <li>The Documented Intention of Death</li>
+                <li>The Creature Built from Your Abscence</li>
+                <li>The Soft Ending of Sharp Things</li>
+                <li>The man made entirely of Regret</li>
+                <li>The Brief Life of a Borrowed Thought</li>
+                <li>The Comfort of Dying Slowly</li>
+                <li>The Word that Teaches You Nothing</li>
+              </ul>
             </motion.article>
 
             <motion.article
@@ -69,6 +82,17 @@ export default function ComingSoonCollectionsPage() {
                 bad choices we keep inviting back. This collection looks at the tenderness of
                 ruin—how sometimes we walk willingly into the jaws and pretend it&apos;s love.
               </p>
+              <ul className="mt-4 space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                <li>A Brief History of Your Disappearance</li>
+                <li>The Simple Fact of Being Wrong</li>
+                <li>Evidence of the Mind Departing</li>
+                <li>A small Catalog of Internal Failures</li>
+                <li>What the Self Does When Unobserved</li>
+                <li>You Will Not Survive This Thought</li>
+                <li>Memory is a Temporary Condition</li>
+                <li>A Step-by-Step Guide to Becoming No one</li>
+                <li>Witness my Self-Erasure</li>
+              </ul>
             </motion.article>
           </div>
 
