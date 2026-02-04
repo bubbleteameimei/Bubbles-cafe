@@ -1436,8 +1436,8 @@ export default function StoriesIndexContent() {
         {featuredStory &&
           sortedPosts.length > 0 &&
           (!deferredSearch.trim() || titleMatches.length > 0 || !!closestTitleMatch) && (
-            <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 content-visibility-auto">
-              <div className="lg:col-span-1">
+            <div className="mb-6 flex flex-col gap-6 content-visibility-auto">
+              <div>
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="group p-4">
                     <div className="flex items-center justify-between gap-2 mb-2">

@@ -130,7 +130,7 @@
 
 /* Subtle active press state */
 .sidebar-menu-button-enhanced:active {
-  transform: translateX(1px) scale(0.98);
+  transform: translateX(1px);
   box-shadow: none;
   transition-duration: 0.1s;
 }
@@ -470,25 +470,7 @@
   background-color: hsl(var(--destructive) / 0.05);
 }
 
-/* Mobile: compact spacing for top-level sidebar menu items */
-@media (max-width: 768px) {
-  /* Strong, scoped override to ensure reduced height on touch devices */
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"] {
-    height: 32px !important;
-    min-height: 32px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-    /* Ensure font size differs from Sign In / Report (which use text-sm ~14px) */
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-  }
 
-  /* Ensure no extra margins are introduced between list items */
-  [data-sidebar="menu"] > [data-sidebar="menu-item"] {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-}
 
 /* Ensure scrollbars are visible for the sidebar menu container */
 [data-sidebar="sidebar"] .sidebar-menu-container {

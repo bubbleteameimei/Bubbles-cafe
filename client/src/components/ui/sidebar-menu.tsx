@@ -280,8 +280,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
   }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
-  const renderActiveIndicator = (_path: string) => {
-    return null;
+  const renderActiveIndicator = (path: string) => {
+    const isActive = location === path;
+    if (!isActive) return null;
+    return (
+      <span
+        className="inline-flex h-1.5 w-1.5 rounded-full bg-primary mr-2"
+        aria-hidden="true"
+      />
+    );
   };
 
   const prefetchDataForRoute = React.useCallback(async (href: string) => {
@@ -439,7 +446,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/index'}
                       size="sm"
@@ -477,7 +488,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/community'}
                       size="sm"
@@ -892,8 +907,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
           <motion.button
             onClick={() => handleNavigation('/report-bug')}
-            whileHover={{ scale: 1.02, translateX: 2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ x: 2 }}
             className={cn(
               "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground transition-colors transition-transform duration-200 ease-out hover:bg-muted hover:-translate-y-[1px] will-change-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               location === '/report-bug'
