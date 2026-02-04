@@ -3,6 +3,7 @@ import { Router } from 'itty-router';
 import { registerReactionsRoutes } from './worker/reactions';
 import { registerAnalyticsRoutes } from './worker/analytics';
 import { registerPostsRoutes } from './worker/posts';
+import { registerCompactPostsRoutes } from './worker/posts-compact';
 import { registerCommentsRoutes } from './worker/comments';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { registerNotificationsRoutes } from './worker/notifications';
@@ -14,20 +15,20 @@ import { registerContactEmailRoutes } from './worker/contact-email';
 const json = (data: any, init?: ResponseInit) =>
   new Response(JSON.stringify(data), {
     headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    status: init?.status || 200,
+    status: init?.status ?? 200,
   });
 
 const router = Router();
 registerReactionsRoutes(router);
 registerAnalyticsRoutes(router);
 registerPostsRoutes(router);
+registerCompactPostsRoutes(router);
 registerCommentsRoutes(router);
 registerWordpressRoutes(router);
 registerNotificationsRoutes(router);
 registerBookmarksRoutes(router);
 registerNewsletterRoutes(router);
 registerContactEmailRoutes(router);
-registerBookmarksRoutes(router);
 
 // ============================================================================
 // TYPE DEFINITIONS

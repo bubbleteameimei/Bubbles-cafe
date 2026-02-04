@@ -87,17 +87,21 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
             if (entry.isIntersecting) {
               setVisible(true);
               // Disconnect once visible to avoid re-observing
-              try { observer?.disconnect(); } catch {}
+              try {
+                observer?.disconnect();
+              } catch {}
               break;
             }
           }
         },
-        { root: null, rootMargin: '800px', threshold: 0.01 }
+        { root: null, rootMargin: '800px', threshold: 0.01 },
       );
       if (anchorRef.current) observer.observe(anchorRef.current);
     } catch {}
     return () => {
-      try { observer?.disconnect(); } catch {}
+      try {
+        observer?.disconnect();
+      } catch {}
     };
   }, []);
 
@@ -429,21 +433,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery<{ posts: WordPressPost[]; totalPages: number; total: number }>({
+  const { data: postsData, isLoading, error } = useQuery<{ posts: Post[]; hasMore?: boolean }>({
     // Stabilise the query key so the list is reused across slug changes
-    queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
+    queryKey: ["posts", "reader", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list (trimmed)...', { routeSlug });
+        console.log('[Reader] Fetching posts list (Supabase-backed)...', { routeSlug, isCommunityContent });
       }
 
       try {
-        // Fetch a trimmed list for TOC/navigation to reduce payload size
-        const result = await fetchWordPressPosts({ page: 1, perPage: 100, includeContent: false, maxRetries: 2 });
+        const endpoint = isCommunityContent
+          ? '/api/posts/community?page=1&limit=100'
+          : '/api/posts/compact?page=1&limit=100';
+        const result = await getJson<{ posts: Post[]; hasMore?: boolean }>(endpoint);
         const posts = Array.isArray(result.posts) ? result.posts : [];
-        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
+        return { posts, hasMore: result.hasMore };
       } catch (error) {
-        console.error('[Reader] Error fetching WordPress posts via proxy:', error);
+        console.error('[Reader] Error fetching posts list:', error);
         try { logReaderError('reader.list.fetchError', error); } catch {}
         throw error;
       }
@@ -456,14 +462,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   // Memoised posts array for consistent usage across hooks
-  const posts = useMemo<WordPressPost[]>(() => {
-    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+  const posts = useMemo<Post[]>(() => {
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     return Array.isArray(dataPosts) ? dataPosts : [];
   }, [postsData]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     if (Array.isArray(dataPosts) && dataPosts.length > 0) {
       // If we have a slug in the route, align the index to that post
       if (routeSlug) {

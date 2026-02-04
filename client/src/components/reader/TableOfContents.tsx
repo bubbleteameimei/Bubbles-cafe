@@ -39,7 +39,7 @@ export default function TableOfContents({ currentPostId, onClose, posts: provide
     // Fallback: fetch a large batch if posts not provided
     (async function fetchPosts() {
       try {
-        const response = await fetch('/api/posts?page=1&limit=500&includeContent=false');
+        const response = await fetch('/api/posts/compact?page=1&limit=500');
         if (response.ok) {
           const data = await response.json();
           const normalizedPosts = data.posts.map((post: any) => ({
