@@ -586,32 +586,44 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  if (error) {
+  if (error && !routeSlug) {
     return (
       <SimplifiedErrorPage
-        statusCode={404}
-        title="Story Not Found"
-        message={error instanceof Error ? error.message : 'The requested story could not be found.'}
-        actionText="Browse Stories"
-        actionLink="/reader"
+        statusCode={500}
+        title="Stories Unavailable"
+        message={error instanceof Error ? error.message : 'Stories are temporarily unavailable.'}
+        actionText="Back to Home"
+        actionLink="/"
       />
     );
   }
 
-  if (!routeSlug && posts.length === 0) {
+  if (!routeSlug && posts.length === 0 && !isLoading) {
     return (
       <SimplifiedErrorPage
         statusCode={404}
-        title="Story Not Found"
-        message="The requested story could not be found."
-        actionText="Browse Stories"
-        actionLink="/reader"
+        title="No Stories Yet"
+        message="No stories are available to read yet. Please check back soon."
+        actionText="Back to Home"
+        actionLink="/"
       />
     );
   }
 
   // Get current post: prefer fully-fetched content
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
+
+  if (!currentPost && routeSlug) {
+    return (
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/index"
+      />
+    );
+  }
 
   // SEO values for this story
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');

@@ -290,6 +290,9 @@ const AppContent = () => {
   } else if (pathForSeo.startsWith('/legal/cookie-policy')) {
     seoTitle = 'Cookie Policy';
     seoDescription = 'Cookie policy for Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/coming-soon')) {
+    seoTitle = 'Coming Soon – Book Collections';
+    seoDescription = 'Preview of upcoming horror collections from Bubble’s Cafe.';
   }
 
   
@@ -331,6 +334,8 @@ const AppContent = () => {
           void import('./pages/editors-picks');
         } else if (path.startsWith('/edens-hollow')) {
           void import('./pages/edens-hollow');
+        } else if (path.startsWith('/coming-soon')) {
+          void import('./pages/coming-soon');
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
         } else if (path.startsWith('/reader')) {
@@ -477,6 +482,7 @@ const AppContent = () => {
                     <Route path="/curated" component={CuratedPage} />
                     <Route path="/editors-picks" component={EditorsPicksPage} />
                     <Route path="/edens-hollow" component={EdensHollowPage} />
+                    <Route path="/coming-soon" component={ComingSoonPage} />
                     <Route path="/about" component={AboutPage} />
                     <Route path="/contact" component={ContactPage} />
                     <Route path="/privacy" component={PrivacyPage} />
@@ -579,6 +585,7 @@ const AppContent = () => {
                       <Route path="/curated" component={CuratedPage} />
                       <Route path="/editors-picks" component={EditorsPicksPage} />
                       <Route path="/edens-hollow" component={EdensHollowPage} />
+                      <Route path="/coming-soon" component={ComingSoonPage} />
                       <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
@@ -708,35 +715,14 @@ function App() {
 
   // CSRF protection is initialized in main.tsx via dynamic import
 
-  // Initialize WordPress sync service and defer content preloading
+  // Initialize WordPress sync service (keeps Supabase posts in sync with WordPress in the background)
   useEffect(() => {
     (async () => {
       try {
         const { initWordPressSync } = await import('./lib/wordpress-sync');
         initWordPressSync();
       } catch {}
-      preloadWordPressPostsDeferred();
     })();
-  }, []);
-
-  // Idle prefetch: warm the Home page "latest post" query so the Latest Story appears faster on first load
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const { fetchWordPressPosts } = await import('./lib/wordpress-api');
-        await queryClient.prefetchQuery({
-          queryKey: ["pages", "home", "latest-post"],
-          queryFn: async () => fetchWordPressPosts({ page: 1, perPage: 1 }),
-          staleTime: 5 * 60 * 1000,
-        });
-      } catch {}
-    };
-    const ric = (window as any)?.requestIdleCallback as any;
-    if (typeof ric === 'function') {
-      ric(() => run(), { timeout: 1200 });
-    } else {
-      setTimeout(run, 300);
-    }
   }, []);
 
   
