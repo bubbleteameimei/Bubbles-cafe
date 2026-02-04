@@ -23,6 +23,7 @@ import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import type { FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
+import { fetchWordPressPosts, type WordPressPost } from "@/lib/wordpress-api";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useAuth } from "@/hooks/use-auth";
@@ -433,7 +434,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery<{ posts: Post[]; hasMore?: boolean }>({
+  const { data: postsData, isLoading: isLoadingSupabase, error: supabaseError } = useQuery<{ posts: Post[]; hasMore?: boolean }>({
     // Stabilise the query key so the list is reused across slug changes
     queryKey: ["posts", "reader", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
@@ -461,11 +462,101 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: false
   });
 
-  // Memoised posts array for consistent usage across hooks
+  // Determine if we have any Supabase-backed posts available
+  const hasSupabasePosts = useMemo(() => {
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
+    return Array.isArray(dataPosts) && dataPosts.length > 0;
+  }, [postsData]);
+
+  // Enable WordPress fallback when Supabase-backed API is unavailable or returns no posts
+  const enableWordPressFallback =
+    !isCommunityContent &&
+    !isLoadingSupabase &&
+    (!hasSupabasePosts || !!supabaseError);
+
+  const {
+    data: wpPostsData,
+    isLoading: isLoadingWordpress,
+    error: wordpressError,
+  } = useQuery<{ posts: Post[]; hasMore?: boolean }>(
+    {
+      queryKey: ["posts", "reader", "wordpress"],
+      enabled: enableWordPressFallback,
+      queryFn: async () => {
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Falling back to WordPress posts...', { routeSlug });
+        }
+        try {
+          const result = await fetchWordPressPosts({
+            page: 1,
+            perPage: 100,
+            includeContent: true,
+            maxRetries: 1,
+          });
+          const wpPosts = Array.isArray(result.posts) ? result.posts : [];
+
+          const posts: Post[] = wpPosts.map((post: WordPressPost) => {
+            const title = getRenderedText(post.title) || post.title?.rendered || 'Untitled Story';
+            const content = getRenderedText(post.content) || post.content?.rendered || '';
+            const slug = post.slug || `post-${post.id ?? Date.now()}`;
+            const createdAt = post.date || new Date().toISOString();
+            const metadata: any = {
+              ...(post.meta || {}),
+              wordpressId: typeof post.id === 'number' ? post.id : undefined,
+              wordpressLink: typeof post.link === 'string' ? post.link : undefined,
+              source: 'wordpress_api',
+            };
+
+            const wordCount = content
+              .replace(/<[^>]*>/g, ' ')
+              .split(/\s+/)
+              .filter(Boolean).length;
+
+            return {
+              id: typeof post.id === 'number' ? post.id : Math.floor(Math.random() * 1_000_000),
+              title,
+              content,
+              slug,
+              excerpt: post.excerpt?.rendered ?? null,
+              authorId: undefined,
+              isSecret: false,
+              isAdminPost: false,
+              matureContent: false,
+              themeCategory: null,
+              readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
+              likesCount: 0,
+              dislikesCount: 0,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              metadata,
+              createdAt,
+            } as unknown as Post;
+          });
+
+          return { posts, hasMore: result.totalPages > 1 };
+        } catch (error) {
+          console.error('[Reader] WordPress fallback failed:', error);
+          try { logReaderError('reader.list.wpFallbackError', error); } catch {}
+          throw error;
+        }
+      },
+      staleTime: 5 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  // Memoised posts array for consistent usage across hooks (Supabase first, then WordPress fallback)
   const posts = useMemo<Post[]>(() => {
     const dataPosts: Post[] | undefined = (postsData as any)?.posts;
-    return Array.isArray(dataPosts) ? dataPosts : [];
-  }, [postsData]);
+    const supabasePosts = Array.isArray(dataPosts) ? dataPosts : [];
+    if (supabasePosts.length > 0 || isCommunityContent) {
+      return supabasePosts;
+    }
+    const wpDataPosts: Post[] | undefined = (wpPostsData as any)?.posts;
+    const wordpressPosts = Array.isArray(wpDataPosts) ? wpDataPosts : [];
+    return wordpressPosts.length > 0 ? wordpressPosts : supabasePosts;
+  }, [postsData, wpPostsData, isCommunityContent]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
@@ -579,26 +670,30 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   // Let's make sure we have posts data and current post before rendering
-  // Keep previous story content visible while fetching; only return null if no cached data yet
-  const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
-  if (isLoading && !hasCachedPosts) {
+  // Keep previous story content visible while fetching; only return a loader if no data yet
+  const hasAnyPosts = Array.isArray(posts) && posts.length > 0;
+  const initialLoading = (isLoadingSupabase || isLoadingWordpress) && !hasAnyPosts;
+
+  if (initialLoading) {
     // Show a lightweight route-level loader on first open
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  if (error && !routeSlug) {
+  const listError = (supabaseError as Error | null) || (wordpressError as Error | null);
+
+  if (!routeSlug && !hasAnyPosts && listError) {
     return (
       <SimplifiedErrorPage
         statusCode={500}
         title="Stories Unavailable"
-        message={error instanceof Error ? error.message : 'Stories are temporarily unavailable.'}
+        message={listError instanceof Error ? listError.message : 'Stories are temporarily unavailable.'}
         actionText="Back to Home"
         actionLink="/"
       />
     );
   }
 
-  if (!routeSlug && posts.length === 0 && !isLoading) {
+  if (!routeSlug && !hasAnyPosts && !initialLoading && !listError) {
     return (
       <SimplifiedErrorPage
         statusCode={404}
