@@ -251,10 +251,15 @@ export function registerPostsRoutes(router: any) {
 
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
 
+      const includeContentParam = (search.get('includeContent') || '').toLowerCase();
+      const includeContent = includeContentParam !== 'false';
+
       const isFirstPageDefaultFeed =
         !cursor && page === 1 && !category && !searchTerm && !!env.CACHE_KV;
 
-      const cacheKey = isFirstPageDefaultFeed ? `posts:first-page:v1:limit=${limit}` : null;
+      const cacheKey = isFirstPageDefaultFeed
+        ? `posts:first-page:v2:limit=${limit}:includeContent=${includeContent ? '1' : '0'}`
+        : null;
 
       if (isFirstPageDefaultFeed && cacheKey) {
         const cached = await getJsonFromCache(env, cacheKey);
@@ -268,10 +273,11 @@ export function registerPostsRoutes(router: any) {
       }
 
       const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
-      postsUrl.searchParams.set(
-        'select',
-        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at',
-      );
+      const selectAll =
+        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+      const selectWithoutContent =
+        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+      postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 
       const useCursor = typeof cursor === 'string' && cursor.length > 0;
@@ -404,10 +410,13 @@ export function registerPostsRoutes(router: any) {
 
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
       const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
-      postsUrl.searchParams.set(
-        'select',
-        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at',
-      );
+      const includeContentParam = (search.get('includeContent') || '').toLowerCase();
+      const includeContent = includeContentParam !== 'false';
+      const selectAll =
+        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+      const selectWithoutContent =
+        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+      postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 
       const useCursor = typeof cursor === 'string' && cursor.length > 0;

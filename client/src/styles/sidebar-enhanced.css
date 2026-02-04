@@ -91,15 +91,15 @@
 
 /* Enhanced menu button styles with optimized spacing and typography */
 .sidebar-menu-button-enhanced {
-  height: 24px;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  height: 28px;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 8px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
-  transition: all 0.12s ease-out;
+  transition: background-color 0.12s ease-out, color 0.12s ease-out, box-shadow 0.12s ease-out;
   position: relative;
   overflow: hidden;
   
@@ -118,19 +118,16 @@
   background-color: transparent;
 }
 
-/* Softer hover - transparent background */
+/* Softer hover - transparent background, no movement */
 .sidebar-menu-button-enhanced:hover {
-  transform: translateX(2px);
   box-shadow: none;
   border-color: transparent;
   background-color: hsl(var(--background) / 0.08);
   color: inherit;
-  will-change: transform;
 }
 
-/* Subtle active press state */
+/* Subtle active press state without translation */
 .sidebar-menu-button-enhanced:active {
-  transform: translateX(1px) scale(0.98);
   box-shadow: none;
   transition-duration: 0.1s;
 }
@@ -146,7 +143,7 @@
 /* Simplified current page state - no box/gradient */
 .sidebar-menu-button-enhanced[data-active="true"],
 .sidebar-menu-button-enhanced.active {
-  background: transparent;
+  background: hsl(var(--background) / 0.12);
   border-color: transparent;
   color: hsl(var(--foreground));
   font-weight: 600;
@@ -159,10 +156,10 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 2px;
-  height: 60%;
+  width: 3px;
+  height: 70%;
   background: hsl(var(--primary));
-  border-radius: 2px;
+  border-radius: 999px;
 }
 
 /* Submenu items - compact and transparent */
@@ -188,9 +185,8 @@
   position: relative;
 }
 
-/* Submenu hover - transparent background with subtle left indicator */
+/* Submenu hover - transparent background with subtle left indicator, no movement */
 .sidebar-submenu-button-enhanced:hover {
-  transform: translateX(1px);
   border-left-color: hsl(var(--primary) / 0.3);
   background-color: hsl(var(--background) / 0.08);
   color: inherit;
@@ -306,11 +302,11 @@
   display: none !important;
 }
 
-/* Motion animations - Improved stability */
+/* Motion animations - softened for desktop to reduce distraction */
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-4px);
   }
   to {
     opacity: 1;
@@ -319,7 +315,7 @@
 }
 
 .sidebar-animate-in {
-  animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideInLeft 0.18s ease-out;
   transform-origin: left center;
   will-change: transform, opacity;
 }
@@ -367,13 +363,13 @@
     height: 18px;
   }
   
-  /* UX: Mobile-specific hover effects (reduce transform for better performance) */
+  /* UX: Mobile-specific hover effects - keep consistent, no translation */
   .sidebar-menu-button-enhanced:hover {
-    transform: translateX(2px);
+    transform: none;
   }
   
   .sidebar-submenu-button-enhanced:hover {
-    transform: translateX(1px);
+    transform: none;
   }
 }
 
@@ -470,25 +466,7 @@
   background-color: hsl(var(--destructive) / 0.05);
 }
 
-/* Mobile: compact spacing for top-level sidebar menu items */
-@media (max-width: 768px) {
-  /* Strong, scoped override to ensure reduced height on touch devices */
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"] {
-    height: 32px !important;
-    min-height: 32px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-    /* Ensure font size differs from Sign In / Report (which use text-sm ~14px) */
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-  }
 
-  /* Ensure no extra margins are introduced between list items */
-  [data-sidebar="menu"] > [data-sidebar="menu-item"] {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-}
 
 /* Ensure scrollbars are visible for the sidebar menu container */
 [data-sidebar="sidebar"] .sidebar-menu-container {

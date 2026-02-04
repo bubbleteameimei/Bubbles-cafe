@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileInput } from "@/components/ui/file-input";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiJson } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 
@@ -55,18 +55,72 @@ export default function ReportBugPage() {
     },
   });
 
+  // Helper to read a File as a data URL for lightweight screenshot uploads
+  async function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  }
+
   const bugReportMutation = useMutation({
     mutationFn: async (data: BugReportForm) => {
-      const formData = new FormData();
-      formData.append("affectedPage", data.affectedPage);
-      formData.append("description", data.description);
-      if (data.email) {
-        formData.append("email", data.email);
+      const metadata: any = {
+        email: data.email || undefined,
+      };
+
+      if (data.screenshot && data.screenshot.length > 0) {
+        const file = data.screenshot[0];
+
+        // Always include basic file metadata
+        metadata.screenshot = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        };
+
+        // Best-effort: include a base64 data URL so the image is actually stored
+        try {
+          const dataUrl = await fileToDataUrl(file);
+          // Keep the data separate so admin tooling can choose how to render it
+          metadata.screenshot.dataUrl = dataUrl;
+        } catch {
+          // If reading fails, we still keep name/size/type so nothing breaks
+        }
       }
-      if (data.screenshot && data.screenshot[0]) {
-        formData.append("screenshot", data.screenshot[0]);
+
+      try {
+        if (typeof window !== "undefined") {
+          metadata.location = {
+            path: window.location.pathname,
+            href: window.location.href,
+          };
+          metadata.screenResolution = `${window.screen.width}x${window.screen.height}`;
+          metadata.device = {
+            type: window.innerWidth <= 768 ? "mobile" : "desktop",
+          };
+          metadata.userAgent = navigator.userAgent;
+          metadata.operatingSystem = navigator.platform || undefined;
+        }
+      } catch {
+        // best-effort metadata collection
       }
-      return apiRequest("/api/bug-report", { method: 'POST', body: formData });
+
+      const payload = {
+        type: "bug",
+        content: data.description,
+        page: data.affectedPage,
+        category: "bug",
+        browser: metadata.browser || undefined,
+        operatingSystem: metadata.operatingSystem || undefined,
+        screenResolution: metadata.screenResolution || undefined,
+        userAgent: metadata.userAgent || undefined,
+        metadata,
+      };
+
+      return apiJson("POST", "/api/feedback", payload);
     },
     onSuccess: () => {
       toast({

@@ -1,24 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { trackInteraction } from '@/lib/metrics';
-import { trackWordPressRead } from '@/lib/wp-reads';
-import type { WordPressPost } from '@/lib/wordpress-api';
+import type { Post } from '@shared/schema';
 
 interface ReaderAnalyticsOptions {
   currentPostId?: number;
   currentPostLink?: string;
   readingProgress: number;
-  posts: WordPressPost[];
+  posts: Post[];
   currentIndex: number;
 }
 
 /**
  * Handles reader-specific analytics:
- * - WordPress.com stats pixel (time-on-page + scroll + consent + interaction gated)
+ * - Time-on-page + scroll + consent + interaction gated
  * - finish_read local interaction events
- * - active time tracking (visibility-aware)
- *
- * Extracted from the reader page component with behaviour preserved.
+ * - Active time tracking (visibility-aware)
  */
 export function useReaderAnalytics(options: ReaderAnalyticsOptions) {
   const { currentPostId, currentPostLink, readingProgress, posts, currentIndex } = options;
@@ -138,7 +135,12 @@ export function useReaderAnalytics(options: ReaderAnalyticsOptions) {
         userInteractedRef.current &&
         isVisible
       ) {
-        trackWordPressRead(currentPostId, currentPostLink);
+        trackInteraction('reader_engaged', {
+          postId: currentPostId,
+          link: currentPostLink,
+          progress: readingProgress,
+          timeMs: elapsedActiveMs,
+        });
       }
     } catch {
       // no-op

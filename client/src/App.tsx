@@ -46,6 +46,7 @@ import Footer from './components/layout/footer';
 // New: BackToTopButton (scroll-to-top)
 const BackToTopButton = React.lazy(() => import('./components/BackToTopButton'));
 import GA4 from './components/GA4';
+import { ApiDebugPanel } from './components/analytics/ApiDebugPanel';
 
 // Import essential pages lazily to keep main bundle small
 import HomePage from './pages/home';
@@ -55,6 +56,7 @@ const BestStoriesPage = React.lazy(() => import('./pages/best-stories'));
 const CuratedPage = React.lazy(() => import('./pages/curated'));
 const EditorsPicksPage = React.lazy(() => import('./pages/editors-picks'));
 const EdensHollowPage = React.lazy(() => import('./pages/edens-hollow'));
+const ComingSoonPage = React.lazy(() => import('./pages/coming-soon'));
 
 import RouteLoader from './components/ui/RouteLoader';
 // Lazily load core pages to enable code-splitting
@@ -288,6 +290,9 @@ const AppContent = () => {
   } else if (pathForSeo.startsWith('/legal/cookie-policy')) {
     seoTitle = 'Cookie Policy';
     seoDescription = 'Cookie policy for Bubble’s Cafe.';
+  } else if (pathForSeo.startsWith('/coming-soon')) {
+    seoTitle = 'Coming Soon – Book Collections';
+    seoDescription = 'Preview of upcoming horror collections from Bubble’s Cafe.';
   }
 
   
@@ -329,6 +334,8 @@ const AppContent = () => {
           void import('./pages/editors-picks');
         } else if (path.startsWith('/edens-hollow')) {
           void import('./pages/edens-hollow');
+        } else if (path.startsWith('/coming-soon')) {
+          void import('./pages/coming-soon');
         } else if (path.startsWith('/community-story/')) {
           void import('./pages/story-view');
         } else if (path.startsWith('/reader')) {
@@ -475,6 +482,7 @@ const AppContent = () => {
                     <Route path="/curated" component={CuratedPage} />
                     <Route path="/editors-picks" component={EditorsPicksPage} />
                     <Route path="/edens-hollow" component={EdensHollowPage} />
+                    <Route path="/coming-soon" component={ComingSoonPage} />
                     <Route path="/about" component={AboutPage} />
                     <Route path="/contact" component={ContactPage} />
                     <Route path="/privacy" component={PrivacyPage} />
@@ -577,6 +585,7 @@ const AppContent = () => {
                       <Route path="/curated" component={CuratedPage} />
                       <Route path="/editors-picks" component={EditorsPicksPage} />
                       <Route path="/edens-hollow" component={EdensHollowPage} />
+                      <Route path="/coming-soon" component={ComingSoonPage} />
                       <Route path="/reader" component={ReaderRoute} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
@@ -706,35 +715,14 @@ function App() {
 
   // CSRF protection is initialized in main.tsx via dynamic import
 
-  // Initialize WordPress sync service and defer content preloading
+  // Initialize WordPress sync service (keeps Supabase posts in sync with WordPress in the background)
   useEffect(() => {
     (async () => {
       try {
         const { initWordPressSync } = await import('./lib/wordpress-sync');
         initWordPressSync();
       } catch {}
-      preloadWordPressPostsDeferred();
     })();
-  }, []);
-
-  // Idle prefetch: warm the Home page "latest post" query so the Latest Story appears faster on first load
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const { fetchWordPressPosts } = await import('./lib/wordpress-api');
-        await queryClient.prefetchQuery({
-          queryKey: ["pages", "home", "latest-post"],
-          queryFn: async () => fetchWordPressPosts({ page: 1, perPage: 1 }),
-          staleTime: 5 * 60 * 1000,
-        });
-      } catch {}
-    };
-    const ric = (window as any)?.requestIdleCallback as any;
-    if (typeof ric === 'function') {
-      ric(() => run(), { timeout: 1200 });
-    } else {
-      setTimeout(run, 300);
-    }
   }, []);
 
   
@@ -744,7 +732,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <CookieConsentProvider>
-            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            {/* Default to dark theme for first-time visitors; users can still switch */}
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
               <SidebarProvider>
                 <NotificationProvider>
                   <ScrollEffectsProvider>
@@ -779,6 +768,8 @@ function App() {
                         <ConsentAwareVercelAnalytics />
                         {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
                         <GA4 />
+                        {/* Dev-only API diagnostics for CORS/base URL debugging */}
+                        {import.meta.env.DEV && <ApiDebugPanel />}
                       </RefreshProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>

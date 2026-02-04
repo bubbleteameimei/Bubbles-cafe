@@ -1,38 +1,42 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
-import { fetchWordPressPosts } from '@/lib/wordpress-api';
+import { apiRequest } from '@/lib/queryClient';
+import type { Post } from '@shared/schema';
 
 const curatedSlugs = ['nostalgia', 'blood'];
 
 export default function EditorsPicksPage() {
   const canonical = '/editors-picks';
 
-  const { data } = useQuery({
-    queryKey: ['editors-picks', 'wp-posts'],
-    queryFn: async () => fetchWordPressPosts({ perPage: 100, includeContent: true }),
+  const { data } = useQuery<Post[]>({
+    queryKey: ['editors-picks', 'posts'],
+    queryFn: async () => {
+      const res = await apiRequest<{ posts?: Post[] }>('/api/posts?limit=100&includeContent=false');
+      return Array.isArray(res.posts) ? res.posts : [];
+    },
     staleTime: 60 * 60 * 1000,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
-  const posts = Array.isArray(data?.posts) ? data!.posts : [];
+  const posts = Array.isArray(data) ? data : [];
 
-  // Try to map curated slugs to WordPress posts
-  const curatedFound: any[] = [];
+  // Try to map curated slugs to posts
+  const curatedFound: Post[] = [];
   for (const slug of curatedSlugs) {
-    const match = posts.find((p: any) => String(p?.slug || '').trim().toLowerCase() === slug);
+    const match = posts.find((p: Post) => String(p?.slug || '').trim().toLowerCase() === slug);
     if (match) curatedFound.push(match);
   }
 
   // If fewer than 3, fill with remaining posts from the list without duplicates
   const fillCount = Math.max(0, 3 - curatedFound.length);
-  const filler: any[] = [];
+  const filler: Post[] = [];
   for (const p of posts) {
     if (filler.length >= fillCount) break;
     const slug = String(p?.slug || '').trim();
     if (!slug) continue;
     if (curatedSlugs.includes(slug.toLowerCase())) continue;
-    filler.push(p);
+    filler.push(p as Post);
   }
 
   const selected = [...curatedFound, ...filler].slice(0, 3);
@@ -54,11 +58,11 @@ export default function EditorsPicksPage() {
           <p className="text-sm text-muted-foreground">No stories available right now. Please check back soon.</p>
         ) : (
           <ul className="space-y-6">
-            {selected.map((p: any) => {
-              const rawTitle = String(p?.title?.rendered || p?.title || 'Untitled');
+            {selected.map((p: Post) => {
+              const rawTitle = String(p?.title || 'Untitled');
               const titleText = rawTitle.replace(/<\/?[^>]+(>|$)/g, '').trim();
               const slug = String(p?.slug || p?.id || '').trim();
-              const excerpt = String(p?.excerpt?.rendered || '').replace(/<\/?[^>]+(>|$)/g, '').trim();
+              const excerpt = String((p as any)?.excerpt || '').replace(/<\/?[^>]+(>|$)/g, '').trim();
               const description = excerpt || 'Read this editor’s pick.';
               if (!slug) return null;
               return (

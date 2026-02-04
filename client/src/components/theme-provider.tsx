@@ -33,7 +33,14 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       const stored = localStorage.getItem(storageKey) as Theme | null;
-      if (stored) return stored;
+      if (stored) {
+        // Migrate legacy "system" preference to a concrete, dark-first theme
+        if (stored === "system") {
+          localStorage.setItem(storageKey, "dark");
+          return "dark";
+        }
+        return stored;
+      }
       const root = typeof document !== "undefined" ? document.documentElement : null;
       if (root) {
         if (root.classList.contains("dark")) return "dark";

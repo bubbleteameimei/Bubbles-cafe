@@ -7,7 +7,9 @@ import { apiRequest } from './queryClient';
 
 export async function getLatestReaderPath(): Promise<string> {
   try {
-    const data = await apiRequest<{ posts?: Array<{ slug?: string }> }>('/api/posts?limit=1');
+    const data = await apiRequest<{ posts?: Array<{ slug?: string }> }>(
+      '/api/posts?limit=1&includeContent=false',
+    );
     const slug = data?.posts?.[0]?.slug;
     if (slug) {
       return `/reader/${encodeURIComponent(String(slug))}`;

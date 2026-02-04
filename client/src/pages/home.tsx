@@ -42,8 +42,8 @@ export default function Home() {
       body.style.backgroundPosition = "center top";
       body.style.backgroundRepeat = "no-repeat";
       body.style.backgroundAttachment = "fixed";
-      // Keep the theme background color behind the image for fallback/edges.
-      body.style.backgroundColor = "hsl(var(--background))";
+      // Make the homepage use the photograph itself as the background without a theme color wash.
+      body.style.backgroundColor = "transparent";
     };
     img.onerror = () => {
       console.warn("[Home] Failed to load homepage background image:", src);
@@ -227,8 +227,8 @@ export default function Home() {
       ) : (
         <div className="homepage-content">
         <div 
-          className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
-          style={{}}
+          className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-transparent"
+          style={{ backgroundColor: "transparent" }}
         >
           {/* Background overlay removed per request */}
           

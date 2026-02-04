@@ -382,7 +382,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
 
-  const submenuItemClass = "px-3 py-2 pr-8 text-[13px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[34px] flex items-center mb-1.5 rounded-md transition-colors duration-200 ease-out hover:bg-background/6 focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/50";
+  const submenuItemClass = "px-3 py-1.5 pr-8 text-[12px] font-medium text-[hsl(var(--sidebar-foreground))] whitespace-nowrap overflow-hidden min-h-[30px] flex items-center mb-0.5 rounded-md transition-colors duration-150 ease-out hover:bg-background/6 focus:bg-background/6 border-l border-transparent data-[active=true]:border-l-primary/50";
 
   return (
     <motion.div 
@@ -412,8 +412,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }}
       >
         {/* Main Navigation */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}>
-          <SidebarGroup className="space-y-1 -mt-2 p-0 pt-0">
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}>
+          <SidebarGroup className="space-y-1 mt-1 p-0 pt-0">
             <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-4 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
               Navigation
             </SidebarGroupLabel>
@@ -421,7 +421,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1.5">
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/'}
                       size="sm"
@@ -439,7 +443,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/index'}
                       size="sm"
@@ -477,7 +485,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/community'}
                       size="sm"
@@ -496,7 +508,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
                       size="sm"
@@ -536,6 +552,23 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   {renderActiveIndicator('/edens-hollow')}
                   <Gamepad2 className="h-6 w-6 sm:h-7 sm:w-7" />
                   <span className="text-[14px] sm:text-[15px] font-semibold">Eden - Experimental Game</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location === '/coming-soon'}
+                  onClick={() => handleNavigation('/coming-soon')}
+                  tooltip="Upcoming book collections"
+                  className={menuItemClass}
+                  aria-current={location === '/coming-soon' ? 'page' : undefined}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-semibold align-middle">
+                      ★
+                    </span>
+                    <span className="text-[13px] font-semibold">Coming Soon</span>
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -875,8 +908,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
           <motion.button
             onClick={() => handleNavigation('/report-bug')}
-            whileHover={{ scale: 1.02, translateX: 2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ x: 2 }}
             className={cn(
               "mt-3 mb-0 text-sm flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground transition-colors transition-transform duration-200 ease-out hover:bg-muted hover:-translate-y-[1px] will-change-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               location === '/report-bug'

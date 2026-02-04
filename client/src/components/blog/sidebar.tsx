@@ -53,7 +53,7 @@ export default function Sidebar() {
     queryKey: ["/api/posts"],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/posts?page=1&limit=5');
+        const response = await fetch('/api/posts?page=1&limit=5&includeContent=false');
         if (!response.ok) {
           console.warn('Posts API not available, using empty array');
           return { posts: [], hasMore: false };

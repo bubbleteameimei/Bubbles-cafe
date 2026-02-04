@@ -1,7 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
-import { fetchWordPressPosts } from '@/lib/wordpress-api';
+import { apiRequest } from '@/lib/queryClient';
+import type { Post } from '@shared/schema';
 
 function getRotationDays(): number {
   const raw = (import.meta as any)?.env?.VITE_BEST_STORIES_ROTATION_DAYS;
@@ -17,14 +18,17 @@ export default function BestStoriesPage() {
   const epochDays = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
   const rotationIndexSeed = Math.floor(epochDays / rotationDays);
 
-  const { data } = useQuery({
-    queryKey: ['best-stories', 'wp-posts'],
-    queryFn: async () => fetchWordPressPosts({ perPage: 100, includeContent: true }),
+  const { data } = useQuery<Post[]>({
+    queryKey: ['best-stories', 'posts'],
+    queryFn: async () => {
+      const res = await apiRequest<{ posts?: Post[] }>('/api/posts?limit=100&includeContent=false');
+      return Array.isArray(res.posts) ? res.posts : [];
+    },
     staleTime: 60 * 60 * 1000,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
-  const posts = Array.isArray(data?.posts) ? data!.posts : [];
+  const posts = Array.isArray(data) ? data : [];
   const count = posts.length;
 
   // Deterministic rotating selection of 3 consecutive posts
@@ -50,11 +54,11 @@ export default function BestStoriesPage() {
           <p className="text-sm text-muted-foreground">No stories available right now. Please check back soon.</p>
         ) : (
           <ul className="space-y-6">
-            {selected.map((p: any) => {
-              const rawTitle = String(p?.title?.rendered || p?.title || 'Untitled');
+            {selected.map((p: Post) => {
+              const rawTitle = String(p?.title || 'Untitled');
               const titleText = rawTitle.replace(/<\/?[^>]+(>|$)/g, '').trim();
               const slug = String(p?.slug || p?.id || '').trim();
-              const excerpt = String(p?.excerpt?.rendered || '').replace(/<\/?[^>]+(>|$)/g, '').trim();
+              const excerpt = String((p as any)?.excerpt || '').replace(/<\/?[^>]+(>|$)/g, '').trim();
               const description = excerpt || 'Discover this standout horror story.';
               if (!slug) return null;
               return (

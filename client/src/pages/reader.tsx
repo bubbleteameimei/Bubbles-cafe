@@ -23,6 +23,7 @@ import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import type { FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
+import { fetchWordPressPosts, type WordPressPost } from "@/lib/wordpress-api";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,14 +31,13 @@ import RouteLoader from "@/components/ui/RouteLoader";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
-import { apiJson } from "@/lib/api";
+import { apiJson, getJson } from "@/lib/api";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
 
 import SEO from "@/components/SEO";
-import { fetchWordPressPosts, fetchWordPressPostBySlug } from "@/lib/wordpress-api";
-import type { WordPressPost } from "@/lib/wordpress-api";
+import type { Post } from "@shared/schema";
 import { sanitizeHtml } from "@/lib/sanitize";
 import {
   Dialog,
@@ -88,17 +88,21 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
             if (entry.isIntersecting) {
               setVisible(true);
               // Disconnect once visible to avoid re-observing
-              try { observer?.disconnect(); } catch {}
+              try {
+                observer?.disconnect();
+              } catch {}
               break;
             }
           }
         },
-        { root: null, rootMargin: '800px', threshold: 0.01 }
+        { root: null, rootMargin: '800px', threshold: 0.01 },
       );
       if (anchorRef.current) observer.observe(anchorRef.current);
     } catch {}
     return () => {
-      try { observer?.disconnect(); } catch {}
+      try {
+        observer?.disconnect();
+      } catch {}
     };
   }, []);
 
@@ -155,7 +159,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         await apiJson('POST', `/api/posts/${postId}/comments`, {
           content: text,
           selectionText: selection,
-          anchorParagraphIndex: Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
+          anchorParagraphIndex:
+            Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
           selectionStart: Number.isFinite(range.start) ? Number(range.start) : undefined,
           selectionEnd: Number.isFinite(range.end) ? Number(range.end) : undefined,
         });
@@ -164,7 +169,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         toast({ title: 'Failed to add comment', description: e?.message || 'Please try again.', variant: 'destructive' });
       }
     },
-    contentSelector: '.story-content'
+    contentSelector: '.story-content',
   });
 
   const logReaderError = (id: string, message: any, extra?: any) => {
@@ -173,16 +178,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // Gate each error id to once per session to avoid noisy logs
       const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
       if (already) return;
-      try { sessionStorage.setItem(key, '1'); } catch {}
+      try {
+        sessionStorage.setItem(key, '1');
+      } catch {}
       fetch('/api/errors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           id,
-          message: typeof message === 'string' ? message : (message && (message.message || String(message))) || 'Unknown',
-          extra
-        })
+          message:
+            typeof message === 'string'
+              ? message
+              : (message && (message.message || String(message))) || 'Unknown',
+          extra,
+        }),
       }).catch(() => {});
     } catch {}
   };
@@ -424,21 +434,23 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   });
 
-  const { data: postsData, isLoading, error } = useQuery<{ posts: WordPressPost[]; totalPages: number; total: number }>({
+  const { data: postsData, isLoading: isLoadingSupabase, error: supabaseError } = useQuery<{ posts: Post[]; hasMore?: boolean }>({
     // Stabilise the query key so the list is reused across slug changes
-    queryKey: ["wordpress", "reader", "list", isCommunityContent ? "community" : "regular"],
+    queryKey: ["posts", "reader", isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       if (import.meta.env?.DEV) {
-        console.log('[Reader] Fetching WordPress posts list (trimmed)...', { routeSlug });
+        console.log('[Reader] Fetching posts list (Supabase-backed)...', { routeSlug, isCommunityContent });
       }
 
       try {
-        // Fetch a trimmed list for TOC/navigation to reduce payload size
-        const result = await fetchWordPressPosts({ page: 1, perPage: 100, includeContent: false, maxRetries: 2 });
+        const endpoint = isCommunityContent
+          ? '/api/posts/community?page=1&limit=100'
+          : '/api/posts/compact?page=1&limit=100';
+        const result = await getJson<{ posts: Post[]; hasMore?: boolean }>(endpoint);
         const posts = Array.isArray(result.posts) ? result.posts : [];
-        return { posts, totalPages: result.totalPages ?? 1, total: result.total ?? posts.length };
+        return { posts, hasMore: result.hasMore };
       } catch (error) {
-        console.error('[Reader] Error fetching WordPress posts via proxy:', error);
+        console.error('[Reader] Error fetching posts list:', error);
         try { logReaderError('reader.list.fetchError', error); } catch {}
         throw error;
       }
@@ -450,15 +462,105 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: false
   });
 
-  // Memoised posts array for consistent usage across hooks
-  const posts = useMemo<WordPressPost[]>(() => {
-    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
-    return Array.isArray(dataPosts) ? dataPosts : [];
+  // Determine if we have any Supabase-backed posts available
+  const hasSupabasePosts = useMemo(() => {
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
+    return Array.isArray(dataPosts) && dataPosts.length > 0;
   }, [postsData]);
+
+  // Enable WordPress fallback when Supabase-backed API is unavailable or returns no posts
+  const enableWordPressFallback =
+    !isCommunityContent &&
+    !isLoadingSupabase &&
+    (!hasSupabasePosts || !!supabaseError);
+
+  const {
+    data: wpPostsData,
+    isLoading: isLoadingWordpress,
+    error: wordpressError,
+  } = useQuery<{ posts: Post[]; hasMore?: boolean }>(
+    {
+      queryKey: ["posts", "reader", "wordpress"],
+      enabled: enableWordPressFallback,
+      queryFn: async () => {
+        if (import.meta.env?.DEV) {
+          console.log('[Reader] Falling back to WordPress posts...', { routeSlug });
+        }
+        try {
+          const result = await fetchWordPressPosts({
+            page: 1,
+            perPage: 100,
+            includeContent: true,
+            maxRetries: 1,
+          });
+          const wpPosts = Array.isArray(result.posts) ? result.posts : [];
+
+          const posts: Post[] = wpPosts.map((post: WordPressPost) => {
+            const title = getRenderedText(post.title) || post.title?.rendered || 'Untitled Story';
+            const content = getRenderedText(post.content) || post.content?.rendered || '';
+            const slug = post.slug || `post-${post.id ?? Date.now()}`;
+            const createdAt = post.date || new Date().toISOString();
+            const metadata: any = {
+              ...(post.meta || {}),
+              wordpressId: typeof post.id === 'number' ? post.id : undefined,
+              wordpressLink: typeof post.link === 'string' ? post.link : undefined,
+              source: 'wordpress_api',
+            };
+
+            const wordCount = content
+              .replace(/<[^>]*>/g, ' ')
+              .split(/\s+/)
+              .filter(Boolean).length;
+
+            return {
+              id: typeof post.id === 'number' ? post.id : Math.floor(Math.random() * 1_000_000),
+              title,
+              content,
+              slug,
+              excerpt: post.excerpt?.rendered ?? null,
+              authorId: undefined,
+              isSecret: false,
+              isAdminPost: false,
+              matureContent: false,
+              themeCategory: null,
+              readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
+              likesCount: 0,
+              dislikesCount: 0,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              metadata,
+              createdAt,
+            } as unknown as Post;
+          });
+
+          return { posts, hasMore: result.totalPages > 1 };
+        } catch (error) {
+          console.error('[Reader] WordPress fallback failed:', error);
+          try { logReaderError('reader.list.wpFallbackError', error); } catch {}
+          throw error;
+        }
+      },
+      staleTime: 5 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  // Memoised posts array for consistent usage across hooks (Supabase first, then WordPress fallback)
+  const posts = useMemo<Post[]>(() => {
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
+    const supabasePosts = Array.isArray(dataPosts) ? dataPosts : [];
+    if (supabasePosts.length > 0 || isCommunityContent) {
+      return supabasePosts;
+    }
+    const wpDataPosts: Post[] | undefined = (wpPostsData as any)?.posts;
+    const wordpressPosts = Array.isArray(wpDataPosts) ? wpDataPosts : [];
+    return wordpressPosts.length > 0 ? wordpressPosts : supabasePosts;
+  }, [postsData, wpPostsData, isCommunityContent]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    const dataPosts: WordPressPost[] | undefined = (postsData as any)?.posts;
+    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     if (Array.isArray(dataPosts) && dataPosts.length > 0) {
       // If we have a slug in the route, align the index to that post
       if (routeSlug) {
@@ -502,11 +604,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     })();
   }, []);
 
-  // WordPress read tracking: compute current post id/link and gate by time-on-page and scroll depth.
+  // Read tracking: compute current post id/link and gate by time-on-page and scroll depth.
   const currentPostId = useMemo(() => {
     try {
-      const post = posts?.[currentIndex];
-      return post?.id as number | undefined;
+      const post = posts?.[currentIndex] as any;
+      if (!post) return undefined;
+      const meta = post.metadata || {};
+      const wordpressId = typeof meta.wordpressId === 'number' ? meta.wordpressId : undefined;
+      return (wordpressId && wordpressId > 0 ? wordpressId : post.id) as number | undefined;
     } catch {
       return undefined;
     }
@@ -514,8 +619,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   const currentPostLink = useMemo(() => {
     try {
-      const post = posts?.[currentIndex];
-      return (post as any)?.link as string | undefined;
+      const post = posts?.[currentIndex] as any;
+      const meta = post?.metadata || {};
+      return (meta.wordpressLink || meta.link) as string | undefined;
     } catch {
       return undefined;
     }
@@ -548,12 +654,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Determine current slug and fetch full post content by slug (prefer full content for the active story)
   const currentSlugToUse = routeSlug || (posts[validCurrentIndex]?.slug as any);
-  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<WordPressPost | null>({
-    queryKey: ['wordpress', 'reader', 'post', currentSlugToUse || ''],
+  const { data: currentPostFull, isFetching: isFetchingPost } = useQuery<Post | null>({
+    queryKey: ['posts', 'reader', 'post', currentSlugToUse || ''],
     queryFn: async () => {
       if (!currentSlugToUse) return null as any;
       try {
-        return await fetchWordPressPostBySlug(String(currentSlugToUse));
+        return await getJson<Post>(`/api/posts/slug/${encodeURIComponent(String(currentSlugToUse))}`);
       } catch (err) {
         try { logReaderError('reader.post.fetchError', 'Failed to fetch post by slug', { slug: String(currentSlugToUse) }); } catch {}
         return null as any;
@@ -564,39 +670,55 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   // Let's make sure we have posts data and current post before rendering
-  // Keep previous story content visible while fetching; only return null if no cached data yet
-  const hasCachedPosts = Array.isArray((postsData as any)?.posts) && ((postsData as any)?.posts?.length > 0);
-  if (isLoading && !hasCachedPosts) {
+  // Keep previous story content visible while fetching; only return a loader if no data yet
+  const hasAnyPosts = Array.isArray(posts) && posts.length > 0;
+  const initialLoading = (isLoadingSupabase || isLoadingWordpress) && !hasAnyPosts;
+
+  if (initialLoading) {
     // Show a lightweight route-level loader on first open
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  if (error) {
+  const listError = (supabaseError as Error | null) || (wordpressError as Error | null);
+
+  if (!routeSlug && !hasAnyPosts && listError) {
     return (
       <SimplifiedErrorPage
-        statusCode={404}
-        title="Story Not Found"
-        message={error instanceof Error ? error.message : 'The requested story could not be found.'}
-        actionText="Browse Stories"
-        actionLink="/reader"
+        statusCode={500}
+        title="Stories Unavailable"
+        message={listError instanceof Error ? listError.message : 'Stories are temporarily unavailable.'}
+        actionText="Back to Home"
+        actionLink="/"
       />
     );
   }
 
-  if (!routeSlug && posts.length === 0) {
+  if (!routeSlug && !hasAnyPosts && !initialLoading && !listError) {
     return (
       <SimplifiedErrorPage
         statusCode={404}
-        title="Story Not Found"
-        message="The requested story could not be found."
-        actionText="Browse Stories"
-        actionLink="/reader"
+        title="No Stories Yet"
+        message="No stories are available to read yet. Please check back soon."
+        actionText="Back to Home"
+        actionLink="/"
       />
     );
   }
 
   // Get current post: prefer fully-fetched content
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
+
+  if (!currentPost && routeSlug) {
+    return (
+      <SimplifiedErrorPage
+        statusCode={404}
+        title="Story Not Found"
+        message="The requested story could not be found."
+        actionText="Browse Stories"
+        actionLink="/index"
+      />
+    );
+  }
 
   // SEO values for this story
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
@@ -606,7 +728,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
-  const published = currentPost.date || new Date().toISOString();
+  const published = (currentPost as any).createdAt || (currentPost as any).date || new Date().toISOString();
   const plainText = stripHtml(rawContent);
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
@@ -1041,7 +1163,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
           key={currentPost.id}
-          className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+          className="prose dark:prose-invert px-4 md:px-6 pt-0 w-full max-w-3xl mx-auto"
         >
           {/* Full-bleed separator above story title (thin, end-to-end) */}
           <div

@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { apiJson } from '@/lib/api';
-import type { WordPressPost } from '@/lib/wordpress-api';
 
 interface ReaderProgressPersistenceOptions {
   readingProgress: number;
   routeSlug?: string;
   autoSaveSlug?: string;
-  posts: WordPressPost[];
+  posts: any[];
   currentIndex: number;
   isAuthenticated: boolean;
 }

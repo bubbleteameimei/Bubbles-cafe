@@ -3,6 +3,7 @@ import { Router } from 'itty-router';
 import { registerReactionsRoutes } from './worker/reactions';
 import { registerAnalyticsRoutes } from './worker/analytics';
 import { registerPostsRoutes } from './worker/posts';
+import { registerCompactPostsRoutes } from './worker/posts-compact';
 import { registerCommentsRoutes } from './worker/comments';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { registerNotificationsRoutes } from './worker/notifications';
@@ -14,20 +15,20 @@ import { registerContactEmailRoutes } from './worker/contact-email';
 const json = (data: any, init?: ResponseInit) =>
   new Response(JSON.stringify(data), {
     headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    status: init?.status || 200,
+    status: init?.status ?? 200,
   });
 
 const router = Router();
 registerReactionsRoutes(router);
 registerAnalyticsRoutes(router);
 registerPostsRoutes(router);
+registerCompactPostsRoutes(router);
 registerCommentsRoutes(router);
 registerWordpressRoutes(router);
 registerNotificationsRoutes(router);
 registerBookmarksRoutes(router);
 registerNewsletterRoutes(router);
 registerContactEmailRoutes(router);
-registerBookmarksRoutes(router);
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -1060,6 +1061,38 @@ router.get('/health', async () => {
 
 router.get('/', async () => {
   return json({ error: 'Not Found' }, { status: 404 });
+});
+
+// Basic CORS support for API routes
+function getCorsHeaders(req: Request, env: Env): Record<string, string> {
+  const origin =
+    req.headers.get('Origin') ||
+    req.headers.get('origin') ||
+    '';
+
+  const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
+
+  const allowOrigin = origin && origin !== 'null' ? origin : frontendBase;
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers':
+      'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
+    Vary: 'Origin',
+  };
+
+  if (allowOrigin !== '*') {
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+
+  return headers;
+}
+
+// CORS preflight handler for API routes
+router.options('/api/*', (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+  return new Response(null, { status: 204, headers });
 });
 
 // CSRF TOKEN: compatibility endpoint for legacy clients
@@ -8814,6 +8847,30 @@ router.post('/api/contact', async (req: Request, env: Env) => {
   }
 });
 
+// GET /api/debug/cors - lightweight CORS/health diagnostics
+router.get('/api/debug/cors', async (req: Request, env: Env) => {
+  const url = new URL(req.url);
+  const origin = req.headers.get('Origin') || req.headers.get('origin') || null;
+
+  // Very small payload so this stays cheap to call from the browser
+  const body = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    origin,
+    url: url.toString(),
+    hostname: url.hostname,
+    cors: {
+      frontendUrl: env.FRONTEND_URL || null,
+      // Whether the Worker believes this is an API route (for CORS wrapping)
+      isApiPath: url.pathname.startsWith('/api/'),
+    },
+  };
+
+  // Attach CORS headers like other /api routes
+  const headers = getCorsHeaders(req, env);
+  return json(body, { headers });
+});
+
 // POST /api/csrf-test - test CSRF protection (for testing only)
 router.post('/api/csrf-test', async (req: Request) => {
   try {
@@ -8967,7 +9024,28 @@ export { RateLimitObject, IdempotencyObject, LocksObject } from './durable-objec
 export default {
   // itty-router v5 uses `router.fetch` (v4 used `router.handle`)
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    return router.fetch(request, env, ctx);
+    // Let the router handle the request first
+    const response = await router.fetch(request, env, ctx);
+
+    // Apply CORS headers for API routes
+    try {
+      const url = new URL(request.url);
+      if (url.pathname.startsWith('/api/')) {
+        const cors = getCorsHeaders(request, env);
+        const headers = new Headers(response.headers);
+        for (const [key, value] of Object.entries(cors)) {
+          headers.set(key, value);
+        }
+        return new Response(response.body, {
+          status: response.status,
+          headers,
+        });
+      }
+    } catch {
+      // If URL parsing fails, fall through and return original response
+    }
+
+    return response;
   },
 
   async scheduled(_event: ScheduledEvent, env: Env) {

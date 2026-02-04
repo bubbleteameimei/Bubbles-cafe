@@ -117,11 +117,8 @@ body {
     min-width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    padding: 0;
-    width: 100%;
     /* Avoid forcing full viewport height on non-home pages to prevent bottom band */
     min-height: auto;
-    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     background-color: hsl(var(--background));
@@ -515,9 +512,9 @@ body.error-page-active footer.site-footer {
    With scrollbar-gutter: stable both-edges already set on html/body, Radix's compensation is safe.
    If further issues arise, consider using a custom overlay class to scope adjustments instead of touching body. */
 
-/* Sidebar: ensure the first group sits flush to the top */
+/* Sidebar: give the first group consistent breathing room from the very top */
 [data-sidebar="sidebar"] [data-sidebar="group"]:first-child {
-  padding-top: 0 !important;
+  padding-top: 8px !important;
   margin-top: 0 !important;
 }
 
