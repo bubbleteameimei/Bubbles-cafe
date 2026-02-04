@@ -1163,7 +1163,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
         <article
           key={currentPost.id}
-          className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
+          className="prose dark:prose-invert px-4 md:px-6 pt-0 w-full max-w-3xl mx-auto"
         >
           {/* Full-bleed separator above story title (thin, end-to-end) */}
           <div
