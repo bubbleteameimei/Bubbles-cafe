@@ -135,7 +135,12 @@ export function useReaderAnalytics(options: ReaderAnalyticsOptions) {
         userInteractedRef.current &&
         isVisible
       ) {
-        trackWordPressRead(currentPostId, currentPostLink);
+        trackInteraction('reader_engaged', {
+          postId: currentPostId,
+          link: currentPostLink,
+          progress: readingProgress,
+          timeMs: elapsedActiveMs,
+        });
       }
     } catch {
       // no-op

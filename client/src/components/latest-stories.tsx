@@ -3,7 +3,6 @@ import { type Post } from "@shared/schema";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { extractHorrorExcerpt } from "@/lib/content-analysis";
@@ -12,16 +11,6 @@ import { useMemo } from "react";
 export default function LatestStories() {
   const [, setLocation] = useLocation();
   
-  // Fetch both WordPress posts and local database posts
-  const { data: wordpressPosts, isLoading: wpLoading } = useQuery<Post[]>({
-    queryKey: ["wordpress", "latest-posts"],
-    queryFn: async () => {
-      const wpPosts = await fetchWordPressPosts(1, 3); // Fetch latest WordPress posts
-      return wpPosts.map(post => convertWordPressPost(post)) as Post[];
-    },
-    staleTime: 5 * 60 * 1000
-  });
-
   // Fetch posts from our database (including user created posts)
   const { data: dbPosts, isLoading: dbLoading } = useQuery<Post[]>({
     queryKey: ["posts", "latest"],
@@ -34,24 +23,21 @@ export default function LatestStories() {
     staleTime: 2 * 60 * 1000
   });
   
-  // Combine and sort all posts by date
+  // Sort by date (newest first) and take top 3
   const allPosts = useMemo(() => {
-    const combined = [...(wordpressPosts || []), ...(dbPosts || [])];
-    
-    // Remove duplicates (might have same post in both WP and DB)
-    const uniquePosts = combined.filter((post, index, self) => 
-      index === self.findIndex(p => p.slug === post.slug)
-    );
-    
-    // Sort by date (newest first)
-    return uniquePosts.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return dateB - dateA;
-    }).slice(0, 3); // Only take the 3 most recent
-  }, [wordpressPosts, dbPosts]);
+    if (!dbPosts) return [];
+
+    return dbPosts
+      .slice()
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt as any).getTime();
+        const dateB = new Date(b.createdAt as any).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 3);
+  }, [dbPosts]);
   
-  const isLoading = wpLoading || dbLoading;
+  const isLoading = dbLoading;
 
   if (isLoading || !allPosts.length) {
     return (
