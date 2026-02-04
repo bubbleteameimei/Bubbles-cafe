@@ -336,13 +336,15 @@ export default function StoriesIndexContent() {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const wpResponse = await fetchWordPressPosts({
         page,
-        perPage: 30,
+        // Smaller page size keeps the initial WordPress payload lighter while
+        // still allowing infinite scroll to pull in the full index as needed.
+        perPage: 18,
       });
       const wpPosts = wpResponse.posts || [];
       const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
       return {
         posts,
-        hasMore: wpPosts.length === 30,
+        hasMore: wpPosts.length === 18,
         page,
       };
     },
@@ -359,7 +361,7 @@ export default function StoriesIndexContent() {
     try {
       const first = (data as any)?.pages?.[0];
       if (first && Array.isArray(first.posts) && first.posts.length > 0) {
-        const payload = { posts: first.posts.slice(0, 30), hasMore: first.hasMore };
+        const payload = { posts: first.posts.slice(0, 18), hasMore: first.hasMore };
         localStorage.setItem('cache:index:page1', JSON.stringify(payload));
       }
     } catch {}

@@ -716,13 +716,39 @@ function App() {
   // CSRF protection is initialized in main.tsx via dynamic import
 
   // Initialize WordPress sync service (keeps Supabase posts in sync with WordPress in the background)
+  // Defer this to idle/late in the session so it doesn't compete with critical
+  // page data (reader/index) on first load, while still keeping content fresh
+  // for subsequent navigations.
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const run = async () => {
       try {
         const { initWordPressSync } = await import('./lib/wordpress-sync');
-        initWordPressSync();
+        if (!cancelled) {
+          initWordPressSync();
+        }
       } catch {}
-    })();
+    };
+
+    const win: any = typeof window !== 'undefined' ? window : null;
+    const ric: any = win && typeof win.requestIdleCallback === 'function'
+      ? win.requestIdleCallback
+      : null;
+
+    if (ric) {
+      ric(() => {
+        run();
+      }, { timeout: 5000 });
+    } else {
+      setTimeout(() => {
+        run();
+      }, 4000);
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   

@@ -489,7 +489,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         try {
           const result = await fetchWordPressPosts({
             page: 1,
-            perPage: 100,
+            // Limit WordPress fallback to a smaller page for faster initial loads while
+            // still providing a rich fallback list when Supabase is unavailable.
+            perPage: 40,
             includeContent: true,
             maxRetries: 1,
           });
