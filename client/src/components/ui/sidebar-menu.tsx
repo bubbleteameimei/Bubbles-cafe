@@ -280,15 +280,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
   }, [location, onNavigate, sidebar, setLocation, scrollToTop, prefetchRouteAsync, prefetchDataForRouteEarly]);
 
-  const renderActiveIndicator = (path: string) => {
-    const isActive = location === path;
-    if (!isActive) return null;
-    return (
-      <span
-        className="inline-flex h-1.5 w-1.5 rounded-full bg-primary mr-2"
-        aria-hidden="true"
-      />
-    );
+  const renderActiveIndicator = (_path: string) => {
+    return null;
   };
 
   const prefetchDataForRoute = React.useCallback(async (href: string) => {
@@ -428,7 +421,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1.5">
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/'}
                       size="sm"
@@ -511,7 +508,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
                     <SidebarMenuButton
                       isActive={location === '/bookmarks'}
                       size="sm"

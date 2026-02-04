@@ -1416,8 +1416,8 @@ export default function StoriesIndexContent() {
       <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
         {/* Sticky controls header (mobile-first) */}
         <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-6">
-            <div className="relative w-full lg:col-span-1">
+          <div className="grid grid-cols-1 items-center gap-6">
+            <div className="relative w-full">
               <Input
                 placeholder="Search stories..."
                 className="pl-3 pr-10 w-full"
@@ -1439,128 +1439,129 @@ export default function StoriesIndexContent() {
             <div className="mb-6 flex flex-col gap-6 content-visibility-auto">
               <div>
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
-                  <CardContent className="group p-4">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Award className="h-4 w-4 text-primary" />
-                        <h2 className="text-lg font-decorative">Featured Story</h2>
-                      </div>
-                      <div className="flex items-center">
-                        <Select
-                          value={sort}
-                          onValueChange={(value) =>
-                            setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                          }
-                        >
-                          <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
-                            <SelectValue placeholder="Sort" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newest">Newest</SelectItem>
-                            <SelectItem value="oldest">Oldest</SelectItem>
-                            <SelectItem value="popular">Popular</SelectItem>
-                            <SelectItem value="shortest">Shortest</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <button
-                          className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2"
-                          onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                          style={{ minHeight: '48px' }}
-                        >
-                          {renderHighlighted(String(featuredStory.title || ''))}
-                        </button>
-                        {(() => {
-                          const { key, label, iconSlug } = computeThemeMeta(featuredStory);
-                          const badgeTint = getBadgeTint(key);
-                          const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
-                          return (
-                            <div className="-mt-1">
-                              <Badge
-                                className={
-                                  'w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ' +
-                                  badgeTint
-                                }
-                              >
-                                {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
-                                {label}
-                              </Badge>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
-                        <div className="flex items-center gap-1 justify-end">
-                          <Calendar className="h-3 w-3" />
-                          <time>
-                            {new Date(featuredStory.createdAt).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </time>
+                  <CardContent className="group p-4 lg:p-6">
+                    <div className="max-w-3xl mx-auto">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Award className="h-4 w-4 text-primary" />
+                          <h2 className="text-lg font-decorative">Featured Story</h2>
                         </div>
-                        <div
-                          className="flex items-center gap-1 justify-end"
-                          title={`~${
-                            String(featuredStory.content || '')
-                              .trim()
-                              .split(/\s+/).length
-                          } words`}
-                        >
-                          <Clock className="h-3 w-3" />
-                          <span>{getReadingTime(featuredStory.content)}</span>
+                        <div className="flex items-center">
+                          <Select
+                            value={sort}
+                            onValueChange={(value) =>
+                              setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                            }
+                          >
+                            <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
+                              <SelectValue placeholder="Sort" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="newest">Newest</SelectItem>
+                              <SelectItem value="oldest">Oldest</SelectItem>
+                              <SelectItem value="popular">Popular</SelectItem>
+                              <SelectItem value="shortest">Shortest</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
-                    </div>
-                    <p
-                      className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans"
-                      style={{
-                        fontFamily:
-                          "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
-                      }}
-                    >
-                      {extractEngagingExcerpt(featuredStory.content, 220)}
-                    </p>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {(() => {
-                          const md: any = (featuredStory as any)?.metadata || {};
-                          const totals = reactionTotals[featuredStory.id] || null;
-                          const likes = Number(totals?.totals?.likes ?? 0);
-                          const views =
-                            md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
-                          const readingTimeStr = getReadingTime(featuredStory.content);
-                          return (
-                            <>
-                              <span className="flex items-center gap-1">
-                                <Heart className="h-3 w-3" /> {likes}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Eye className="h-3 w-3" /> {views}
-                              </span>
-                            </>
-                          );
-                        })()}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <button
+                            className="text-left text-xl md:text-2xl font-semibold tracking-tight leading-tight hover:text-primary group-hover:text-primary line-clamp-2"
+                            onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                            style={{ minHeight: '48px' }}
+                          >
+                            {renderHighlighted(String(featuredStory.title || ''))}
+                          </button>
+                          {(() => {
+                            const { key, label, iconSlug } = computeThemeMeta(featuredStory);
+                            const badgeTint = getBadgeTint(key);
+                            const ThemeIconCmp: any = getThemeIconFor(key, iconSlug);
+                            return (
+                              <div className="-mt-1">
+                                <Badge
+                                  className={
+                                    'w-fit text-[12px] font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 border whitespace-nowrap ' +
+                                    badgeTint
+                                  }
+                                >
+                                  {ThemeIconCmp ? <ThemeIconCmp className="h-3 w-3" /> : null}
+                                  {label}
+                                </Badge>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground space-y-1 whitespace-nowrap">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Calendar className="h-3 w-3" />
+                            <time>
+                              {new Date(featuredStory.createdAt).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </time>
+                          </div>
+                          <div
+                            className="flex items-center gap-1 justify-end"
+                            title={`~${
+                              String(featuredStory.content || '')
+                                .trim()
+                                .split(/\s+/).length
+                            } words`}
+                          >
+                            <Clock className="h-3 w-3" />
+                            <span>{getReadingTime(featuredStory.content)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
-                        className="h-9 px-4 transition-transform active:scale-95"
+                      <p
+                        className="text-[15px] sm:text-[16px] text-muted-foreground leading-6 mt-6 line-clamp-3 font-sans"
+                        style={{
+                          fontFamily:
+                            "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+                        }}
                       >
-                        Read story
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
+                        {extractEngagingExcerpt(featuredStory.content, 220)}
+                      </p>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {(() => {
+                            const md: any = (featuredStory as any)?.metadata || {};
+                            const totals = reactionTotals[featuredStory.id] || null;
+                            const likes = Number(totals?.totals?.likes ?? 0);
+                            const views =
+                              md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
+                            const readingTimeStr = getReadingTime(featuredStory.content);
+                            return (
+                              <>
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3" /> {likes}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3" /> {views}
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
+                          className="h-9 px-4 transition-transform active:scale-95"
+                        >
+                          Read story
+                          <ArrowRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-              <div className="lg:col-span-2">
-                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+              {/* Most liked: keep on mobile/tablet, hide on  <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
                     <MostLikedList
                       posts={sortedPosts}
