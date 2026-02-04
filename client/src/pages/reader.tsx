@@ -123,7 +123,11 @@ const getRenderedText = (value: any): string => {
     }
     return '';
   } catch {
-  </old_code><new_code>interface ReaderPageProps {
+    return '';
+  }
+};
+
+interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
   isCommunityContent?: boolean;
@@ -150,7 +154,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         await apiJson('POST', `/api/posts/${postId}/comments`, {
           content: text,
           selectionText: selection,
-          anchorParagraphIndex: Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
+          anchorParagraphIndex:
+            Number(range.paragraphIndex ?? -1) >= 0 ? Number(range.paragraphIndex) : undefined,
           selectionStart: Number.isFinite(range.start) ? Number(range.start) : undefined,
           selectionEnd: Number.isFinite(range.end) ? Number(range.end) : undefined,
         });
@@ -159,7 +164,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         toast({ title: 'Failed to add comment', description: e?.message || 'Please try again.', variant: 'destructive' });
       }
     },
-    contentSelector: '.story-content'
+    contentSelector: '.story-content',
   });
 
   const logReaderError = (id: string, message: any, extra?: any) => {
@@ -168,16 +173,21 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       // Gate each error id to once per session to avoid noisy logs
       const already = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
       if (already) return;
-      try { sessionStorage.setItem(key, '1'); } catch {}
+      try {
+        sessionStorage.setItem(key, '1');
+      } catch {}
       fetch('/api/errors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           id,
-          message: typeof message === 'string' ? message : (message && (message.message || String(message))) || 'Unknown',
-          extra
-        })
+          message:
+            typeof message === 'string'
+              ? message
+              : (message && (message.message || String(message))) || 'Unknown',
+          extra,
+        }),
       }).catch(() => {});
     } catch {}
   };
