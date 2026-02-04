@@ -1561,7 +1561,9 @@ export default function StoriesIndexContent() {
                   </CardContent>
                 </Card>
               </div>
-              {/* Most liked: keep on mobile/tablet, hide on  <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
+              {/* Most liked: keep on mobile/tablet, hide on desktop to let featured story breathe */}
+              <div className="lg:hidden">
+                <Card className="rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="p-4">
                     <MostLikedList
                       posts={sortedPosts}
