@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
@@ -24,7 +24,6 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import type { FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
 import { fetchWordPressPosts, type WordPressPost } from "@/lib/wordpress-api";
-import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useAuth } from "@/hooks/use-auth";
 import RouteLoader from "@/components/ui/RouteLoader";
@@ -66,13 +65,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getBadgeTint } from "@/lib/theme-badges";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
 
-import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 import { useReaderScrollProgress } from "@/hooks/reader/use-reader-scroll-progress";
 import { useReaderFonts } from "@/hooks/reader/use-reader-fonts";
 import { useReaderHorrorOverlay } from "@/hooks/reader/use-reader-horror-overlay";
 import { useReaderDebugInstrumentation } from "@/hooks/reader/use-reader-debug";
 import { useReaderProgressPersistence } from "@/hooks/reader/use-reader-progress-persistence";
 import { useReaderAnalytics } from "@/hooks/reader/use-reader-analytics";
+
+const SimpleCommentSectionLazy = lazy(() =>
+  import("@/components/blog/SimpleCommentSection").then((m) => ({
+    default: (m as any).default ?? (m as any).SimpleCommentSection,
+  })),
+);
+
+const ReaderSocialIcons = lazy(() => import("@/components/reader/ReaderSocialIcons"));
 
 // Lazy-mount comment section when near viewport to reduce initial load cost
 function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
@@ -106,7 +112,15 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
     };
   }, []);
 
-  return <div ref={anchorRef}>{visible ? <SimpleCommentSection postId={postId} /> : null}</div>;
+  return (
+    <div ref={anchorRef}>
+      {visible ? (
+        <Suspense fallback={null}>
+          <SimpleCommentSectionLazy postId={postId} />
+        </Suspense>
+      ) : null}
+    </div>
+  );
 }
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
@@ -114,7 +128,7 @@ const sanitizeHtmlContent = (html: string): string => {
   try {
     return sanitizeHtml(html);
   } catch (error) {
-    console.error('[Reader] Error sanitizing HTML:', error);
+    console.error("[Reader] Error sanitizing HTML:", error);
     return html;
   }
 };
@@ -593,16 +607,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }, [currentIndex, postsData, routeSlug]);
 
   useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Verifying social icons:', {
-        twitter: !!FaTwitter,
-        wordpress: !!FaWordpress,
-        instagram: !!FaInstagram
-      });
-    }
     // Sync theme definition overrides from server to ensure global labels/icons are up to date
     (async () => {
-      try { await syncThemeDefinitionOverridesFromServer(); } catch {}
+      try {
+        await syncThemeDefinitionOverridesFromServer();
+      } catch {}
     })();
   }, []);
 
@@ -1854,44 +1863,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                   {/* Social Icons */}
                   <div className="flex gap-3">
-                    {/* Twitter */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
-                      }}
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <FaTwitter className="h-4 w-4" />
-                      <span className="sr-only">Follow on Twitter</span>
-                    </Button>
-                    
-                    {/* WordPress */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
-                      }}
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <FaWordpress className="h-4 w-4" />
-                      <span className="sr-only">Follow on WordPress</span>
-                    </Button>
-                    
-                    {/* Instagram */}
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <a href="https://www.instagram.com/Bubbleteameimei/" target="__blank" rel="noreferrer">
-                        <FaInstagram className="h-4 w-4" />
-                        <span className="sr-only">Follow on Instagram</span>
-                      </a>
-                    </Button>
+                    <Suspense fallback={null}>
+                      <ReaderSocialIcons />
+                    </Suspense>
                   </div>
                 </div>
               </div>

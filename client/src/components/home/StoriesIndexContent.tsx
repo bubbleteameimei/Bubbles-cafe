@@ -7,6 +7,7 @@ import SEO from '@/components/SEO';
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getJson } from '@/lib/api';
 import {
   ArrowRight,
   Clock,
@@ -64,10 +65,8 @@ import {
 } from '@/components/ui/select';
 
 import { getReadingTime, extractEngagingExcerpt } from '@/lib/excerpt-lite';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, getJson } from '@/lib/api';
 import { THEME_CATEGORIES } from '@/lib/themes-lite';
-import type { WordPressPost } from '@/lib/wordpress-api';
-import { fetchWordPressPosts } from '@/lib/wordpress-api';
 import {
   determineThemeCategory as sharedDetermineThemeCategory,
   THEME_CATEGORIES as SHARED_THEME_CATEGORIES,
@@ -82,22 +81,6 @@ import ContinueReadingBanner from '@/components/ContinueReadingBanner';
 import { VirtualScrollArea } from '@/components/ui/VirtualScrollArea';
 import { computeTrendingScores } from '@/lib/trending';
 import { useThemeCategories } from '@/hooks/use-theme-categories';
-
-// Lightweight converter from WordPress API post to local Post shape
-function wpToPost(post: WordPressPost): Post {
-  const title = post?.title?.rendered?.trim() || 'Untitled Story';
-  const content = post?.content?.rendered || '';
-  const slug = post?.slug || `post-${post?.id ?? Date.now()}`;
-  const createdAt = post?.date ? new Date(post.date) : new Date();
-  return {
-    id: post.id ?? Math.floor(Math.random() * 100000),
-    title,
-    content,
-    slug,
-    createdAt,
-    metadata: {},
-  } as unknown as Post;
-}
 
 export default function StoriesIndexContent() {
   const [, setLocation] = useLocation();
@@ -325,26 +308,22 @@ export default function StoriesIndexContent() {
     return null;
   }, []);
 
-  // Paginated query
+  // Paginated query (Supabase-backed compact posts with WordPress handled behind /api/posts/compact)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{
     posts: Post[];
     hasMore: boolean;
     page: number;
   }>({
-    queryKey: ['wordpress', 'posts'],
+    queryKey: ['posts', 'index', 'compact'],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
-      const wpResponse = await fetchWordPressPosts({
-        page,
-        // Smaller page size keeps the initial WordPress payload lighter while
-        // still allowing infinite scroll to pull in the full index as needed.
-        perPage: 18,
-      });
-      const wpPosts = wpResponse.posts || [];
-      const posts = wpPosts.map((post: WordPressPost) => wpToPost(post)) as Post[];
+      const result = await getJson<{ posts?: Post[]; hasMore?: boolean }>(
+        `/api/posts/compact?page=${page}&limit=18`,
+      );
+      const posts = Array.isArray(result.posts) ? result.posts : [];
       return {
         posts,
-        hasMore: wpPosts.length === 18,
+        hasMore: Boolean(result.hasMore) && posts.length === 18,
         page,
       };
     },
@@ -478,7 +457,7 @@ export default function StoriesIndexContent() {
             try {
               const derived = sharedDetermineThemeCategory(
                 String(p.title || ''),
-                String(p.content || ''),
+                String((p as any).content || (p as any).excerpt || ''),
               );
               key = String(derived || '').trim();
             } catch {}
@@ -598,7 +577,7 @@ export default function StoriesIndexContent() {
         try {
           const derived = sharedDetermineThemeCategory(
             String(p.title || ''),
-            String(p.content || ''),
+            String((p as any).content || (p as any).excerpt || ''),
           );
           key = String(derived || '').trim();
         } catch {}
@@ -612,7 +591,7 @@ export default function StoriesIndexContent() {
   const computeThemeMeta = (p: Post): { key: string; label: string; iconSlug: string } => {
     const md: any = (p as any)?.metadata || {};
     const title = String(p.title || '');
-    const content = String(p.content || '');
+    const content = String((p as any).content || (p as any).excerpt || '');
     const primaryThemeRaw = md.themeCategory || sharedDetermineThemeCategory(title, content);
 
     const override = getStoryThemeOverride((p as any)?.slug as any, title as any);
@@ -1091,7 +1070,11 @@ export default function StoriesIndexContent() {
         });
         break;
       case 'shortest':
-        list.sort((a, b) => String(a.content || '').length - String(b.content || '').length);
+        list.sort(
+          (a, b) =>
+            String((a as any).content || (a as any).excerpt || '').length -
+            String((b as any).content || (b as any).excerpt || '').length,
+        );
         break;
       case 'newest':
       default:
@@ -1282,7 +1265,10 @@ export default function StoriesIndexContent() {
           const md: any = (p as any)?.metadata || {};
           const primary =
             md.themeCategory ||
-            sharedDetermineThemeCategory(String(p.title || ''), String(p.content || ''));
+            sharedDetermineThemeCategory(
+              String(p.title || ''),
+              String((p as any).content || (p as any).excerpt || ''),
+            );
           const raw = String(primary || '').trim();
           if (!raw) return '';
           for (const [key, info] of Object.entries(
@@ -1373,7 +1359,7 @@ export default function StoriesIndexContent() {
         md.themeCategory ||
         sharedDetermineThemeCategory(
           String(featuredStory.title || ''),
-          String(featuredStory.content || ''),
+          String((featuredStory as any).content || (featuredStory as any).excerpt || ''),
         );
       const raw = String(primary || '').trim();
       let key = '';
@@ -1509,13 +1495,25 @@ export default function StoriesIndexContent() {
                           <div
                             className="flex items-center gap-1 justify-end"
                             title={`~${
-                              String(featuredStory.content || '')
+                              String(
+                                (featuredStory as any).content ||
+                                  (featuredStory as any).excerpt ||
+                                  '',
+                              )
                                 .trim()
                                 .split(/\s+/).length
                             } words`}
                           >
                             <Clock className="h-3 w-3" />
-                            <span>{getReadingTime(featuredStory.content)}</span>
+                            <span>
+                              {getReadingTime(
+                                String(
+                                  (featuredStory as any).content ||
+                                    (featuredStory as any).excerpt ||
+                                    '',
+                                ),
+                              )}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1526,7 +1524,14 @@ export default function StoriesIndexContent() {
                             "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
                         }}
                       >
-                        {extractEngagingExcerpt(featuredStory.content, 220)}
+                        {extractEngagingExcerpt(
+                          String(
+                            (featuredStory as any).content ||
+                              (featuredStory as any).excerpt ||
+                              '',
+                          ),
+                          220,
+                        )}
                       </p>
 
                       <div className="mt-3 flex items-center justify-between">
@@ -1537,7 +1542,13 @@ export default function StoriesIndexContent() {
                             const likes = Number(totals?.totals?.likes ?? 0);
                             const views =
                               md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
-                            const readingTimeStr = getReadingTime(featuredStory.content);
+                            const readingTimeStr = getReadingTime(
+                              String(
+                                (featuredStory as any).content ||
+                                  (featuredStory as any).excerpt ||
+                                  '',
+                              ),
+                            );
                             return (
                               <>
                                 <span className="flex items-center gap-1">
@@ -1635,7 +1646,10 @@ export default function StoriesIndexContent() {
                             })()}
 
                             <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                              {extractEngagingExcerpt(s.content, 100)}
+                              {extractEngagingExcerpt(
+                                String((s as any).content || (s as any).excerpt || ''),
+                                100,
+                              )}
                             </p>
 
                             <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -1650,7 +1664,11 @@ export default function StoriesIndexContent() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                <span>{getReadingTime(s.content)}</span>
+                                <span>
+                                  {getReadingTime(
+                                    String((s as any).content || (s as any).excerpt || ''),
+                                  )}
+                                </span>
                               </div>
                             </div>
                           </CardContent>
@@ -1768,7 +1786,10 @@ export default function StoriesIndexContent() {
                               );
                             })()}
                             <p className="text-[13px] text-muted-foreground leading-5 mt-1 line-clamp-1">
-                              {extractEngagingExcerpt(pop.content, 100)}
+                              {extractEngagingExcerpt(
+                                String((pop as any).content || (pop as any).excerpt || ''),
+                                100,
+                              )}
                             </p>
                             <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                               <div className="flex items-center gap-1">
@@ -1782,7 +1803,11 @@ export default function StoriesIndexContent() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                <span>{getReadingTime(pop.content)}</span>
+                                <span>
+                                  {getReadingTime(
+                                    String((pop as any).content || (pop as any).excerpt || ''),
+                                  )}
+                                </span>
                               </div>
                             </div>
                           </CardContent>
@@ -1867,7 +1892,7 @@ export default function StoriesIndexContent() {
                           try {
                             const derived = sharedDetermineThemeCategory(
                               String(post.title || ''),
-                              String(post.content || ''),
+                              String((post as any).content || (post as any).excerpt || ''),
                             );
                             themeCategory = String(derived || '');
                           } catch {}
@@ -1925,13 +1950,25 @@ export default function StoriesIndexContent() {
                                     <div
                                       className="flex items-center gap-1 justify-end"
                                       title={`~${
-                                        String(post.content || '')
+                                        String(
+                                          (post as any).content ||
+                                            (post as any).excerpt ||
+                                            '',
+                                        )
                                           .trim()
                                           .split(/\s+/).length
                                       } words`}
                                     >
                                       <Clock className="h-3 w-3" />
-                                      <span>{getReadingTime(post.content)}</span>
+                                      <span>
+                                        {getReadingTime(
+                                          String(
+                                            (post as any).content ||
+                                              (post as any).excerpt ||
+                                              '',
+                                          ),
+                                        )}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
@@ -1942,7 +1979,10 @@ export default function StoriesIndexContent() {
                                       "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
                                   }}
                                 >
-                                  {extractEngagingExcerpt(post.content, 200)}
+                                  {extractEngagingExcerpt(
+                                    String((post as any).content || (post as any).excerpt || ''),
+                                    200,
+                                  )}
                                 </p>
                               </CardContent>
                               <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
@@ -1995,7 +2035,7 @@ export default function StoriesIndexContent() {
                     try {
                       const derived = sharedDetermineThemeCategory(
                         String(post.title || ''),
-                        String(post.content || ''),
+                        String((post as any).content || (post as any).excerpt || ''),
                       );
                       themeCategory = String(derived || '');
                     } catch {}
@@ -2057,10 +2097,22 @@ export default function StoriesIndexContent() {
                               </div>
                               <div
                                 className="flex items-center gap-1 justify-end"
-                                title={`~${String(post.content || '').split(/\s+/).length} words`}
+                                title={`~${
+                                  String(
+                                    (post as any).content || (post as any).excerpt || '',
+                                  )
+                                    .trim()
+                                    .split(/\s+/).length
+                                } words`}
                               >
                                 <Clock className="h-3 w-3" />
-                                <span>{getReadingTime(post.content)}</span>
+                                <span>
+                                  {getReadingTime(
+                                    String(
+                                      (post as any).content || (post as any).excerpt || '',
+                                    ),
+                                  )}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -2072,7 +2124,10 @@ export default function StoriesIndexContent() {
                                 "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
                             }}
                           >
-                            {extractEngagingExcerpt(post.content, 200)}
+                            {extractEngagingExcerpt(
+                              String((post as any).content || (post as any).excerpt || ''),
+                              200,
+                            )}
                           </p>
                         </CardContent>
                         <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
