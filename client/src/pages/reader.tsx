@@ -81,7 +81,7 @@ const SimpleCommentSectionLazy = lazy(() =>
 const ReaderSocialIcons = lazy(() => import("@/components/reader/ReaderSocialIcons"));
 
 // Lazy-mount comment section when near viewport to reduce initial load cost
-function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
+const LazyCommentSection: React.FC<{ postId: number }> = ({ postId }) => {
   const [visible, setVisible] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -121,7 +121,7 @@ function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
       ) : null}
     </div>
   );
-}
+};
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
 const sanitizeHtmlContent = (html: string): string => {

@@ -7,7 +7,6 @@ import SEO from '@/components/SEO';
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getJson } from '@/lib/api';
 import {
   ArrowRight,
   Clock,
