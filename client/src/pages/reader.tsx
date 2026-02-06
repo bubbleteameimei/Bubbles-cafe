@@ -779,7 +779,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -794,7 +794,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -809,7 +809,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -897,7 +897,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         /* Set default cursor for everything */
         .reader-page {
           cursor: default;
-          scrollbar-gutter: stable;
         }
         
         /* Set pointer cursor only for interactive elements */
