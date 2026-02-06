@@ -31,6 +31,7 @@ import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson, getJson } from "@/lib/api";
+import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
@@ -72,57 +73,7 @@ import { useReaderDebugInstrumentation } from "@/hooks/reader/use-reader-debug";
 import { useReaderProgressPersistence } from "@/hooks/reader/use-reader-progress-persistence";
 import { useReaderAnalytics } from "@/hooks/reader/use-reader-analytics";
 
-const SimpleCommentSectionLazy = lazy(
-  () =>
-    import("@/components/blog/SimpleCommentSection").then((m) => ({
-      default: (m as any).default ?? (m as any).SimpleCommentSection,
-    })),
-) as React.LazyExoticComponent<React.ComponentType<{ postId: number }>>;
-
 const ReaderSocialIcons = lazy(() => import("@/components/reader/ReaderSocialIcons"));
-
-// Lazy-mount comment section when near viewport to reduce initial load cost
-const LazyCommentSection: React.FC<{ postId: number }> = ({ postId }) => {
-  const [visible, setVisible] = useState(false);
-  const anchorRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let observer: IntersectionObserver | null = null;
-    try {
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              setVisible(true);
-              // Disconnect once visible to avoid re-observing
-              try {
-                observer?.disconnect();
-              } catch {}
-              break;
-            }
-          }
-        },
-        { root: null, rootMargin: '800px', threshold: 0.01 },
-      );
-      if (anchorRef.current) observer.observe(anchorRef.current);
-    } catch {}
-    return () => {
-      try {
-        observer?.disconnect();
-      } catch {}
-    };
-  }, []);
-
-  return (
-    <div ref={anchorRef}>
-      {visible ? (
-        <Suspense fallback={null}>
-          <SimpleCommentSectionLazy postId={postId} />
-        </Suspense>
-      ) : null}
-    </div>
-  );
-};
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
 const sanitizeHtmlContent = (html: string): string => {
@@ -483,11 +434,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return Array.isArray(dataPosts) && dataPosts.length > 0;
   }, [postsData]);
 
-  // Enable WordPress fallback when Supabase-backed API is unavailable or returns no posts
-  const enableWordPressFallback =
-    !isCommunityContent &&
-    !isLoadingSupabase &&
-    (!hasSupabasePosts || !!supabaseError);
+  // Always enable WordPress fetch for non-community stories once initial Supabase load completes.
+  // This ensures older WordPress-only stories remain available even when Supabase has only a
+  // partial subset of posts (e.g., a couple of synced stories).
+  const enableWordPressFallback = !isCommunityContent && !isLoadingSupabase;
 
   const {
     data: wpPostsData,
@@ -563,16 +513,47 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
   );
 
-  // Memoised posts array for consistent usage across hooks (Supabase first, then WordPress fallback)
+  // Memoised posts array for consistent usage across hooks.
+  // For community stories we rely solely on Supabase; for regular stories we
+  // merge Supabase and WordPress posts so that legacy WordPress-only stories
+  // remain navigable even when Supabase has only a subset of posts.
   const posts = useMemo<Post[]>(() => {
     const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     const supabasePosts = Array.isArray(dataPosts) ? dataPosts : [];
-    if (supabasePosts.length > 0 || isCommunityContent) {
+
+    if (isCommunityContent) {
       return supabasePosts;
     }
+
     const wpDataPosts: Post[] | undefined = (wpPostsData as any)?.posts;
     const wordpressPosts = Array.isArray(wpDataPosts) ? wpDataPosts : [];
-    return wordpressPosts.length > 0 ? wordpressPosts : supabasePosts;
+
+    if (!supabasePosts.length && !wordpressPosts.length) {
+      return [];
+    }
+
+    const merged: Post[] = [...supabasePosts];
+    const seenSlugs = new Set(
+      supabasePosts
+        .map((p: any) => String(p?.slug || '').toLowerCase())
+        .filter((s) => !!s),
+    );
+
+    for (const wp of wordpressPosts) {
+      const slug = String((wp as any)?.slug || '').toLowerCase();
+      if (slug && !seenSlugs.has(slug)) {
+        merged.push(wp);
+      }
+    }
+
+    // Sort by createdAt/date desc so newest stories appear first
+    merged.sort((a: any, b: any) => {
+      const da = new Date(a?.createdAt || a?.date || 0).getTime();
+      const db = new Date(b?.createdAt || b?.date || 0).getTime();
+      return db - da;
+    });
+
+    return merged;
   }, [postsData, wpPostsData, isCommunityContent]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
@@ -1875,9 +1856,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </div>
           </div>
           
-          {/* Comment section (lazy-mounted near viewport) */}
+          {/* Comment section */}
           <div className="mt-8">
-            <LazyCommentSection postId={currentPost.id} />
+            <SimpleCommentSection postId={currentPost.id} />
           </div>
 
           {/* Social sharing and support section */}
