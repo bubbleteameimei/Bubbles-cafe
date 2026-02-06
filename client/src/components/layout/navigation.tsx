@@ -327,9 +327,10 @@ export default function Navigation() {
   // Reader route progress state (for in-header progress bar)
   const [scrollProgress, setScrollProgress] = useState(0);
   const isReaderRoute = typeof location === "string" && location.includes("/reader");
+  const isCommunityRoute = typeof location === "string" && location.includes("/community-story/");
 
   useEffect(() => {
-    if (!isReaderRoute) return;
+    if (!isReaderRoute && !isCommunityRoute) return;
     let ticking = false;
     const update = () => {
       const scrollTop = window.scrollY;
@@ -908,17 +909,17 @@ export default function Navigation() {
           )}
         </AnimatePresence>
 
-        {/* Demarcation line constrained to header width to avoid horizontal overflow */}
+        {/* Demarcation line constrained to header width to avoid horizontal overflow.
+            Rendered as a separate element below the header so it does not combine visually
+            with the reader progress bar. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none"
+          className="pointer-events-none border-b border-border/60"
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
+            position: "relative",
+            margin: 0,
+            padding: 0,
             width: "100%",
-            transform: "none",
-            borderTop: "1px solid hsl(var(--border) / 0.70)",
             zIndex: 40,
           }}
         />
