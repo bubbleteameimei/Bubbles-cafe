@@ -558,35 +558,39 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
-    if (Array.isArray(dataPosts) && dataPosts.length > 0) {
-      // If we have a slug in the route, align the index to that post
-      if (routeSlug) {
-        const bySlug = dataPosts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
-        if (bySlug >= 0 && bySlug !== currentIndex) {
-          setCurrentIndex(bySlug);
+    if (!Array.isArray(posts) || posts.length === 0) {
+      return;
+    }
+
+    // If we have a slug in the route, align the index to that post in the merged list
+    if (routeSlug) {
+      const bySlug = posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+      if (bySlug >= 0 && bySlug !== currentIndex) {
+        setCurrentIndex(bySlug);
+        try {
           sessionStorage.setItem('selectedStoryIndex', String(bySlug));
-        }
-      }
-
-      // Ensure currentIndex is within bounds
-      if (currentIndex >= dataPosts.length) {
-        setCurrentIndex(0);
-        sessionStorage.setItem('selectedStoryIndex', '0');
-      } else {
-        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-      }
-
-      // Log current post details
-      const currentPost = dataPosts[currentIndex];
-
-      // Now that we have the post data, update our slug for auto-saving
-      if (currentPost) {
-        const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        setAutoSaveSlug(newSlug);
+        } catch {}
       }
     }
-  }, [currentIndex, postsData, routeSlug]);
+
+    // Ensure currentIndex is within bounds of the merged posts list
+    if (currentIndex >= posts.length) {
+      setCurrentIndex(0);
+      try {
+        sessionStorage.setItem('selectedStoryIndex', '0');
+      } catch {}
+    } else {
+      try {
+        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+      } catch {}
+    }
+
+    const current = posts[currentIndex];
+    if (current) {
+      const newSlug = routeSlug || (current.slug || `post-${current.id}`);
+      setAutoSaveSlug(newSlug);
+    }
+  }, [currentIndex, posts, routeSlug]);
 
   useEffect(() => {
     // Sync theme definition overrides from server to ensure global labels/icons are up to date
