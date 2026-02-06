@@ -72,11 +72,12 @@ import { useReaderDebugInstrumentation } from "@/hooks/reader/use-reader-debug";
 import { useReaderProgressPersistence } from "@/hooks/reader/use-reader-progress-persistence";
 import { useReaderAnalytics } from "@/hooks/reader/use-reader-analytics";
 
-const SimpleCommentSectionLazy = lazy(() =>
-  import("@/components/blog/SimpleCommentSection").then((m) => ({
-    default: (m as any).default ?? (m as any).SimpleCommentSection,
-  })),
-);
+const SimpleCommentSectionLazy = lazy(
+  () =>
+    import("@/components/blog/SimpleCommentSection").then((m) => ({
+      default: (m as any).default ?? (m as any).SimpleCommentSection,
+    })),
+) as React.LazyExoticComponent<React.ComponentType<{ postId: number }>>;
 
 const ReaderSocialIcons = lazy(() => import("@/components/reader/ReaderSocialIcons"));
 
@@ -1421,10 +1422,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 
                 {/* Date indicator */}
                 <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
-                  {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
+                  {(() => {
+                    const rawDate = (currentPost as any)?.date || (currentPost as any)?.createdAt || (currentPost as any)?.created_at;
+                    if (!rawDate) return 'No date';
+                    const d = new Date(rawDate);
+                    if (Number.isNaN(d.getTime())) return 'No date';
+                    return format(d, 'MMM d, yyyy');
+                  })()}
                 </span>
-                
-                <span className="text-muted-foreground">•</span>
                 
                 {/* Estimated reading time */}
                 <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
