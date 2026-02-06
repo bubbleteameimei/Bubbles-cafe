@@ -119,54 +119,124 @@ export function registerPostsRoutes(router: any) {
         },
       });
 
-      if (!res.ok) {
-        return json({ error: 'Failed to fetch post' }, { status: 500 });
+      if (res.ok) {
+        const rows = (await res.json().catch(() => [])) as any[];
+        if (Array.isArray(rows) && rows.length > 0) {
+          const row = rows[0] as any;
+          const content = typeof row.content === 'string' ? row.content : '';
+          const readingTimeMinutesValue =
+            row.reading_time_minutes != null
+              ? Number(row.reading_time_minutes)
+              : Math.max(
+                  1,
+                  Math.ceil(content.split(/\s+/).filter((w: string) => w.length > 0).length / 200),
+                );
+
+          const metadata =
+            row.metadata && typeof row.metadata === 'object' ? row.metadata : undefined;
+
+          const likesCount = Number(row.likes_count ?? row.likesCount ?? 0);
+          const dislikesCount = Number(row.dislikes_count ?? row.dislikesCount ?? 0);
+
+          const baselineLikes = Number(row.baseline_likes ?? row.baselineLikes ?? 0);
+          const baselineDislikes = Number(row.baseline_dislikes ?? row.baselineDislikes ?? 0);
+
+          const post = {
+            id: Number(row.id),
+            title: row.title ?? '',
+            content,
+            slug: row.slug ?? rawSlug,
+            excerpt: row.excerpt ?? null,
+            authorId: row.author_id != null ? Number(row.author_id) : undefined,
+            isSecret: Boolean(row.is_secret),
+            isAdminPost: null,
+            matureContent: Boolean(row.mature_content),
+            themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
+            readingTimeMinutes: readingTimeMinutesValue,
+            likesCount,
+            dislikesCount,
+            baselineLikes,
+            baselineDislikes,
+            metadata: metadata ?? {},
+            createdAt: row.created_at ?? new Date().toISOString(),
+          };
+
+          return json(post);
+        }
       }
 
-      const rows = (await res.json().catch(() => [])) as any[];
-      if (!Array.isArray(rows) || rows.length === 0) {
-        return json({ error: 'Post not found' }, { status: 404 });
+      // Supabase has no matching row; fall back to WordPress posts so that
+      // legacy stories remain readable without returning a 404.
+      try {
+        const wpBase =
+          env.WORDPRESS_API ||
+          'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+        const params = new URLSearchParams();
+        params.set('slug', rawSlug);
+        params.set('per_page', '1');
+
+        const wpRes = await fetch(`${wpBase}?${params.toString()}`);
+        if (wpRes.ok) {
+          const wpPosts = (await wpRes.json().catch(() => [])) as any[];
+          if (Array.isArray(wpPosts) && wpPosts.length > 0) {
+            const post = wpPosts[0] as any;
+            const title =
+              (post?.title && typeof post.title.rendered === 'string'
+                ? post.title.rendered
+                : '') || 'Untitled Story';
+            const contentHtml =
+              (post?.content && typeof post.content.rendered === 'string'
+                ? post.content.rendered
+                : '') || '';
+            const excerpt =
+              (post?.excerpt && typeof post.excerpt.rendered === 'string'
+                ? post.excerpt.rendered
+                : '') || null;
+            const slug =
+              typeof post.slug === 'string' && post.slug.trim() ? post.slug : rawSlug;
+            const createdAt = (post.date as string) || new Date().toISOString();
+
+            const wordCount = contentHtml
+              .replace(/<[^>]*>/g, ' ')
+              .split(/\s+/)
+              .filter(Boolean).length;
+            const readingTimeMinutesValue = Math.max(1, Math.ceil(wordCount / 200));
+
+            const metadata: any = {
+              ...(post.meta || {}),
+              wordpressId: typeof post.id === 'number' ? post.id : undefined,
+              wordpressLink: typeof post.link === 'string' ? post.link : undefined,
+              source: 'wordpress_api',
+            };
+
+            const fallbackPost = {
+              id: typeof post.id === 'number' ? post.id : Date.now(),
+              title,
+              content: contentHtml,
+              slug,
+              excerpt,
+              authorId: undefined,
+              isSecret: false,
+              isAdminPost: false,
+              matureContent: false,
+              themeCategory: null,
+              readingTimeMinutes: readingTimeMinutesValue,
+              likesCount: 0,
+              dislikesCount: 0,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              metadata,
+              createdAt,
+            };
+
+            return json(fallbackPost);
+          }
+        }
+      } catch {
+        // Ignore WordPress fallback errors; we'll fall through to a 404.
       }
 
-      const row = rows[0] as any;
-      const content = typeof row.content === 'string' ? row.content : '';
-      const readingTimeMinutesValue =
-        row.reading_time_minutes != null
-          ? Number(row.reading_time_minutes)
-          : Math.max(
-              1,
-              Math.ceil(content.split(/\s+/).filter((w: string) => w.length > 0).length / 200),
-            );
-
-      const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : undefined;
-
-      const likesCount = Number(row.likes_count ?? row.likesCount ?? 0);
-      const dislikesCount = Number(row.dislikes_count ?? row.dislikesCount ?? 0);
-
-      const baselineLikes = Number(row.baseline_likes ?? row.baselineLikes ?? 0);
-      const baselineDislikes = Number(row.baseline_dislikes ?? row.baselineDislikes ?? 0);
-
-      const post = {
-        id: Number(row.id),
-        title: row.title ?? '',
-        content,
-        slug: row.slug ?? rawSlug,
-        excerpt: row.excerpt ?? null,
-        authorId: row.author_id != null ? Number(row.author_id) : undefined,
-        isSecret: Boolean(row.is_secret),
-        isAdminPost: null,
-        matureContent: Boolean(row.mature_content),
-        themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
-        readingTimeMinutes: readingTimeMinutesValue,
-        likesCount,
-        dislikesCount,
-        baselineLikes,
-        baselineDislikes,
-        metadata: metadata ?? {},
-        createdAt: row.created_at ?? new Date().toISOString(),
-      };
-
-      return json(post);
+      return json({ error: 'Post not found' }, { status: 404 });
     } catch {
       return json({ error: 'Failed to fetch post' }, { status: 500 });
     }

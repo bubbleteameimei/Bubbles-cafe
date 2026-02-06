@@ -339,68 +339,98 @@ export function registerAnalyticsRoutes(router: any) {
     try {
       const body = (await (req as any).json?.()) || {};
 
-      // Check rate limit: basic IP-based guard via RATE_LIMIT_DO
-      const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-      const id = env.RATE_LIMIT_DO.idFromName(`analytics-${ip}`);
-      const obj = env.RATE_LIMIT_DO.get(id);
-      const response = await obj.fetch(
-        new Request('https://worker', {
-          method: 'POST',
-          body: JSON.stringify({ key: `analytics-${ip}`, limit: 100, window: 60 }),
-        }),
-      );
-      const result = (await response.json()) as any;
-      if (result.allowed === false) {
-        return json({ error: 'Rate limited' }, { status: 429 });
+      const analyticsKv = (env as any).ANALYTICS_KV as KVNamespace | undefined;
+      const rateLimitNs = (env as any).RATE_LIMIT_DO as DurableObjectNamespace | undefined;
+
+      // If analytics storage is not configured, acknowledge the event and no-op
+      // instead of returning an error.
+      if (!analyticsKv) {
+        return json({ success: true, eventId: null });
+      }
+
+      // Check rate limit via RATE_LIMIT_DO when available; skip silently if not.
+      if (rateLimitNs && typeof rateLimitNs.idFromName === 'function') {
+        const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+        const id = rateLimitNs.idFromName(`analytics-${ip}`);
+        const obj = rateLimitNs.get(id);
+        const response = await obj.fetch(
+          new Request('https://worker', {
+            method: 'POST',
+            body: JSON.stringify({ key: `analytics-${ip}`, limit: 100, window: 60 }),
+          }),
+        );
+        const result = (await response.json().catch(() => ({}))) as any;
+        if (result && result.allowed === false) {
+          return json({ error: 'Rate limited' }, { status: 429 });
+        }
       }
 
       const eventId = crypto.randomUUID();
-      await env.ANALYTICS_KV.put(`vitals-${eventId}`, JSON.stringify(body), {
+      await analyticsKv.put(`vitals-${eventId}`, JSON.stringify(body), {
         expirationTtl: 86400,
       });
 
       return json({ success: true, eventId });
     } catch (error) {
-      return json({ error: String(error) }, { status: 400 });
+      // Never surface analytics pipeline issues as HTTP errors to the client.
+      return json({ success: false, error: String(error) });
     }
   });
 
   router.post('/api/analytics/pageview', async (req: Request, env: Env) => {
     try {
       const body = (await (req as any).json?.()) || {};
+      const analyticsKv = (env as any).ANALYTICS_KV as KVNamespace | undefined;
+
+      if (!analyticsKv) {
+        return json({ success: true, eventId: null });
+      }
+
       const eventId = crypto.randomUUID();
-      await env.ANALYTICS_KV.put(`pageview-${eventId}`, JSON.stringify(body), {
+      await analyticsKv.put(`pageview-${eventId}`, JSON.stringify(body), {
         expirationTtl: 86400,
       });
       return json({ success: true, eventId });
     } catch (error) {
-      return json({ error: String(error) }, { status: 400 });
+      return json({ success: false, error: String(error) });
     }
   });
 
   router.post('/api/analytics/interaction', async (req: Request, env: Env) => {
     try {
       const body = (await (req as any).json?.()) || {};
+      const analyticsKv = (env as any).ANALYTICS_KV as KVNamespace | undefined;
+
+      if (!analyticsKv) {
+        return json({ success: true, eventId: null });
+      }
+
       const eventId = crypto.randomUUID();
-      await env.ANALYTICS_KV.put(`interaction-${eventId}`, JSON.stringify(body), {
+      await analyticsKv.put(`interaction-${eventId}`, JSON.stringify(body), {
         expirationTtl: 86400,
       });
       return json({ success: true, eventId });
     } catch (error) {
-      return json({ error: String(error) }, { status: 400 });
+      return json({ success: false, error: String(error) });
     }
   });
 
   router.post('/api/analytics/performance', async (req: Request, env: Env) => {
     try {
       const body = (await (req as any).json?.()) || {};
+      const analyticsKv = (env as any).ANALYTICS_KV as KVNamespace | undefined;
+
+      if (!analyticsKv) {
+        return json({ success: true, eventId: null });
+      }
+
       const eventId = crypto.randomUUID();
-      await env.ANALYTICS_KV.put(`performance-${eventId}`, JSON.stringify(body), {
+      await analyticsKv.put(`performance-${eventId}`, JSON.stringify(body), {
         expirationTtl: 86400,
       });
       return json({ success: true, eventId });
     } catch (error) {
-      return json({ error: String(error) }, { status: 400 });
+      return json({ success: false, error: String(error) });
     }
   });
 

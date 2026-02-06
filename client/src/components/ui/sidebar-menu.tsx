@@ -163,6 +163,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }
         case '/bookmarks': {
           // Require authentication for bookmarks; no anonymous fallback
+          if (!user) break;
           await apiRequest('/api/bookmarks').catch(() => {});
           break;
         }
@@ -178,7 +179,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
       }
     } catch {}
-  }, []);
+  }, [user]);
 
   const prefetchRouteAsync = React.useCallback((href: string): Promise<any> => {
     try {
@@ -298,6 +299,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         }
         case '/bookmarks': {
           // Require authentication for bookmarks; no anonymous fallback
+          if (!user) break;
           await apiRequest('/api/bookmarks').catch(() => {});
           break;
         }
@@ -313,7 +315,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           break;
       }
     } catch {}
-  }, []);
+  }, [user]);
 
   const prefetchRoute = React.useCallback((href: string) => {
     try {

@@ -1160,7 +1160,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
-          aria-hidden="true"
           className="border-b border-border/20"
           style={{ 
             width: '100%', 
@@ -1179,7 +1178,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         >
           {/* Full-bleed separator above story title (thin, end-to-end) */}
           <div
-            aria-hidden="true"
             className="border-b border-border/20"
             style={{ 
               width: '100%', 

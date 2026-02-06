@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { BookOpen, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 type SavedPosition = {
   scrollY: number;
@@ -40,6 +41,7 @@ function sanitize(html: string) {
 export default function ContinueReadingBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   const latest = useMemo(() => {
     try {
@@ -136,7 +138,7 @@ export default function ContinueReadingBanner() {
   // Load server reading progress if available for authenticated users
   const { data: serverProgress } = useQuery({
     queryKey: ["/api/reading-progress", slug],
-    enabled: Boolean(slug) && !dismissed,
+    enabled: Boolean(slug) && !dismissed && isAuthenticated,
     queryFn: async () => {
       if (!slug) return null;
       try {
