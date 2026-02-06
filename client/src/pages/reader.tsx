@@ -894,11 +894,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           }
         }
         
-        /* Only show pointer cursor on story content */
-        .reader-page .story-content {
-          cursor: pointer;
-        }
-        
         /* Set default cursor for everything */
         .reader-page {
           cursor: default;
@@ -911,11 +906,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         .reader-page [role="button"],
         .reader-page input[type="button"],
         .reader-page input[type="submit"] {
-          cursor: pointer;
-        }
-        
-        /* Keep the story content cursor as pointer to indicate clickable for distraction-free mode */
-        .reader-page .story-content {
           cursor: pointer;
         }
         
@@ -1709,23 +1699,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
             <div 
-              className="story-content cursor-pointer text-justify"
+              className="story-content text-justify"
               ref={contentRef}
-              onClick={() => {
-                if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                  toggleUIWithDebug('contentClick');
-                }
-              }}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                  e.preventDefault();
-                  toggleUIWithDebug('contentKey');
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Toggle user interface visibility"
-              aria-pressed={isUIHidden}
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
