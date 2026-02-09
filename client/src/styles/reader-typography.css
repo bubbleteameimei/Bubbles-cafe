@@ -11,6 +11,11 @@
   letter-spacing: 0.01em;
   overflow-wrap: break-word;
   word-wrap: break-word;
+  /* Ensure story content itself is not a scroll container; let the page scroll instead */
+  height: auto;
+  max-height: none;
+  overflow-y: visible;
+  overflow-x: visible;
 }
 
 /* Ensure images scale to container width and keep aspect ratio */
