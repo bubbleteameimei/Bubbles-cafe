@@ -24,9 +24,15 @@ const RouteScrollManager: React.FC = () => {
     };
   }, []);
 
-  // On route changes, reset scroll unless it was a popstate or a hash navigation
+  // On route changes, reset scroll unless it was a popstate, a hash navigation,
+  // or a reader route (reader manages its own scroll behaviour).
   useEffect(() => {
     try {
+      const path = location || '';
+
+      // Skip when navigating within the Reader; avoid extra scroll jumps there
+      if (path.startsWith('/reader')) return;
+
       // Skip when navigating to an in-page anchor; handled by initSmoothScroll
       const hasHash = typeof window !== 'undefined' ? !!window.location.hash : false;
       if (hasHash) return;
