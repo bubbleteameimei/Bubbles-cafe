@@ -11,8 +11,7 @@
 /* Fix double scrollbar issue */
 html, body {
   overflow-x: hidden;
-  /* Keep layout stable when scrollbars appear/disappear (Chrome/Edge/Firefox) */
-  scrollbar-gutter: stable both-edges;
+  /* Removed scrollbar-gutter to avoid right-edge gutter stripe on route transitions */
 }
 
 body {
