@@ -6,8 +6,8 @@ html, body, #root {
   min-width: 100% !important;
   max-width: 100% !important;
   overflow-x: hidden !important;
-  /* Always reserve vertical scrollbar space to prevent horizontal shifts */
-  overflow-y: scroll !important;
+  /* Let the browser manage vertical scrollbars naturally to avoid permanent gutter lines */
+  overflow-y: auto !important;
 }
 
 body > div#root,
