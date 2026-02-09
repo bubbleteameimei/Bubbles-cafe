@@ -186,27 +186,8 @@ body {
     background-color: hsl(var(--background));
   }
 
-  /* Minimal scrollbar style */
-  /* Consolidated scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px; /* Width of the scrollbar */
-    height: 8px; /* Height of the scrollbar for horizontal scrolling */
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent; /* Transparent track */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--foreground) / 0.30); /* Semi-transparent thumb color */
-    border-radius: 20px; /* Rounded corners for the thumb */
-    border: 2px solid transparent; /* Transparent border to allow track color to show through */
-    background-clip: content-box; /* Clip the background to the content box */
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent; /* Transparent scrollbar corner */
-  }
+  /* Minimal scrollbar style removed to avoid right-edge gutter stripe on some platforms.
+     Let the browser/OS handle scrollbars natively for a less jumpy experience. */
 
   /* Optimize for touch interactions */
   @media (hover: none) and (pointer: coarse) {
