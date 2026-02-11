@@ -16,6 +16,13 @@
   max-height: none;
   overflow-y: visible;
   overflow-x: visible;
+  /* Hide any transient inner scrollbars on story content itself; page remains scrollable */
+  scrollbar-width: none; /* Firefox */
+}
+
+.story-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Ensure images scale to container width and keep aspect ratio */
