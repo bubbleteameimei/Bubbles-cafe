@@ -478,8 +478,14 @@ div.sidebar-menu-container {
 /* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter) */
 body:has(main:has([data-reader-page])) {
   background-color: hsl(var(--background)) !important;
-  /* Let the browser manage vertical scrollbars on reader routes to avoid extra gutter/flash */
-  overflow-y: auto !important;
+  /* Keep reader route scrollable and hide visual scrollbars for a stable, distraction-free layout */
+  overflow-y: scroll !important;
+  scrollbar-width: none; /* Firefox */
+}
+
+body:has(main:has([data-reader-page]))::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Hide the footer on error pages */
