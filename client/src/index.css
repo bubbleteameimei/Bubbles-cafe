@@ -475,7 +475,9 @@ div.sidebar-menu-container {
    Keeping default prevents content height shrink/expand on dialog open/close, reducing layout shifts. */
 /* (Removed the reader-specific min-height: auto overrides) */
 
-/* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter) */
+/* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter).
+   Apply to both html and body because different browsers attach the root scrollbar to different elements. */
+html:has(main:has([data-reader-page])),
 body:has(main:has([data-reader-page])) {
   background-color: hsl(var(--background)) !important;
   /* Keep reader route scrollable and hide visual scrollbars for a stable, distraction-free layout */
@@ -483,6 +485,7 @@ body:has(main:has([data-reader-page])) {
   scrollbar-width: none; /* Firefox */
 }
 
+html:has(main:has([data-reader-page]))::-webkit-scrollbar,
 body:has(main:has([data-reader-page]))::-webkit-scrollbar {
   width: 0;
   height: 0;
