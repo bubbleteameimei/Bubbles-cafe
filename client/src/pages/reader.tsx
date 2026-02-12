@@ -702,7 +702,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  // Get current post: prefer fully-fetched content when available
+  // Get current post: prefer fully-fetched content
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
   if (!currentPost && routeSlug) {
@@ -717,17 +717,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     );
   }
 
-  // Prefer full post content for the reader view to avoid double layout shifts
-  const hasFullContent = !!currentPostFull && !!getRenderedText((currentPostFull as any).content || '').trim().length;
-  const basePostForContent: any = hasFullContent ? currentPostFull : posts[validCurrentIndex];
-
   // SEO values for this story
   const stripHtml = (s: string): string => (s ? s.replace(/<\/?[^>]+(>|$)/g, '').trim() : '');
   const titleText = stripHtml(getRenderedText(currentPost.title) || 'Story');
-  const rawContent = basePostForContent ? getRenderedText(basePostForContent.content) || '' : '';
+  const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
-  // Only treat content as ready when we either have full content or are not actively fetching it
-  const isContentReady = contentHtml.trim().length > 0 && (!isFetchingPost || hasFullContent);
+  const isContentReady = contentHtml.trim().length > 0;
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = (currentPost as any).createdAt || (currentPost as any).date || new Date().toISOString();
@@ -737,7 +732,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const keywords = detectThemes(rawContent);
   const ogImageFromContent = (() => {
     try {
-      const html = getRenderedText(basePostForContent?.content) || '';
+      const html = getRenderedText(currentPost.content) || '';
       const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
       if (match) {
         const url = match[1];
