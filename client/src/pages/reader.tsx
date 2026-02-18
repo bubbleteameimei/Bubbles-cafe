@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "rea
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
+import { Skeleton } from "@/components/ui/skeleton"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
 import useInlineCommenting from "@/hooks/useInlineCommenting";
@@ -666,6 +667,33 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     enabled: Boolean(currentSlugToUse),
   });
 
+  // Prefetch adjacent stories so Next/Previous navigation doesn't go through a "short content" phase
+  // (which makes the scrollbar appear/disappear briefly on larger screens).
+  useEffect(() => {
+    if (!Array.isArray(posts) || posts.length === 0) return;
+
+    const candidates = [validCurrentIndex - 1, validCurrentIndex + 1];
+
+    for (const idx of candidates) {
+      const p = posts[idx] as any;
+      const s = p?.slug;
+      if (!s) continue;
+
+      const slugStr = String(s);
+      void queryClient.prefetchQuery({
+        queryKey: ['posts', 'reader', 'post', slugStr],
+        queryFn: async () => {
+          try {
+            return await getJson<Post>(`/api/posts/slug/${encodeURIComponent(slugStr)}`);
+          } catch {
+            return null as any;
+          }
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [posts, validCurrentIndex, queryClient]);
+
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return a loader if no data yet
   const hasAnyPosts = Array.isArray(posts) && posts.length > 0;
@@ -723,6 +751,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
   const isContentReady = contentHtml.trim().length > 0;
+
+  useEffect(() => {
+    if (!isContentReady) return;
+    const el = (contentRef as any)?.current as HTMLElement | null;
+    if (!el) return;
+    const h = el.getBoundingClientRect().height;
+    if (h > 0) setContentHoldHeight(h);
+  }, [isContentReady, contentHtml, contentRef]);
+
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = (currentPost as any).createdAt || (currentPost as any).date || new Date().toISOString();
@@ -1700,16 +1737,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div 
               className="story-content text-justify"
               ref={contentRef}
+              style={!isContentReady ? { minHeight: contentHoldHeight ? `${contentHoldHeight}px` : '60vh' } : undefined}
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
-                isFetchingPost ? (
-                  <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                    Loading story…
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                )
+                <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-11/12" />
+                  <Skeleton className="h-4 w-10/12" />
+                  <Skeleton className="h-4 w-9/12" />
+                </div>
               ) : null}
             </div>
             {/* Inline comment dialog (selection-based) */}

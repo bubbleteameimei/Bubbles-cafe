@@ -18,6 +18,12 @@ body {
   overflow-y: auto;
 }
 
+/* Reader: keep vertical scrollbar stable between stories to avoid a brief scrollbar flash on large screens */
+html:has([data-reader-page]),
+body:has([data-reader-page]) {
+  overflow-y: scroll !important;
+}
+
 /* Screen reader only utility */
 .sr-only {
   position: absolute;
