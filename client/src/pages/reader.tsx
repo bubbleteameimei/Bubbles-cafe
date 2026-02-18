@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
 import useInlineCommenting from "@/hooks/useInlineCommenting";
@@ -24,7 +24,6 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import type { FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES, getExcerpt } from "@/lib/content-analysis";
 import { fetchWordPressPosts, type WordPressPost } from "@/lib/wordpress-api";
-import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { useAuth } from "@/hooks/use-auth";
 import RouteLoader from "@/components/ui/RouteLoader";
@@ -32,6 +31,7 @@ import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import SimplifiedErrorPage from "@/components/errors/SimplifiedErrorPage";
 import { useToast } from "@/hooks/use-toast";
 import { apiJson, getJson } from "@/lib/api";
+import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 import { SupportWritingCard } from "@/components/SupportWritingCard";
 import { resolveAuthorId } from "@/lib/reader-navigation";
@@ -66,7 +66,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getBadgeTint } from "@/lib/theme-badges";
 import { useThemeCategories } from "@/hooks/use-theme-categories";
 
-import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 import { useReaderScrollProgress } from "@/hooks/reader/use-reader-scroll-progress";
 import { useReaderFonts } from "@/hooks/reader/use-reader-fonts";
 import { useReaderHorrorOverlay } from "@/hooks/reader/use-reader-horror-overlay";
@@ -74,47 +73,14 @@ import { useReaderDebugInstrumentation } from "@/hooks/reader/use-reader-debug";
 import { useReaderProgressPersistence } from "@/hooks/reader/use-reader-progress-persistence";
 import { useReaderAnalytics } from "@/hooks/reader/use-reader-analytics";
 
-// Lazy-mount comment section when near viewport to reduce initial load cost
-function LazyCommentSection({ postId }: { postId: number }): JSX.Element {
-  const [visible, setVisible] = useState(false);
-  const anchorRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let observer: IntersectionObserver | null = null;
-    try {
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              setVisible(true);
-              // Disconnect once visible to avoid re-observing
-              try {
-                observer?.disconnect();
-              } catch {}
-              break;
-            }
-          }
-        },
-        { root: null, rootMargin: '800px', threshold: 0.01 },
-      );
-      if (anchorRef.current) observer.observe(anchorRef.current);
-    } catch {}
-    return () => {
-      try {
-        observer?.disconnect();
-      } catch {}
-    };
-  }, []);
-
-  return <div ref={anchorRef}>{visible ? <SimpleCommentSection postId={postId} /> : null}</div>;
-}
+const ReaderSocialIcons = lazy(() => import("@/components/reader/ReaderSocialIcons"));
 
 // Native HTML sanitization function (now powered by DOMPurify with extra hardening)
 const sanitizeHtmlContent = (html: string): string => {
   try {
     return sanitizeHtml(html);
   } catch (error) {
-    console.error('[Reader] Error sanitizing HTML:', error);
+    console.error("[Reader] Error sanitizing HTML:", error);
     return html;
   }
 };
@@ -468,11 +434,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return Array.isArray(dataPosts) && dataPosts.length > 0;
   }, [postsData]);
 
-  // Enable WordPress fallback when Supabase-backed API is unavailable or returns no posts
-  const enableWordPressFallback =
-    !isCommunityContent &&
-    !isLoadingSupabase &&
-    (!hasSupabasePosts || !!supabaseError);
+  // Always enable WordPress fetch for non-community stories once initial Supabase load completes.
+  // This ensures older WordPress-only stories remain available even when Supabase has only a
+  // partial subset of posts (e.g., a couple of synced stories).
+  const enableWordPressFallback = !isCommunityContent && !isLoadingSupabase;
 
   const {
     data: wpPostsData,
@@ -489,7 +454,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         try {
           const result = await fetchWordPressPosts({
             page: 1,
-            perPage: 100,
+            // Limit WordPress fallback to a smaller page for faster initial loads while
+            // still providing a rich fallback list when Supabase is unavailable.
+            perPage: 40,
             includeContent: true,
             maxRetries: 1,
           });
@@ -546,61 +513,91 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
   );
 
-  // Memoised posts array for consistent usage across hooks (Supabase first, then WordPress fallback)
+  // Memoised posts array for consistent usage across hooks.
+  // For community stories we rely solely on Supabase; for regular stories we
+  // merge Supabase and WordPress posts so that legacy WordPress-only stories
+  // remain navigable even when Supabase has only a subset of posts.
   const posts = useMemo<Post[]>(() => {
     const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     const supabasePosts = Array.isArray(dataPosts) ? dataPosts : [];
-    if (supabasePosts.length > 0 || isCommunityContent) {
+
+    if (isCommunityContent) {
       return supabasePosts;
     }
+
     const wpDataPosts: Post[] | undefined = (wpPostsData as any)?.posts;
     const wordpressPosts = Array.isArray(wpDataPosts) ? wpDataPosts : [];
-    return wordpressPosts.length > 0 ? wordpressPosts : supabasePosts;
+
+    if (!supabasePosts.length && !wordpressPosts.length) {
+      return [];
+    }
+
+    const merged: Post[] = [...supabasePosts];
+    const seenSlugs = new Set(
+      supabasePosts
+        .map((p: any) => String(p?.slug || '').toLowerCase())
+        .filter((s) => !!s),
+    );
+
+    for (const wp of wordpressPosts) {
+      const slug = String((wp as any)?.slug || '').toLowerCase();
+      if (slug && !seenSlugs.has(slug)) {
+        merged.push(wp);
+      }
+    }
+
+    // Sort by createdAt/date desc so newest stories appear first
+    merged.sort((a: any, b: any) => {
+      const da = new Date(a?.createdAt || a?.date || 0).getTime();
+      const db = new Date(b?.createdAt || b?.date || 0).getTime();
+      return db - da;
+    });
+
+    return merged;
   }, [postsData, wpPostsData, isCommunityContent]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
-    const dataPosts: Post[] | undefined = (postsData as any)?.posts;
-    if (Array.isArray(dataPosts) && dataPosts.length > 0) {
-      // If we have a slug in the route, align the index to that post
-      if (routeSlug) {
-        const bySlug = dataPosts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
-        if (bySlug >= 0 && bySlug !== currentIndex) {
-          setCurrentIndex(bySlug);
+    if (!Array.isArray(posts) || posts.length === 0) {
+      return;
+    }
+
+    // If we have a slug in the route, align the index to that post in the merged list
+    if (routeSlug) {
+      const bySlug = posts.findIndex((p: any) => String(p.slug || '') === String(routeSlug));
+      if (bySlug >= 0 && bySlug !== currentIndex) {
+        setCurrentIndex(bySlug);
+        try {
           sessionStorage.setItem('selectedStoryIndex', String(bySlug));
-        }
-      }
-
-      // Ensure currentIndex is within bounds
-      if (currentIndex >= dataPosts.length) {
-        setCurrentIndex(0);
-        sessionStorage.setItem('selectedStoryIndex', '0');
-      } else {
-        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-      }
-
-      // Log current post details
-      const currentPost = dataPosts[currentIndex];
-
-      // Now that we have the post data, update our slug for auto-saving
-      if (currentPost) {
-        const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
-        setAutoSaveSlug(newSlug);
+        } catch {}
       }
     }
-  }, [currentIndex, postsData, routeSlug]);
+
+    // Ensure currentIndex is within bounds of the merged posts list
+    if (currentIndex >= posts.length) {
+      setCurrentIndex(0);
+      try {
+        sessionStorage.setItem('selectedStoryIndex', '0');
+      } catch {}
+    } else {
+      try {
+        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+      } catch {}
+    }
+
+    const current = posts[currentIndex];
+    if (current) {
+      const newSlug = routeSlug || (current.slug || `post-${current.id}`);
+      setAutoSaveSlug(newSlug);
+    }
+  }, [currentIndex, posts, routeSlug]);
 
   useEffect(() => {
-    if (import.meta.env?.DEV) {
-      console.log('[Reader] Verifying social icons:', {
-        twitter: !!FaTwitter,
-        wordpress: !!FaWordpress,
-        instagram: !!FaInstagram
-      });
-    }
     // Sync theme definition overrides from server to ensure global labels/icons are up to date
     (async () => {
-      try { await syncThemeDefinitionOverridesFromServer(); } catch {}
+      try {
+        await syncThemeDefinitionOverridesFromServer();
+      } catch {}
     })();
   }, []);
 
@@ -669,6 +666,33 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     enabled: Boolean(currentSlugToUse),
   });
 
+  // Prefetch adjacent stories so Next/Previous navigation doesn't go through a "short content" phase
+  // (which makes the scrollbar appear/disappear briefly on larger screens).
+  useEffect(() => {
+    if (!Array.isArray(posts) || posts.length === 0) return;
+
+    const candidates = [validCurrentIndex - 1, validCurrentIndex + 1];
+
+    for (const idx of candidates) {
+      const p = posts[idx] as any;
+      const s = p?.slug;
+      if (!s) continue;
+
+      const slugStr = String(s);
+      void queryClient.prefetchQuery({
+        queryKey: ['posts', 'reader', 'post', slugStr],
+        queryFn: async () => {
+          try {
+            return await getJson<Post>(`/api/posts/slug/${encodeURIComponent(slugStr)}`);
+          } catch {
+            return null as any;
+          }
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [posts, validCurrentIndex, queryClient]);
+
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return a loader if no data yet
   const hasAnyPosts = Array.isArray(posts) && posts.length > 0;
@@ -726,6 +750,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
   const isContentReady = contentHtml.trim().length > 0;
+
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
   const published = (currentPost as any).createdAt || (currentPost as any).date || new Date().toISOString();
@@ -782,7 +807,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -797,7 +822,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -812,7 +837,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      // Do not force scroll position; let the browser preserve current position.
     }
   };
   
@@ -897,15 +922,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           }
         }
         
-        /* Only show pointer cursor on story content */
-        .reader-page .story-content {
-          cursor: pointer;
-        }
-        
         /* Set default cursor for everything */
         .reader-page {
           cursor: default;
-          scrollbar-gutter: stable;
         }
         
         /* Set pointer cursor only for interactive elements */
@@ -914,11 +933,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         .reader-page [role="button"],
         .reader-page input[type="button"],
         .reader-page input[type="submit"] {
-          cursor: pointer;
-        }
-        
-        /* Keep the story content cursor as pointer to indicate clickable for distraction-free mode */
-        .reader-page .story-content {
           cursor: pointer;
         }
         
@@ -1148,7 +1162,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
         {/* Full-bleed separator under controls row (thin, end-to-end) */}
         <div
-          aria-hidden="true"
           className="border-b border-border/20"
           style={{ 
             width: '100%', 
@@ -1167,7 +1180,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         >
           {/* Full-bleed separator above story title (thin, end-to-end) */}
           <div
-            aria-hidden="true"
             className="border-b border-border/20"
             style={{ 
               width: '100%', 
@@ -1410,10 +1422,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 
                 {/* Date indicator */}
                 <span className="text-xs px-2 py-1 bg-muted/80 border border-border/50 rounded-md whitespace-nowrap">
-                  {currentPost.date ? format(new Date(currentPost.date), 'MMM d, yyyy') : 'No date'}
+                  {(() => {
+                    const rawDate = (currentPost as any)?.date || (currentPost as any)?.createdAt || (currentPost as any)?.created_at;
+                    if (!rawDate) return 'No date';
+                    const d = new Date(rawDate);
+                    if (Number.isNaN(d.getTime())) return 'No date';
+                    return format(d, 'MMM d, yyyy');
+                  })()}
                 </span>
-                
-                <span className="text-muted-foreground">•</span>
                 
                 {/* Estimated reading time */}
                 <span className="text-xs px-2 py-1 bg-accent/50 rounded-md whitespace-nowrap">
@@ -1710,33 +1726,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
             <div 
-              className="story-content cursor-pointer text-justify"
+              className="story-content text-justify"
               ref={contentRef}
-              onClick={() => {
-                if (!fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                  toggleUIWithDebug('contentClick');
-                }
-              }}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !fontDialogOpen && !contentsDialogOpen && !showDeleteDialog && !showHorrorMessage) {
-                  e.preventDefault();
-                  toggleUIWithDebug('contentKey');
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Toggle user interface visibility"
-              aria-pressed={isUIHidden}
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
-                isFetchingPost ? (
-                  <div aria-busy="true" aria-live="polite" className="text-sm text-muted-foreground py-2">
-                    Loading story…
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
-                )
+                <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
               ) : null}
             </div>
             {/* Inline comment dialog (selection-based) */}
@@ -1852,53 +1847,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
                   {/* Social Icons */}
                   <div className="flex gap-3">
-                    {/* Twitter */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        window.open('https://twitter.com/Bubbleteameimei', '_blank', 'noopener,noreferrer');
-                      }}
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <FaTwitter className="h-4 w-4" />
-                      <span className="sr-only">Follow on Twitter</span>
-                    </Button>
-                    
-                    {/* WordPress */}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        window.open('https://bubbleteameimei.wordpress.com/', '_blank', 'noopener,noreferrer');
-                      }}
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <FaWordpress className="h-4 w-4" />
-                      <span className="sr-only">Follow on WordPress</span>
-                    </Button>
-                    
-                    {/* Instagram */}
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <a href="https://www.instagram.com/Bubbleteameimei/" target="__blank" rel="noreferrer">
-                        <FaInstagram className="h-4 w-4" />
-                        <span className="sr-only">Follow on Instagram</span>
-                      </a>
-                    </Button>
+                    <Suspense fallback={null}>
+                      <ReaderSocialIcons />
+                    </Suspense>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Comment section (lazy-mounted near viewport) */}
+          {/* Comment section */}
           <div className="mt-8">
-            <LazyCommentSection postId={currentPost.id} />
+            <SimpleCommentSection postId={currentPost.id} />
           </div>
 
           {/* Social sharing and support section */}

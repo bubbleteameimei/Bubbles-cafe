@@ -11,12 +11,17 @@
 /* Fix double scrollbar issue */
 html, body {
   overflow-x: hidden;
-  /* Keep layout stable when scrollbars appear/disappear (Chrome/Edge/Firefox) */
-  scrollbar-gutter: stable both-edges;
+  /* Removed scrollbar-gutter to avoid right-edge gutter stripe on route transitions */
 }
 
 body {
   overflow-y: auto;
+}
+
+/* Reader: keep vertical scrollbar stable between stories to avoid a brief scrollbar flash on large screens */
+html:has([data-reader-page]),
+body:has([data-reader-page]) {
+  overflow-y: scroll !important;
 }
 
 /* Screen reader only utility */
@@ -187,27 +192,8 @@ body {
     background-color: hsl(var(--background));
   }
 
-  /* Minimal scrollbar style */
-  /* Consolidated scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px; /* Width of the scrollbar */
-    height: 8px; /* Height of the scrollbar for horizontal scrolling */
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent; /* Transparent track */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--foreground) / 0.30); /* Semi-transparent thumb color */
-    border-radius: 20px; /* Rounded corners for the thumb */
-    border: 2px solid transparent; /* Transparent border to allow track color to show through */
-    background-clip: content-box; /* Clip the background to the content box */
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent; /* Transparent scrollbar corner */
-  }
+  /* Minimal scrollbar style removed to avoid right-edge gutter stripe on some platforms.
+     Let the browser/OS handle scrollbars natively for a less jumpy experience. */
 
   /* Optimize for touch interactions */
   @media (hover: none) and (pointer: coarse) {
@@ -495,12 +481,8 @@ div.sidebar-menu-container {
    Keeping default prevents content height shrink/expand on dialog open/close, reducing layout shifts. */
 /* (Removed the reader-specific min-height: auto overrides) */
 
-/* Keep reader route background stable and force scrollbar presence (Safari lacks scrollbar-gutter) */
-body:has(main:has([data-reader-page])) {
-  background-color: hsl(var(--background)) !important;
-  /* Always reserve vertical scrollbar space on reader routes to prevent width shifts on dialog open/close */
-  overflow-y: scroll !important;
-}
+/* Reader route: no special override for root scrollbars.
+   Let the browser manage scrollbars natively to avoid unexpected visual artifacts on large screens. */
 
 /* Hide the footer on error pages */
 body.error-page-active footer.site-footer {

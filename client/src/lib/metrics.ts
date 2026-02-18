@@ -7,9 +7,31 @@ import { recordPageView, recordInteraction } from '@/api/analytics';
 import { getApiBaseUrl } from '@/lib/asset-path';
 import { isCategoryAllowed } from '@/lib/cookie-manager';
 
+function analyticsDisabled(): boolean {
+  try {
+    const flag = (import.meta as any).env?.VITE_ENABLE_ANALYTICS;
+    if (flag === 'false') return true;
+
+    if (typeof window === 'undefined') return false;
+
+    const host = window.location.hostname || '';
+    const isPreviewHost =
+      /\.vercel\.app$/.test(host) ||
+      /\.vercel\.dev$/.test(host) ||
+      /\.repl\.co$/.test(host) ||
+      /\.replit\.dev$/.test(host) ||
+      /\.replit\.app$/.test(host);
+
+    return isPreviewHost;
+  } catch {
+    return false;
+  }
+}
+
 type ReportHandler = (metric: any) => void;
 
 function sendVitals(metric: any) {
+  if (analyticsDisabled()) return;
   try {
     const API_BASE = getApiBaseUrl();
     const url = API_BASE ? `${API_BASE}/api/analytics/vitals` : '/api/analytics/vitals';
@@ -31,6 +53,7 @@ function sendVitals(metric: any) {
 }
 
 export async function startWebVitals() {
+  if (analyticsDisabled()) return;
   try {
     // Only run if performance cookies are allowed
     if (!isCategoryAllowed('performance')) return;
@@ -42,12 +65,13 @@ export async function startWebVitals() {
     onLCP(report);
     onFCP(report);
     onTTFB(report);
-  } catch (e) {
+  } catch {
     // Silently ignore if web-vitals cannot be loaded
   }
 }
 
 export function trackPageView(path?: string) {
+  if (analyticsDisabled()) return;
   try {
     // Only record page views if analytics cookies are allowed
     if (!isCategoryAllowed('analytics')) return;
@@ -56,6 +80,7 @@ export function trackPageView(path?: string) {
 }
 
 export function trackInteraction(interactionType: string, details: Record<string, any> = {}) {
+  if (analyticsDisabled()) return;
   try {
     // Consider interactions as analytics
     if (!isCategoryAllowed('analytics')) return;
@@ -64,11 +89,14 @@ export function trackInteraction(interactionType: string, details: Record<string
 }
 
 export function sendPerformanceSummary() {
+  if (analyticsDisabled()) return;
   try {
     if (!isCategoryAllowed('performance')) return;
 
     // Use Navigation Timing if available
-    const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const nav = performance.getEntriesByType('navigation')[0] as
+      | PerformanceNavigationTiming
+      | undefined;
     const summary = nav
       ? {
           domContentLoaded: Math.max(0, nav.domContentLoadedEventEnd - nav.startTime),
@@ -90,7 +118,9 @@ export function sendPerformanceSummary() {
     };
 
     const API_BASE = getApiBaseUrl();
-    const url = API_BASE ? `${API_BASE}/api/analytics/performance` : '/api/analytics/performance';
+    const url = API_BASE
+      ? `${API_BASE}/api/analytics/performance`
+      : '/api/analytics/performance';
     fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -102,11 +132,14 @@ export function sendPerformanceSummary() {
 }
 
 export function schedulePerformanceSummary() {
+  if (analyticsDisabled()) return;
   try {
     if (!isCategoryAllowed('performance')) return;
 
     const schedule = (cb: () => void) =>
-      (window as any).requestIdleCallback ? (window as any).requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 1000);
+      (window as any).requestIdleCallback
+        ? (window as any).requestIdleCallback(cb, { timeout: 2000 })
+        : setTimeout(cb, 1000);
     schedule(() => sendPerformanceSummary());
   } catch {}
 }
@@ -119,9 +152,13 @@ export function logOnce(id: string, message: string, extra?: Record<string, any>
   try {
     const key = `log_once_${id}`;
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) return;
-    try { sessionStorage.setItem(key, '1'); } catch {}
+    try {
+      sessionStorage.setItem(key, '1');
+    } catch {}
     // Console for immediate visibility
-    try { console.warn(`[once] ${message}`, extra || ''); } catch {}
+    try {
+      console.warn(`[once] ${message}`, extra || '');
+    } catch {}
     // Optional: send to server errors endpoint
     try {
       const API_BASE = getApiBaseUrl();

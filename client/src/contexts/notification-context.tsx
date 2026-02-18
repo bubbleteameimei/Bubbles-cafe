@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { CreepyTextGlitch } from '@/components/effects/CreepyTextGlitch';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'new-story' | 'cursed';
 
@@ -64,6 +65,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   });
 
   const [showCursedEffect, setShowCursedEffect] = useState(false);
+  const { isAuthenticated } = useAuth();
   
   useEffect(() => {
     if (lastNotificationOpen) {
@@ -83,8 +85,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const { toast } = useToast();
   
-  // Load server notifications when available
+  // Load server notifications only for authenticated users
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     (async () => {
       try {
         const res = await apiRequest<{ notifications: Array<{ id: number; type: string; title: string; message: string; metadata?: any; isRead: boolean; createdAt: string }> }>('/api/notifications');
@@ -118,7 +122,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
     })();
-  }, []);
+  }, [isAuthenticated]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
