@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/co</old_code><new_code>import { Badge } from "@/components/ui/badge"; 
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
-seReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
 import useInlineCommenting from "@/hooks/useInlineCommenting";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
