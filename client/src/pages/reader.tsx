@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; 
-import { Skeleton } from "@/components/ui/skeleton"; 
+import { Button } from "@/co</old_code><new_code>import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
+seReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import { useCopyProtection } from "@/hooks/useCopyProtection";
 import useInlineCommenting from "@/hooks/useInlineCommenting";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
@@ -751,14 +750,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const rawContent = getRenderedText(currentPost.content) || '';
   const contentHtml = sanitizeHtmlContent(rawContent);
   const isContentReady = contentHtml.trim().length > 0;
-
-  useEffect(() => {
-    if (!isContentReady) return;
-    const el = (contentRef as any)?.current as HTMLElement | null;
-    if (!el) return;
-    const h = el.getBoundingClientRect().height;
-    if (h > 0) setContentHoldHeight(h);
-  }, [isContentReady, contentHtml, contentRef]);
 
   const descriptionText = getExcerpt(rawContent, 160);
   const canonicalPath = routeSlug ? `/reader/${encodeURIComponent(routeSlug)}` : '/reader';
@@ -1737,17 +1728,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div 
               className="story-content text-justify"
               ref={contentRef}
-              style={!isContentReady ? { minHeight: contentHoldHeight ? `${contentHoldHeight}px` : '60vh' } : undefined}
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
-                <div aria-busy="true" aria-live="polite" className="space-y-3 py-2">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-11/12" />
-                  <Skeleton className="h-4 w-10/12" />
-                  <Skeleton className="h-4 w-9/12" />
-                </div>
+                <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
               ) : null}
             </div>
             {/* Inline comment dialog (selection-based) */}
