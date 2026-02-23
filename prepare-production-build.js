@@ -110,19 +110,21 @@ function copyProductionFiles(productionDir) {
   
   const filesToCopy = [
     'client',
-    'server',
+    // 'server' (legacy Express backend) intentionally excluded; production runs on the Worker API.
     'shared',
     'public',
     'dist',
     '.env.production',
-    'tsconfig.json'
+    'tsconfig.json',
+    'wrangler.toml',
+    'src'
   ];
   
   // Create necessary subdirectories
   ensureDirectoryExists(path.join(productionDir, 'client'));
-  ensureDirectoryExists(path.join(productionDir, 'server'));
   ensureDirectoryExists(path.join(productionDir, 'shared'));
   ensureDirectoryExists(path.join(productionDir, 'public'));
+  ensureDirectoryExists(path.join(productionDir, 'src'));
   
   // Copy files recursively
   filesToCopy.forEach(filePath => {

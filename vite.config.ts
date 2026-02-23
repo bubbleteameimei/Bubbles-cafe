@@ -99,10 +99,10 @@ export default defineConfig(({ mode }) => {
 		},
 		server: {
 			allowedHosts: true,
-			// Proxy API requests to the mock server during client-only development
+			// Proxy API requests to the local Cloudflare Worker (wrangler dev)
 			proxy: {
 				"/api": {
-					target: "http://localhost:4000",
+					target: "http://127.0.0.1:8787",
 					changeOrigin: true,
 					ws: false,
 				},
