@@ -4,7 +4,7 @@
 // and table-of-contents style views where only metadata is required.
 
 import type { Env } from './utils';
-import { json, proxyToBackend } from './utils';
+import { json, proxyToBackend, getBearerToken } from './utils';
 
 function stripHtml(value: any): string {
   try {
@@ -202,9 +202,10 @@ export function registerCompactPostsRoutes(router: any) {
         );
       }
 
+      const token = getBearerToken(req);
       const headers: Record<string, string> = {
         apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${token || env.SUPABASE_ANON_KEY}`,
         Accept: 'application/json',
         Prefer: 'count=exact',
       };

@@ -167,7 +167,8 @@ export async function fetchSupabasePosts(env: Env): Promise<any[]> {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
       Accept: 'application/json',
-
+    },
+  });
 
   if (!res.ok) {
     throw new Error('Failed to fetch posts from Supabase');
@@ -225,10 +226,11 @@ export function registerPostsRoutes(router: any) {
       postsUrl.searchParams.set('slug', `eq.${rawSlug}`);
       postsUrl.searchParams.set('limit', '1');
 
+      const token = getBearerToken(req);
       const res = await fetch(postsUrl.toString(), {
         headers: {
           apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${token || env.SUPABASE_ANON_KEY}`,
           Accept: 'application/json',
         },
       });
