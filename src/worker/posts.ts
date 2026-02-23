@@ -3,7 +3,14 @@
 // preserving existing behavior.
 
 import type { Env } from './utils';
-import { json, proxyToBackend, getJsonFromCache, setJsonCache, buildPostSummaries } from './utils';
+import {
+  json,
+  proxyToBackend,
+  getJsonFromCache,
+  setJsonCache,
+  buildPostSummaries,
+  getBearerToken,
+} from './utils';
 
 function stripHtml(value: any): string {
   try {
@@ -158,8 +165,7 @@ export async function fetchSupabasePosts(env: Env): Promise<any[]> {
   const res = await fetch(postsUrl.toString(), {
     headers: {
       apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-      Accept: 'application/json',
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANion/json',
     },
   });
 
@@ -756,6 +762,9 @@ export function registerPostsRoutes(router: any) {
       });
     } catch {
       return proxyToBackend(req, env);
+    }
+  });
+}oBackend(req, env);
     }
   });
 }
