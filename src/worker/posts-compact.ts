@@ -6,6 +6,90 @@
 import type { Env } from './utils';
 import { json, proxyToBackend } from './utils';
 
+function stripHtml(value: any): string {
+  try {
+    const str = String(value ?? '');
+    return str
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
+async function fetchWordpressCompactPosts(
+  env: Env,
+  opts: { page: number; limit: number; search?: string },
+): Promise<{ posts: any[]; hasMore: boolean } | null> {
+  try {
+    const wpBase =
+      env.WORDPRESS_API ||
+      'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+
+    const perPage = Math.max(1, Math.min(opts.limit, 100));
+    const page = Math.max(1, opts.page);
+
+    const params = new URLSearchParams();
+    params.set('per_page', String(perPage));
+    params.set('page', String(page));
+    if (opts.search) params.set('search', opts.search);
+
+    const res = await fetch(`${wpBase}?${params.toString()}`);
+    if (!res.ok) return null;
+
+    const rows = (await res.json().catch(() => [])) as any[];
+    if (!Array.isArray(rows)) return { posts: [], hasMore: false };
+
+    const posts = rows.map((post: any) => {
+      const title =
+        (post?.title && typeof post.title.rendered === 'string' ? post.title.rendered : '') ||
+        'Untitled Story';
+      const excerptHtml =
+        (post?.excerpt && typeof post.excerpt.rendered === 'string' ? post.excerpt.rendered : '') ||
+        '';
+      const contentHtml =
+        (post?.content && typeof post.content.rendered === 'string' ? post.content.rendered : '') ||
+        '';
+
+      const slug =
+        typeof post.slug === 'string' && post.slug.trim() ? post.slug.trim() : String(post.id || '');
+
+      const wordCount = stripHtml(contentHtml).split(/\s+/).filter(Boolean).length;
+      const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+      return {
+        id: typeof post.id === 'number' ? post.id : Date.now(),
+        title,
+        content: '',
+        slug,
+        excerpt: excerptHtml || null,
+        authorId: undefined,
+        isSecret: false,
+        isAdminPost: false,
+        matureContent: false,
+        themeCategory: null,
+        readingTimeMinutes,
+        likesCount: 0,
+        dislikesCount: 0,
+        baselineLikes: 0,
+        baselineDislikes: 0,
+        metadata: {
+          ...(post.meta || {}),
+          wordpressId: typeof post.id === 'number' ? post.id : undefined,
+          wordpressLink: typeof post.link === 'string' ? post.link : undefined,
+          source: 'wordpress_api',
+        },
+        createdAt: (post.date as string) || new Date().toISOString(),
+      };
+    });
+
+    return { posts, hasMore: rows.length === perPage };
+  } catch {
+    return null;
+  }
+}
+
 // Map a Supabase posts row to a compact API post shape.
 function mapCompactPostRow(row: any): any {
   const metadata = row && typeof row.metadata === 'object' && row.metadata !== null
@@ -51,6 +135,27 @@ export function registerCompactPostsRoutes(router: any) {
   // GET /api/posts/compact - lightweight posts listing for navigation/TOC
   router.get('/api/posts/compact', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      try {
+        const urlObj = new URL(req.url);
+        const search = urlObj.searchParams;
+        const pageParam = parseInt(search.get('page') || '1', 10);
+        const limitParam = parseInt(search.get('limit') || '100', 10);
+        const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+        const rawLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 100;
+        const limit = Math.max(1, Math.min(rawLimit, 100));
+        const searchTerm = (search.get('search') || '').trim();
+
+        const fallback = await fetchWordpressCompactPosts(env, { page, limit, search: searchTerm });
+        if (fallback) {
+          return json(
+            { posts: fallback.posts, hasMore: fallback.hasMore, source: 'wordpress_api' },
+            { headers: { 'Cache-Control': 'max-age=120, stale-while-revalidate=240' } },
+          );
+        }
+      } catch {
+        // fall through
+      }
+
       return proxyToBackend(req, env);
     }
 
