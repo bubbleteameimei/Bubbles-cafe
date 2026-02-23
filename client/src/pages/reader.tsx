@@ -437,7 +437,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Always enable WordPress fetch for non-community stories once initial Supabase load completes.
   // This ensures older WordPress-only stories remain available even when Supabase has only a
   // partial subset of posts (e.g., a couple of synced stories).
-  const enableWordPressFallback = !isCommunityContent && !isLoadingSupabase;
+  // Supabase is the canonical story source. Disable WordPress runtime fallback.
+  const enableWordPressFallback = false;
 
   const {
     data: wpPostsData,
@@ -514,9 +515,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   );
 
   // Memoised posts array for consistent usage across hooks.
-  // For community stories we rely solely on Supabase; for regular stories we
-  // merge Supabase and WordPress posts so that legacy WordPress-only stories
-  // remain navigable even when Supabase has only a subset of posts.
+  // Supabase is the canonical story source.
   const posts = useMemo<Post[]>(() => {
     const dataPosts: Post[] | undefined = (postsData as any)?.posts;
     const supabasePosts = Array.isArray(dataPosts) ? dataPosts : [];
@@ -525,36 +524,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       return supabasePosts;
     }
 
-    const wpDataPosts: Post[] | undefined = (wpPostsData as any)?.posts;
-    const wordpressPosts = Array.isArray(wpDataPosts) ? wpDataPosts : [];
-
-    if (!supabasePosts.length && !wordpressPosts.length) {
-      return [];
-    }
-
-    const merged: Post[] = [...supabasePosts];
-    const seenSlugs = new Set(
-      supabasePosts
-        .map((p: any) => String(p?.slug || '').toLowerCase())
-        .filter((s) => !!s),
-    );
-
-    for (const wp of wordpressPosts) {
-      const slug = String((wp as any)?.slug || '').toLowerCase();
-      if (slug && !seenSlugs.has(slug)) {
-        merged.push(wp);
-      }
-    }
-
-    // Sort by createdAt/date desc so newest stories appear first
-    merged.sort((a: any, b: any) => {
+    // Keep newest stories first
+    return [...supabasePosts].sort((a: any, b: any) => {
       const da = new Date(a?.createdAt || a?.date || 0).getTime();
       const db = new Date(b?.createdAt || b?.date || 0).getTime();
       return db - da;
     });
-
-    return merged;
-  }, [postsData, wpPostsData, isCommunityContent]);
+  }, [postsData, isCommunityContent]);
 
   // Validate and update currentIndex when posts data changes; align index by slug if present
   useEffect(() => {
@@ -703,7 +679,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  const listError = (supabaseError as Error | null) || (wordpressError as Error | null);
+  const listError = supabaseError as Error | null;) || (wordpressError as Error | null);
 
   if (!routeSlug && !hasAnyPosts && listError) {
     return (

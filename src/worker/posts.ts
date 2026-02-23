@@ -24,6 +24,20 @@ function stripHtml(value: any): string {
   }
 }
 
+function parseMetadata(raw: any): Record<string, any> {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
 async function fetchWordpressPostsList(
   env: Env,
   opts: { page: number; limit: number; search?: string; slug?: string },
@@ -101,23 +115,9 @@ async function fetchWordpressPostsList(
   }
 }
 
-// Map a Supabase posts row to the API post shape.
-// Copied from src/index.ts so it can be shared by posts route</old_code><new_code>export function mapSupabasePostRowToPost(row: any): any {
+export function mapSupabasePostRowToPost(row: any): any {
   const content = typeof row.content === 'string' ? row.content : '';
-  const metadata = (() => {
-    const raw = (row as any)?.metadata;
-    if (!raw) return {};
-    if (typeof raw === 'object') return raw;
-    if (typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  })();
+  const metadata = parseMetadata((row as any)?.metadata);
 
   const readingTimeMinutesValue =
     row.reading_time_minutes != null
@@ -158,8 +158,6 @@ async function fetchWordpressPostsList(
   };
 }
 
-// Fetch posts list from Supabase for listing/search contexts.
-// Copied from src/index.ts so it can be reused by search routes as well.
 export async function fetchSupabasePosts(env: Env): Promise<any[]> {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
     return [];
@@ -194,9 +192,7 @@ export async function fetchSupabasePosts(env: Env): Promise<any[]> {
   return rows.map(mapSupabasePostRowToPost);
 }
 
-// Register all posts-related routes (public reader endpoints) on the provided router instance.
 export function registerPostsRoutes(router: any) {
-  // GET /api/posts/slug/:slug - fetch full post by slug
   router.get('/api/posts/slug/:slug', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       try {
@@ -250,51 +246,10 @@ export function registerPostsRoutes(router: any) {
       if (res.ok) {
         const rows = (await res.json().catch(() => [])) as any[];
         if (Array.isArray(rows) && rows.length > 0) {
-          const row = rows[0] as any;
-          const content = typeof row.content === 'string' ? row.content : '';
-          const readingTimeMinutesValue =
-            row.reading_time_minutes != null
-              ? Number(row.reading_time_minutes)
-              : Math.max(
-                  1,
-                  Math.ceil(content.split(/\s+/).filter((w: string) => w.length > 0).length / 200),
-                );
-
-          const metadata =
-            row.metadata && typeof row.metadata === 'object' ? row.metadata : undefined;
-
-          const likesCount = Number(row.likes_count ?? row.likesCount ?? 0);
-          const dislikesCount = Number(row.dislikes_count ?? row.dislikesCount ?? 0);
-
-          const baselineLikes = Number(row.baseline_likes ?? row.baselineLikes ?? 0);
-          const baselineDislikes = Number(row.baseline_dislikes ?? row.baselineDislikes ?? 0);
-
-          const post = {
-            id: Number(row.id),
-            title: row.title ?? '',
-            content,
-            slug: row.slug ?? rawSlug,
-            excerpt: row.excerpt ?? null,
-            authorId: row.author_id != null ? Number(row.author_id) : undefined,
-            isSecret: Boolean(row.is_secret),
-            isAdminPost: null,
-            matureContent: Boolean(row.mature_content),
-            themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
-            readingTimeMinutes: readingTimeMinutesValue,
-            likesCount,
-            dislikesCount,
-            baselineLikes,
-            baselineDislikes,
-            metadata: metadata ?? {},
-            createdAt: row.created_at ?? new Date().toISOString(),
-          };
-
-          return json(post);
+          return json(mapSupabasePostRowToPost(rows[0]));
         }
       }
 
-      // Supabase has no matching row; fall back to WordPress posts so that
-      // legacy stories remain readable without returning a 404.
       try {
         const wpBase =
           env.WORDPRESS_API ||
@@ -324,10 +279,7 @@ export function registerPostsRoutes(router: any) {
               typeof post.slug === 'string' && post.slug.trim() ? post.slug : rawSlug;
             const createdAt = (post.date as string) || new Date().toISOString();
 
-            const wordCount = contentHtml
-              .replace(/<[^>]*>/g, ' ')
-              .split(/\s+/)
-              .filter(Boolean).length;
+            const wordCount = stripHtml(contentHtml).split(/\s+/).filter(Boolean).length;
             const readingTimeMinutesValue = Math.max(1, Math.ceil(wordCount / 200));
 
             const metadata: any = {
@@ -337,7 +289,7 @@ export function registerPostsRoutes(router: any) {
               source: 'wordpress_api',
             };
 
-            const fallbackPost = {
+            return json({
               id: typeof post.id === 'number' ? post.id : Date.now(),
               title,
               content: contentHtml,
@@ -355,13 +307,11 @@ export function registerPostsRoutes(router: any) {
               baselineDislikes: 0,
               metadata,
               createdAt,
-            };
-
-            return json(fallbackPost);
+            });
           }
         }
       } catch {
-        // Ignore WordPress fallback errors; we'll fall through to a 404.
+        // ignore
       }
 
       return json({ error: 'Post not found' }, { status: 404 });
@@ -370,7 +320,6 @@ export function registerPostsRoutes(router: any) {
     }
   });
 
-  // GET /api/posts/:id/summary - single post summary by external id
   router.get('/api/posts/:id/summary', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return proxyToBackend(req, env);
@@ -379,7 +328,6 @@ export function registerPostsRoutes(router: any) {
     try {
       const urlObj = new URL(req.url);
       const segments = urlObj.pathname.split('/');
-      // .../api/posts/:id/summary -> second to last segment is id
       const idSegment = segments.length >= 2 ? segments[segments.length - 2] : '';
       const rawId = parseInt(decodeURIComponent(idSegment || ''), 10);
       if (!Number.isFinite(rawId) || rawId <= 0) {
@@ -397,7 +345,6 @@ export function registerPostsRoutes(router: any) {
     }
   });
 
-  // GET /api/posts/summary?ids=1,2,3 - batch summaries by external ids
   router.get('/api/posts/summary', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return proxyToBackend(req, env);
@@ -425,40 +372,8 @@ export function registerPostsRoutes(router: any) {
     }
   });
 
-  // GET /api/posts - posts listing with optional cursor pagination and caching
   router.get('/api/posts', async (req: Request, env: Env) => {
-    // If Supabase isn't configured, fall back to WordPress so the site still has substance.
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-      try {
-        const urlObj = new URL(req.url);
-        const search = urlObj.searchParams;
-        const pageParam = parseInt(search.get('page') || '1', 10);
-        const limitParam = parseInt(search.get('limit') || '16', 10);
-        const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-        const rawLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
-        const limit = Math.max(1, Math.min(rawLimit, 100));
-        const searchTerm = (search.get('search') || '').trim();
-
-        const fallback = await fetchWordpressPostsList(env, { page, limit, search: searchTerm });
-        if (fallback) {
-          return json(
-            {
-              posts: fallback.posts,
-              hasMore: fallback.hasMore,
-              nextCursor: null,
-              source: 'wordpress_api',
-            },
-            {
-              headers: {
-                'Cache-Control': 'max-age=120, stale-while-revalidate=240',
-              },
-            },
-          );
-        }
-      } catch {
-        // fall through to legacy proxy handler
-      }
-
       return proxyToBackend(req, env);
     }
 
@@ -535,9 +450,10 @@ export function registerPostsRoutes(router: any) {
         );
       }
 
+      const token = getBearerToken(req);
       const headers: Record<string, string> = {
         apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${token || env.SUPABASE_ANON_KEY}`,
         Accept: 'application/json',
         Prefer: 'count=exact',
       };
@@ -550,33 +466,6 @@ export function registerPostsRoutes(router: any) {
 
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
-        // If Supabase is configured but empty (or RLS filters everything), fall back to WordPress
-        // so the site still has content.
-        try {
-          const wpFallback = await fetchWordpressPostsList(env, {
-            page,
-            limit,
-            search: searchValue || undefined,
-          });
-          if (wpFallback && wpFallback.posts.length > 0) {
-            return json(
-              {
-                posts: wpFallback.posts,
-                hasMore: wpFallback.hasMore,
-                nextCursor: null,
-                source: 'wordpress_api',
-              },
-              {
-                headers: {
-                  'Cache-Control': 'max-age=120, stale-while-revalidate=240',
-                },
-              },
-            );
-          }
-        } catch {
-          // ignore and return empty
-        }
-
         const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
         if (isFirstPageDefaultFeed && cacheKey) {
           await setJsonCache(env, cacheKey, emptyPayload, 300);
@@ -642,7 +531,6 @@ export function registerPostsRoutes(router: any) {
     }
   });
 
-  // GET /api/posts/community - community posts listing
   router.get('/api/posts/community', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return proxyToBackend(req, env);
@@ -688,7 +576,6 @@ export function registerPostsRoutes(router: any) {
         }
       }
 
-      // Restrict to community posts (metadata.isCommunityPost === true)
       postsUrl.searchParams.set('metadata->>isCommunityPost', 'eq.true');
 
       if (category) {
@@ -704,9 +591,10 @@ export function registerPostsRoutes(router: any) {
         );
       }
 
+      const token = getBearerToken(req);
       const headers: Record<string, string> = {
         apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${token || env.SUPABASE_ANON_KEY}`,
         Accept: 'application/json',
         Prefer: 'count=exact',
       };
@@ -776,9 +664,6 @@ export function registerPostsRoutes(router: any) {
       });
     } catch {
       return proxyToBackend(req, env);
-    }
-  });
-}oBackend(req, env);
     }
   });
 }
