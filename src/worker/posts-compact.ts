@@ -92,9 +92,20 @@ async function fetchWordpressCompactPosts(
 
 // Map a Supabase posts row to a compact API post shape.
 function mapCompactPostRow(row: any): any {
-  const metadata = row && typeof row.metadata === 'object' && row.metadata !== null
-    ? (row.metadata as any)
-    : {};
+  const metadata = (() => {
+    const raw = (row as any)?.metadata;
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  })();
 
   const likesCount = Number(row.likes_count ?? row.likesCount ?? 0);
   const dislikesCount = Number(row.dislikes_count ?? row.dislikesCount ?? 0);

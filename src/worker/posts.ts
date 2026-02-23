@@ -102,10 +102,22 @@ async function fetchWordpressPostsList(
 }
 
 // Map a Supabase posts row to the API post shape.
-// Copied from src/index.ts so it can be shared by posts routes and other modules.
-export function mapSupabasePostRowToPost(row: any): any {
+// Copied from src/index.ts so it can be shared by posts route</old_code><new_code>export function mapSupabasePostRowToPost(row: any): any {
   const content = typeof row.content === 'string' ? row.content : '';
-  const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+  const metadata = (() => {
+    const raw = (row as any)?.metadata;
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  })();
 
   const readingTimeMinutesValue =
     row.reading_time_minutes != null
