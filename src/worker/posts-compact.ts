@@ -225,6 +225,23 @@ export function registerCompactPostsRoutes(router: any) {
 
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
+        // If Supabase is configured but returns no rows, fall back to WordPress so the index isn't empty.
+        try {
+          const wpFallback = await fetchWordpressCompactPosts(env, {
+            page,
+            limit: Math.min(limit, 100),
+            search: searchValue || undefined,
+          });
+          if (wpFallback && wpFallback.posts.length > 0) {
+            return json(
+              { posts: wpFallback.posts, hasMore: wpFallback.hasMore, source: 'wordpress_api' },
+              { headers: { 'Cache-Control': 'max-age=120, stale-while-revalidate=240' } },
+            );
+          }
+        } catch {
+          // ignore
+        }
+
         return json(
           { posts: [], hasMore: false },
           {

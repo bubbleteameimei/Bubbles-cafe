@@ -530,6 +530,33 @@ export function registerPostsRoutes(router: any) {
 
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
+        // If Supabase is configured but empty (or RLS filters everything), fall back to WordPress
+        // so the site still has content.
+        try {
+          const wpFallback = await fetchWordpressPostsList(env, {
+            page,
+            limit,
+            search: searchValue || undefined,
+          });
+          if (wpFallback && wpFallback.posts.length > 0) {
+            return json(
+              {
+                posts: wpFallback.posts,
+                hasMore: wpFallback.hasMore,
+                nextCursor: null,
+                source: 'wordpress_api',
+              },
+              {
+                headers: {
+                  'Cache-Control': 'max-age=120, stale-while-revalidate=240',
+                },
+              },
+            );
+          }
+        } catch {
+          // ignore and return empty
+        }
+
         const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
         if (isFirstPageDefaultFeed && cacheKey) {
           await setJsonCache(env, cacheKey, emptyPayload, 300);

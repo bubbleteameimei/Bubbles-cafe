@@ -5,10 +5,9 @@ import { format } from 'date-fns';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
-import { fetchWordPressPosts, fetchWordPressPostBySlug, type WordPressPost } from "@/lib/wordpress-api";
-import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt, extractExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { getJson } from "@/lib/api";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
@@ -36,7 +35,6 @@ export default function Home() {
 
     img.onload = () => {
       if (cancelled) return;
-      console.log("[Home] Using homepage background image:", src);
       body.style.backgroundImage = `url(${src})`;
       body.style.backgroundSize = "cover";
       body.style.backgroundPosition = "center top";
@@ -96,7 +94,7 @@ export default function Home() {
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      return fetchWordPressPosts({ page: 1, perPage: 1, includeContent: false });
+      return getJson<{ posts: any[]; hasMore?: boolean }>("/api/posts?limit=1&includeContent=true");
     },
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -142,17 +140,13 @@ export default function Home() {
   // Use our ApiLoader component to handle global loading state
   const posts = postsResponse?.posts || [];
 
-  // Background enrich: fetch full content for engaging excerpt when missing
-  const [fullPost, setFullPost] = useState<WordPressPost | null>(null);
-  useEffect(() => {
-    let canceled = false;
-    const latest = postsResponse?.posts?.[0];
-    if (latest) {
-      const missing = !latest?.content?.rendered || latest?.content?.rendered === 'Content unavailable';
-      if (missing) {
-        (async () => {
-          try {
-            const p = await fetchWordPressPostBySlug(latest.slug);
+  // Latest story content comes from /api/posts (which falls back to WordPres  const [fullPost, setFullP  // No additional background enrichment need  useEffe  const ful    let cancel
+  return (
+    <div>
+      {error ? (
+        <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
+          <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
+          <p classNa            const p = await fetchWordPressPostBySlug(latest.slug);
             if (!canceled) setFullPost(p as WordPressPost);
           } catch {}
         })();
@@ -208,10 +202,7 @@ export default function Home() {
               >
                 Try Again
                 <motion.div
-                  animate={{ 
-                    x: [0, 4, 0]
-                  }}
-                  transition={{ 
+                          <div                    x: [0, 4, 0                                         transition={{ 
                     duration: 1.8,
                     repeat: Infinity,
                     ease: "easeInOut"
@@ -369,22 +360,15 @@ export default function Home() {
 
                       }
                     }} 
-                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300"
-                    style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
-                    whileHover={{ 
-                      y: -8, 
-                      scale: 1.02,
-                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)"
-                    }}
-                    transition={{ 
-                      type: "spring", 
+                    className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition                                               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-foregro                                        dangerouslySetInnerHTML={                      scale: 1.02,
+                      boxShadow: "0 20px 40px -12px rgba(0,0,                    <div className="text-base sm:text-lg md:text-x                      type: "spring", 
                       stiffness: 300, 
                       damping: 20 
                     }}
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-foreground px-2 sm:px-3"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(String(posts[0]?.title || 'Featured Story')) }}
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
                       <motion.span
@@ -393,28 +377,17 @@ export default function Home() {
                         transition={{ duration: 0.3, delay: 0.1 }}
                       >
                         {(() => {
-                          const latest = (fullPost || posts[0]) as any;
-                          const content = latest?.content?.rendered || '';
-                          const excerpt = latest?.excerpt?.rendered || '';
-                          if (content && content.trim().length > 0 && content !== 'Content unavailable') {
+                          const latest = posts[0] as any;
+                          const content = typeof latest?.content === 'string' ? latest.content : '';
+                          const excerpt = typeof latest?.excerpt === 'string' ? latest.excerpt : '';
+                          if (content && content.trim().length > 0) {
                             return extractEngagingExcerpt(content, 240);
                           }
                           return extractExcerpt(excerpt || content, 240);
                         })()}
                       </motion.span>
                     </div>
-                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium mt-1 md:mt-2">
-                      Read full story 
-                      <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground mt-3 md:mt-4">
-                      {posts[0]?.date ? formatDate(posts[0].date) : ''}
-                    </div>
-                  </motion.div>
-
-                  
-                </div>
-              )}
+                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300              )}
             </div>
           </div>
 
@@ -422,16 +395,15 @@ export default function Home() {
           <motion.div
             onClick={() => setLocation('/install')}
             className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6 max-w-4xl mx-auto"
-            style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
-            whileHover={{ 
-              y: -6, 
-              scale: 1.01
-            }}
-            whileTap={{ 
-              scale: 0.98,
-              y: -3
-            }}
-            transition={{ 
+            style={{ backgroundImage: 'linear-gradient(135deg, hsl(v                  
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* App install CTA card (always visible, independent of posts) */}
+          <motion.div
+            onClick={()             transition={{ 
               type: "spring", 
               stiffness: 280, 
               damping: 22 
@@ -453,6 +425,18 @@ export default function Home() {
                 animate={{ x: [0, 3, 0] }}
                 transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
               >
+                <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 tra            }}
+          >
+            <div className="flex items-center justify-c            <p              <h3 className="text-xl sm:text-2xl font-semibold text-foreground"                  Try the Bubble's Cafe App!
+              </h3>
+              <motion.div
+                animate={{ x:          {/*                 transition={{ duratio          <ContinueReadingBanner />
+        </div>
+      )}
+    </div>
+  );
+}
+ >
                 <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.div>
             </div>
