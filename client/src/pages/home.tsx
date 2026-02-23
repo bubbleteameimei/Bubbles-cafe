@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Book } from "lucide-react";
-import { fetchWordPressPosts, fetchWordPressPostBySlug, type WordPressPost } from "@/lib/wordpress-api";
-import { getExcerpt } from "@/lib/content-analysis";
 import { extractEngagingExcerpt, extractExcerpt } from "@/lib/excerpt-lite";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { getJson, apiRequest } from "@/lib/api";
 import ContinueReadingBanner from "@/components/ContinueReadingBanner";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { SupportWritingCard } from "@/components/SupportWritingCard";
@@ -17,7 +16,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const heroRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
-  
+
   // Setup for homepage background using the IMG_5890.jpeg asset from public.
   // Apply the background to the <body> element so it isn't covered by the
   // theme's solid html background color.
@@ -36,13 +35,11 @@ export default function Home() {
 
     img.onload = () => {
       if (cancelled) return;
-      console.log("[Home] Using homepage background image:", src);
       body.style.backgroundImage = `url(${src})`;
       body.style.backgroundSize = "cover";
       body.style.backgroundPosition = "center top";
       body.style.backgroundRepeat = "no-repeat";
       body.style.backgroundAttachment = "fixed";
-      // Make the homepage use the photograph itself as the background without a theme color wash.
       body.style.backgroundColor = "transparent";
     };
     img.onerror = () => {
@@ -72,124 +69,83 @@ export default function Home() {
           observer.disconnect();
         }
       },
-      { root: null, rootMargin: '0px', threshold: 0.2 }
+      { root: null, rootMargin: "0px", threshold: 0.2 },
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // Ensure images within hero are lazily loaded
-  useEffect(() => {
-    const root = heroRef.current;
-    if (!root) return;
-    const imgs = root.querySelectorAll<HTMLImageElement>('img');
-    imgs.forEach((img) => {
-      if (!img.hasAttribute('loading')) {
-        img.setAttribute('loading', 'lazy');
-      }
-      if (!img.hasAttribute('decoding')) {
-        img.setAttribute('decoding', 'async');
-      }
-    });
-  }, [inView]);
-
-  const { data: postsResponse, isLoading, error } = useQuery({
+  const { data: postsResponse, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      return fetchWordPressPosts({ page: 1, perPage: 1, includeContent: false });
+      return getJson<{ posts: any[]; hasMore?: boolean }>(
+        "/api/posts?limit=1&includeContent=true",
+      );
     },
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  // Lightweight engagement fetch for social proof
+  // Fire-and-forget engagement requests (non-blocking)
   useQuery({
     queryKey: ["analytics", "engagement"],
     queryFn: async () => {
-      const res = await fetch('/api/analytics/engagement');
-      if (!res.ok) throw new Error('Failed to load engagement');
+      const res = await apiRequest("GET", "/api/analytics/engagement");
       return res.json();
     },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  // Reading time analytics for monthly views
-  const { data: readingTime } = useQuery({
+  useQuery({
     queryKey: ["analytics", "reading-time"],
     queryFn: async () => {
-      const res = await fetch('/api/analytics/reading-time');
-      if (!res.ok) throw new Error('Failed to load reading-time');
+      const res = await apiRequest("GET", "/api/analytics/reading-time");
       return res.json();
     },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  
 
-  // Format date helper
-  const formatDate = (date: string): string => {
-    try {
-      return format(new Date(date), 'MMMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-    }
-    return '';
-  };
-
-  
-
-  // Use our ApiLoader component to handle global loading state
   const posts = postsResponse?.posts || [];
 
-  // Background enrich: fetch full content for engaging excerpt when missing
-  const [fullPost, setFullPost] = useState<WordPressPost | null>(null);
-  useEffect(() => {
-    let canceled = false;
-    const latest = postsResponse?.posts?.[0];
-    if (latest) {
-      const missing = !latest?.content?.rendered || latest?.content?.rendered === 'Content unavailable';
-      if (missing) {
-        (async () => {
-          try {
-            const p = await fetchWordPressPostBySlug(latest.slug);
-            if (!canceled) setFullPost(p as WordPressPost);
-          } catch {}
-        })();
-      } else {
-        setFullPost(null);
-      }
+  const formatDate = (date: string): string => {
+    try {
+      return format(new Date(date), "MMMM d, yyyy");
+    } catch {
+      return "";
     }
-    return () => { canceled = true; };
-  }, [postsResponse]);
+  };
 
   return (
     <div>
       {error ? (
         <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
           <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
-          <p className="mb-4">The database connection is currently unavailable, but you can still explore the site.</p>
+          <p className="mb-4">
+            The database connection is currently unavailable, but you can still explore the site.
+          </p>
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Button 
-                onClick={() => setLocation('/index')}
+              <Button
+                onClick={() => setLocation("/index")}
                 className="group w-full px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
               >
                 Browse Stories
                 <motion.div
-                  animate={{ 
+                  animate={{
                     x: [0, 3, 0],
                     rotate: [0, 10, -5, 0],
-                    scale: [1, 1.05, 0.98, 1]
+                    scale: [1, 1.05, 0.98, 1],
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 3,
                     repeat: Infinity,
-                    ease: "easeInOut"
+                    ease: "easeInOut",
                   }}
                   className="ml-2"
                 >
@@ -202,19 +158,17 @@ export default function Home() {
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Button 
+              <Button
                 onClick={() => window.location.reload()}
                 className="group w-full px-6 py-3 bg-card border border-border text-foreground hover:bg-muted shadow-lg transition-all duration-300 hover:shadow-xl font-medium text-lg text-center"
               >
                 Try Again
                 <motion.div
-                  animate={{ 
-                    x: [0, 4, 0]
-                  }}
-                  transition={{ 
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{
                     duration: 1.8,
                     repeat: Infinity,
-                    ease: "easeInOut"
+                    ease: "easeInOut",
                   }}
                   className="ml-2"
                 >
@@ -226,243 +180,255 @@ export default function Home() {
         </div>
       ) : (
         <div className="homepage-content">
-        <div 
-          className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-transparent"
-          style={{ backgroundColor: "transparent" }}
-        >
-          {/* Background overlay removed per request */}
-          
-          {/* Invisible barrier removed to standardize content start */}
-          <div className="relative w-full h-0" aria-hidden="true"></div>
-          
-          {/* Content container with proper z-index to appear above background - full width */}
-          <div ref={heroRef} className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen">
-            <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
-            <div className="relative">
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-                className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
-              >
-                {/* Keep BUBBLE'S text white in all themes; CAFE in red as before */}
-                <span className="hero-bubbles text-white">BUBBLE'S</span>
-                <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
-              </motion.h1>
-            </div>
-          
-            {/* Increased spacing between logo and tagline */}
-            <div className="h-8 sm:h-10 md:h-12"></div>
-          
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={inView ? { opacity: 1, y: 0 } : undefined}
-              transition={{ duration: 0.4, delay: 0.16, ease: 'easeOut' }}
-              className="px-4 max-w-2xl mx-auto"
+          <div
+            className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-transparent"
+            style={{ backgroundColor: "transparent" }}
+          >
+            <div className="relative w-full h-0" aria-hidden="true"></div>
+
+            <div
+              ref={heroRef}
+              className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen"
             >
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground leading-[1.7] font-normal" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                Every story here is a portal to the unexpected,
-                the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
-              </p>
-            </motion.div>
+              <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
+              <div className="relative">
+                <motion.h1
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={inView ? { opacity: 1, y: 0 } : undefined}
+                  transition={{ duration: 0.45, delay: 0.08, ease: "easeOut" }}
+                  className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-foreground flex flex-col items-center"
+                >
+                  <span className="hero-bubbles text-white">BUBBLE'S</span>
+                  <span className="mt-1 md:mt-2 text-red-700 relative">CAFE</span>
+                </motion.h1>
+              </div>
+
+              <div className="h-8 sm:h-10 md:h-12"></div>
 
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={inView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.4, delay: 0.22, ease: 'easeOut' }}
+                transition={{ duration: 0.4, delay: 0.16, ease: "easeOut" }}
+                className="px-4 max-w-2xl mx-auto"
+              >
+                <p
+                  className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground leading-[1.7] font-normal"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  Every story here is a portal to the unexpected, the unexplained, and{" "}
+                  <span className="italic text-red-700">
+                    the unsettling<span className="text-red-700 font-bold">.</span>
+                  </span>
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.4, delay: 0.22, ease: "easeOut" }}
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-0 sm:gap-y-0 sm:gap-x-8">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                  >
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      onClick={() => setLocation('/index')}
-                      onMouseEnter={() => { try { void import('@/pages/index'); } catch {} }}
-                      onFocus={() => { try { void import('@/pages/index'); } catch {} }}
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
-                      data-testid="home-browse-stories"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-0 sm:gap-y-0 sm:gap-x-8">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
                     >
-                      <span className="text-center mr-1">Browse Stories</span>
-                      <motion.div
-                        animate={inView ? {
-                          rotate: [0, 10, -6, 4, 0],
-                          scale: [1, 1.06, 0.98, 1.03, 1]
-                        } : undefined}
-                        transition={{ 
-                          duration: 1.2,
-                          repeat: Infinity,
-                          repeatDelay: 1.6,
-                          ease: "easeInOut"
+                      <Button
+                        size="lg"
+                        variant="secondary"
+                        onClick={() => setLocation("/index")}
+                        onMouseEnter={() => {
+                          try {
+                            void import("@/pages/index");
+                          } catch {}
                         }}
+                        onFocus={() => {
+                          try {
+                            void import("@/pages/index");
+                          } catch {}
+                        }}
+                        className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
+                        data-testid="home-browse-stories"
                       >
-                        <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
-                      </motion.div>
-                    </Button>
-                  </motion.div>
-                  
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="-mt-[8px] sm:mt-0 sm:ml-0"
-                  >
-                    <Button
-                      size="lg"
-                      onClick={async () => {
-                        try {
-                          const { getLatestReaderPath } = await import('@/lib/reader-navigation');
-                          const target = await getLatestReaderPath();
-                          setLocation(target);
-                        } catch {
-                          setLocation('/reader');
-                        }
-                      }}
-                      onMouseEnter={() => { try { void import('@/pages/reader'); } catch {} }}
-                      onFocus={() => { try { void import('@/pages/reader'); } catch {} }}
-                      aria-label="Start reading now"
-                      className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
+                        <span className="text-center mr-1">Browse Stories</span>
+                        <motion.div
+                          animate={
+                            inView
+                              ? {
+                                  rotate: [0, 10, -6, 4, 0],
+                                  scale: [1, 1.06, 0.98, 1.03, 1],
+                                }
+                              : undefined
+                          }
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            repeatDelay: 1.6,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <Book className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300" />
+                        </motion.div>
+                      </Button>
+                    </motion.div>
+
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                      className="-mt-[8px] sm:mt-0 sm:ml-0"
                     >
-                      <span className="text-center mr-1">Start Reading</span>
-                      <motion.div
-                        animate={inView ? { x: [0, 4, 0] } : undefined}
-                        transition={{ 
-                          duration: 0.6,
-                          repeat: Infinity,
-                          ease: "easeInOut"
+                      <Button
+                        size="lg"
+                        onClick={async () => {
+                          try {
+                            const { getLatestReaderPath } = await import(
+                              "@/lib/reader-navigation"
+                            );
+                            const target = await getLatestReaderPath();
+                            setLocation(target);
+                          } catch {
+                            setLocation("/reader");
+                          }
                         }}
+                        onMouseEnter={() => {
+                          try {
+                            void import("@/pages/reader");
+                          } catch {}
+                        }}
+                        onFocus={() => {
+                          try {
+                            void import("@/pages/reader");
+                          } catch {}
+                        }}
+                        aria-label="Start reading now"
+                        className="group relative w-full h-14 shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 active:scale-95 rounded-lg flex items-center justify-center px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:-translate-y-[1px] will-change-transform"
                       >
-                        <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
-                      </motion.div>
-                    </Button>
-                  </motion.div>
-                </div>
+                        <span className="text-center mr-1">Start Reading</span>
+                        <motion.div
+                          animate={inView ? { x: [0, 4, 0] } : undefined}
+                          transition={{
+                            duration: 0.6,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+                        </motion.div>
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
-              {/* Monthly readers pill removed by request */}
-              
-              {/* Buy Me a Coffee launches the existing Support My Writing overlay */}
-              <div className="flex flex-col items-center gap-2 mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
-                <BuyMeCoffeeButton authorId={Number(posts?.[0]?.author) || undefined} />
-                {/* Mount overlay (hidden card) so the button can open it */}
-                <SupportWritingCard hideCard authorId={Number(posts?.[0]?.author) || undefined} />
-              </div>
 
-              
+              <div className="flex flex-col items-center gap-2 mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
+                <BuyMeCoffeeButton authorId={Number((posts?.[0] as any)?.authorId) || undefined} />
+                <SupportWritingCard hideCard authorId={Number((posts?.[0] as any)?.authorId) || undefined} />
+              </div>
 
               {posts.length > 0 && (
                 <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-foreground uppercase tracking-wider font-sans">Latest Story</p>
-                  <motion.div 
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-foreground uppercase tracking-wider font-sans">
+                    Latest Story
+                  </p>
+                  <motion.div
                     onClick={async () => {
                       try {
-                        const { getLatestReaderPath } = await import('@/lib/reader-navigation');
+                        const { getLatestReaderPath } = await import(
+                          "@/lib/reader-navigation"
+                        );
                         const target = await getLatestReaderPath();
                         setLocation(target);
                       } catch {
-                        setLocation('/reader');
-
+                        setLocation("/reader");
                       }
-                    }} 
+                    }}
                     className="group cursor-pointer w-full p-5 sm:p-6 md:p-8 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300"
-                    style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
-                    whileHover={{ 
-                      y: -8, 
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)",
+                    }}
+                    whileHover={{
+                      y: -8,
                       scale: 1.02,
-                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)"
+                      boxShadow: "0 20px 40px -12px rgba(0,0,0,0.7)",
                     }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 300, 
-                      damping: 20 
-                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <h2 
+                    <h2
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 text-foreground px-2 sm:px-3"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(posts[0]?.title?.rendered || 'Featured Story') }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(String((posts[0] as any)?.title || "Featured Story")),
+                      }}
                     />
-                    <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans" style={{ fontFamily: "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
-                      <motion.span
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 }}
-                      >
-                        {(() => {
-                          const latest = (fullPost || posts[0]) as any;
-                          const content = latest?.content?.rendered || '';
-                          const excerpt = latest?.excerpt?.rendered || '';
-                          if (content && content.trim().length > 0 && content !== 'Content unavailable') {
-                            return extractEngagingExcerpt(content, 240);
-                          }
-                          return extractExcerpt(excerpt || content, 240);
-                        })()}
-                      </motion.span>
+                    <div
+                      className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground w-full mb-4 sm:mb-5 md:mb-6 line-clamp-2 px-2 sm:px-3 leading-relaxed md:leading-relaxed font-sans"
+                      style={{
+                        fontFamily:
+                          "'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+                      }}
+                    >
+                      {(() => {
+                        const latest = posts[0] as any;
+                        const content = typeof latest?.content === "string" ? latest.content : "";
+                        const excerpt = typeof latest?.excerpt === "string" ? latest.excerpt : "";
+                        if (content && content.trim().length > 0) {
+                          return extractEngagingExcerpt(content, 240);
+                        }
+                        return extractExcerpt(excerpt || content, 240);
+                      })()}
                     </div>
                     <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium mt-1 md:mt-2">
-                      Read full story 
+                      Read full story
                       <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-1 transition-transform" />
                     </div>
                     <div className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground mt-3 md:mt-4">
-                      {posts[0]?.date ? formatDate(posts[0].date) : ''}
+                      {(posts[0] as any)?.createdAt ? formatDate(String((posts[0] as any).createdAt)) : ""}
                     </div>
                   </motion.div>
-
-                  
                 </div>
               )}
             </div>
+
+            <motion.div
+              onClick={() => setLocation("/install")}
+              className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6 max-w-4xl mx-auto"
+              style={{
+                backgroundImage:
+                  "linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)",
+              }}
+              whileHover={{ y: -6, scale: 1.01 }}
+              whileTap={{ scale: 0.98, y: -3 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setLocation("/install");
+                }
+              }}
+            >
+              <div className="flex items-center justify-center gap-3">
+                <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+                  Try the Bubble's Cafe App!
+                </h3>
+                <motion.div
+                  animate={{ x: [0, 3, 0] }}
+                  transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
+                >
+                  <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
+                </motion.div>
+              </div>
+              <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text[13px]">
+                Install on your phone for a fast, immersive reading experience.
+              </p>
+            </motion.div>
+
+            <ContinueReadingBanner />
           </div>
-
-          {/* App install CTA card (always visible, independent of posts) */}
-          <motion.div
-            onClick={() => setLocation('/install')}
-            className="group cursor-pointer w-full p-5 sm:p-6 md:p-7 rounded-xl relative bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl transition-all duration-300 mt-6 max-w-4xl mx-auto"
-            style={{ backgroundImage: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05), transparent)' }}
-            whileHover={{ 
-              y: -6, 
-              scale: 1.01
-            }}
-            whileTap={{ 
-              scale: 0.98,
-              y: -3
-            }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 280, 
-              damping: 22 
-            }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setLocation('/install');
-              }
-            }}
-          >
-            <div className="flex items-center justify-center gap-3">
-              <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
-                Try the Bubble's Cafe App!
-              </h3>
-              <motion.div
-                animate={{ x: [0, 3, 0] }}
-                transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
-              >
-                <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8 group-hover:translate-x-1 transition-transform duration-300" />
-              </motion.div>
-            </div>
-            <p className="text-muted-foreground mt-2 text-center text-[12px] sm:text[13px]">
-              Install on your phone for a fast, immersive reading experience.
-            </p>
-          </motion.div>
-
-          {/* Continue Reading floating banner */}
-          <ContinueReadingBanner />
         </div>
       )}
     </div>

@@ -33,7 +33,11 @@ export default defineConfig(({ mode }) => {
 			workbox: {
 				navigateFallback: "/index.html",
 				cleanupOutdatedCaches: true,
+				// Vercel builds can place artifacts outside workbox's globDirectory; don't fail the build.
 				globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,json,woff2,woff,ttf,otf}"],
+				globIgnores: ["**/*.map"],
+				// Avoid failing the build when a pattern matches 0 files.
+				globStrict: false,
 				runtimeCaching: [
 					{
 						// Cache images (same-origin and cross-origin)
@@ -99,10 +103,10 @@ export default defineConfig(({ mode }) => {
 		},
 		server: {
 			allowedHosts: true,
-			// Proxy API requests to the mock server during client-only development
+			// Proxy API requests to the local Cloudflare Worker (wrangler dev)
 			proxy: {
 				"/api": {
-					target: "http://localhost:4000",
+					target: "http://127.0.0.1:8787",
 					changeOrigin: true,
 					ws: false,
 				},

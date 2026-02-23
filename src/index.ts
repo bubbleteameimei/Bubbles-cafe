@@ -8899,12 +8899,13 @@ router.post('/api/csrf-test', async (req: Request) => {
 });
 
 // POST /api/csrf-test-bypass - bypass CSRF for testing (not for production)
-router.post('/api/csrf-test-bypass', async (req: Request) => {
-  try {
-    return json({ success: true, message: 'CSRF bypass test passed' });
-  } catch {
-    return json({ success: false, message: 'CSRF bypass test failed' }, { status: 500 });
+router.post('/api/csrf-test-bypass', async (_req: Request, env: Env) => {
+  // Never expose bypass routes in production.
+  if ((env.NODE_ENV || '').toLowerCase() === 'production') {
+    return json({ error: 'Not Found' }, { status: 404 });
   }
+
+  return json({ success: true, message: 'CSRF bypass test passed' });
 });
 
 // POST /api/bug-report - bug report submission

@@ -10,6 +10,11 @@ account_id = "50154307e88967cd12ab1262230de6ac"
 FRONTEND_URL = "https://bubblescafe.space"
 NODE_ENV = "production"
 ENABLE_WORDPRESS_SCHEDULER = "true"
+# Ensure we don't accidentally serve any legacy/local auth flows from the API
+DISABLE_LOCAL_AUTH = "true"
+
+# WordPress public API base (no query string). Used for sync fallback.
+WORDPRESS_API = "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts"
 
 # KV Namespaces
 kv_namespaces = [
