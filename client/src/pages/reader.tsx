@@ -679,7 +679,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  const listError = supabaseError as Error | null;) || (wordpressError as Error | null);
+  const listError = supabaseError as Error | null;
 
   if (!routeSlug && !hasAnyPosts && listError) {
     return (
