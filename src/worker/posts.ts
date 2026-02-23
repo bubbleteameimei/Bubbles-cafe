@@ -165,9 +165,9 @@ export async function fetchSupabasePosts(env: Env): Promise<any[]> {
   const res = await fetch(postsUrl.toString(), {
     headers: {
       apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANion/json',
-    },
-  });
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+
 
   if (!res.ok) {
     throw new Error('Failed to fetch posts from Supabase');
