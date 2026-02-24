@@ -42,6 +42,9 @@ interface Env {
   ANALYTICS_KV: KVNamespace;
   CACHE_KV: KVNamespace;
 
+  // Optional CORS allowlist (comma-separated origins)
+  ADDITIONAL_CORS_ORIGINS?: string;
+
   // Durable Objects
   LOCKS_DO: DurableObjectNamespace;
   RATE_LIMIT_DO: DurableObjectNamespace;
@@ -1060,30 +1063,132 @@ router.get('/health', async () => {
 });
 
 router.get('/', async () => {
-  return json({ error: 'Not Found' }, { status: 404 });
-});
-
-// Basic CORS support for API routes
+  return json({ error: 'Not Found' }, { </old_code><new_code>// Basic CORS support for API routes (Worker-native)
+//
+// IMPORTANT: Unlike the legacy Express backend, the Worker must not reflect
+// arbitrary Origin headers. We only allow a configured allowlist, same-site
+// origins, and known preview domains.
 function getCorsHeaders(req: Request, env: Env): Record<string, string> {
-  const origin =
-    req.headers.get('Origin') ||
-    req.headers.get('origin') ||
-    '';
+  const originHeader = req.headers.get('Origin') || req.headers.get('origin') || '';
+  const origin = originHeader && originHeader !== 'null' ? originHeader : '';
+
+  const normalize = (value: string): string => {
+    try {
+      const u = new URL(value);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return value;
+    }
+  };
+
+  const getRoot = (host?: string): string | null => {
+    if (!host) return null;
+    try {
+      const h = host.toLowerCase().split(':')[0].trim();
+      const parts = h.split('.').filter(Boolean);
+      if (parts.length < 2) return h;
+      return parts.slice(-2).join('.');
+    } catch {
+      return null;
+    }
+  };
+
+  const isReplitOrigin = (o?: string) =>
+    !!o &&
+    (/\.repl\.co$/.test(o) ||
+      /\.replit\.dev$/.test(o) ||
+      /\.replit\.app$/.test(o) ||
+      o.includes('.replit.') ||
+      o.includes('repl.co'));
+
+  const isVercelOrigin = (o?: string) => !!o && (/\.vercel\.app$/.test(o) || /\.vercel\.dev$/.test(o));
+
+  const isNetlifyOrigin = (o?: string) => !!o && /\.netlify\.app$/.test(o);
+
+  const isCloudflareOrigin = (o?: string) => !!o && /\.pages\.dev$/.test(o);
+
+  const nodeEnv = (env.NODE_ENV || '').toLowerCase();
+  const isProd = nodeEnv === 'production';
 
   const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
 
-  const allowOrigin = origin && origin !== 'null' ? origin : frontendBase;
+  const allowed = new Set<string>();
+  for (const item of [frontendBase, env.BACKEND_BASE_URL].filter((v) => typeof v === 'string' && v.trim())) {
+    allowed.add(normalize(String(item)));
+  }
+
+  // Allow local dev origins in non-production
+  if (!isProd) {
+    allowed.add('http://localhost:3000');
+    allowed.add('http://localhost:5173');
+    allowed.add('http://localhost:5174');
+  }
+
+  // Additional allowlisted origins (comma-separated)
+  try {
+    const extra = (env.ADDITIONAL_CORS_ORIGINS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    for (const v of extra) {
+      allowed.add(normalize(v));
+    }
+  } catch {
+    // ignore
+  }
+
+  let allowOrigin: string | null = null;
+
+  if (!origin) {
+    // Non-browser clients (no Origin) can be wildcarded safely (no credentials).
+    allowOrigin = '*';
+  } else {
+    const normalizedOrigin = normalize(origin);
+    const originHost = (() => {
+      try {
+        return new URL(origin).host;
+      } catch {
+        return '';
+      }
+    })();
+    const originRoot = getRoot(originHost);
+
+    const reqHost = (() => {
+      try {
+        return new URL(req.url).host;
+      } catch {
+        return '';
+      }
+    })();
+    const apiRoot = getRoot(reqHost);
+
+    if (allowed.has(normalizedOrigin)) {
+      allowOrigin = origin;
+    } else if (originRoot && apiRoot && originRoot === apiRoot) {
+      // Same-site family (e.g., bubblescafe.space <-> api.bubblescafe.space)
+      allowOrigin = origin;
+    } else if (isReplitOrigin(originHost) || isVercelOrigin(originHost) || isNetlifyOrigin(originHost) || isCloudflareOrigin(originHost)) {
+      allowOrigin = origin;
+    } else if (!isProd) {
+      // For convenience, allow unlisted origins in non-production.
+      allowOrigin = origin;
+    } else {
+      // Blocked origin: do not emit ACAO.
+      allowOrigin = null;
+    }
+  }
 
   const headers: Record<string, string> = {
-    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers':
-      'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
-    Vary: 'Origin',
+    'Access-Control-Allow-Headers': 'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
+    Vary: 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers',
   };
 
-  if (allowOrigin !== '*') {
-    headers['Access-Control-Allow-Credentials'] = 'true';
+  if (allowOrigin) {
+    headers['Access-Control-Allow-Origin'] = allowOrigin;
+    if (allowOrigin !== '*') {
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
   }
 
   return headers;
@@ -1098,16 +1203,27 @@ router.options('/api/*', (req: Request, env: Env) => {
 // CSRF TOKEN: compatibility endpoint for legacy clients
 // Note: Worker APIs are JWT-based and do not require CSRF protection.
 // This endpoint returns a stateless token so clients expecting /api/csrf-token
-// can continue to function without relying on the legacy Express backend.
-router.get('/api/csrf-token', async (_req: Request) => {
+// can continue to function without relying on the leg</old_code><new_code>router.get('/api/csrf-token', async (req: Request, env: Env) => {
   try {
     const token = crypto.randomUUID();
     const headers: Record<string, string> = {
       'Cache-Control': 'no-store, max-age=0',
     };
+
+    const isSecure = (() => {
+      try {
+        const u = new URL(req.url);
+        if (u.protocol === 'https:') return true;
+      } catch {
+        // ignore
+      }
+      return (env.NODE_ENV || '').toLowerCase() === 'production';
+    })();
+
     try {
-      headers['Set-Cookie'] =
-        `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Secure`;
+      headers['Set-Cookie'] = `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax${
+        isSecure ? '; Secure' : ''
+      }`;
     } catch {
       // Ignore cookie errors (non-browser contexts)
     }

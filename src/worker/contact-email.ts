@@ -2,7 +2,7 @@
 // Extracted from src/index.ts to keep the Worker entrypoint slimmer.
 
 import type { Env } from './utils';
-import { json, sendBrevoEmail } from './utils';
+import { json, sendBrevoEmail, getBearerToken, getSupabaseCurrentUser } from './utils';
 
 // Local rate-limit helper (mirrors checkRateLimit in index.ts)
 async function checkRateLimit(
@@ -278,6 +278,21 @@ async function handleEmailTest(req: Request, env: Env): Promise<Response> {
 // EMAIL SERVICE SEND
 async function handleEmailSend(req: Request, env: Env): Promise<Response> {
   try {
+    // Admin-only: this endpoint can send arbitrary email and must not be public.
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: 'Admin authentication required' }, { status: 401 });
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token);
+    if (!currentUser || !currentUser.isAdmin) {
+      return json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const ip = req.headers.get('cf-connecting-ip') || 'unknown';
     const allowed = await checkRateLimit(env, `email-${ip}`, 10, 3600);
     if (!allowed) {

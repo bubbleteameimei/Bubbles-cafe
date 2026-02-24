@@ -11,6 +11,9 @@ export interface Env {
   ANALYTICS_KV: KVNamespace;
   CACHE_KV: KVNamespace;
 
+  // Optional CORS allowlist (comma-separated origins)
+  ADDITIONAL_CORS_ORIGINS?: string;
+
   // Durable Objects
   LOCKS_DO: DurableObjectNamespace;
   RATE_LIMIT_DO: DurableObjectNamespace;
