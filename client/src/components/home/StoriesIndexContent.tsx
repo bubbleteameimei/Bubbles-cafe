@@ -301,7 +301,11 @@ export default function StoriesIndexContent() {
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && Array.isArray(data.posts)) {
-        return { posts: data.posts as Post[], hasMore: !!data.hasMore, page: 1 };
+        const posts = data.posts as Post[];
+        // Do not trust cached hasMore; it can become stale and prevent pagination.
+        // If we have a full first page, assume there may be more.
+        const hasMore = posts.length >= 18;
+        return { posts, hasMore, page: 1 };
       }
     } catch {}
     return null;
@@ -328,7 +332,7 @@ export default function StoriesIndexContent() {
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
+    refetchOnMount: cachedPage1 ? true : false,
     refetchOnWindowFocus: false,
     initialPageParam: 1,
     initialData: cachedPage1 ? ({ pages: [cachedPage1], pageParams: [1] } as any) : undefined,
@@ -339,7 +343,11 @@ export default function StoriesIndexContent() {
     try {
       const first = (data as any)?.pages?.[0];
       if (first && Array.isArray(first.posts) && first.posts.length > 0) {
-        const payload = { posts: first.posts.slice(0, 18), hasMore: first.hasMore };
+        const payload = {
+          posts: first.posts.slice(0, 18),
+          // Persist a conservative "may have more" flag so we don't lock pagination.
+          hasMore: Boolean(first.hasMore) || first.posts.length >= 18,
+        };
         localStorage.setItem('cache:index:page1', JSON.stringify(payload));
       }
     } catch {}
