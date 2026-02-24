@@ -706,6 +706,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
 
   // Get current post: prefer fully-fetched content
+  // Avoid the "no content" phase for initial loads: if we're on a slug route,
+  // wait for the full post fetch before rendering the reader.
+  if (routeSlug && isFetchingPost && !currentPostFull) {
+    return <RouteLoader label="Loading story" minHeight="60vh" />;
+  }
+
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
   if (!currentPost && routeSlug) {

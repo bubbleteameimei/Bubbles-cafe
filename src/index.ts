@@ -9240,7 +9240,8 @@ export default {
 
       if (shouldRunSync) {
         try {
-          await fetch('https://api.bubblescafe.space/api/wordpress/sync/manual', {
+          const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
+          await fetch(`${base}/api/wordpress/sync/manual`, {
             method: 'POST',
             headers: {
               'X-Scheduler': 'true',
