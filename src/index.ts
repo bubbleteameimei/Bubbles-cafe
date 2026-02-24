@@ -1,30 +1,19 @@
->/ CORS preflight handler for API routes
-router.options('/api/*', (req: Request, env: Env) => {
-  const headers = getCorsHeaders(req, env);
-  return new Response(null, { status: 204, headers });
-});
+import { Router } from 'itty-router';
 
-// CSRF TOKEN: compatibility endpoint for legacy clients
-// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
-// This endpoint exists only so clients expecting /api/csrf-token don't break.
-router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
-  try {
-    const token = crypto.randomUUID();
-    const headers: Record<string, string> = {
-      'Cache-Control': 'no-store, max-age=0',
-    };
+import { registerAnalyticsRoutes } from './worker/analytics';
+import { registerBookmarksRoutes } from './worker/bookmarks';
+import { registerCommentsRoutes } from './worker/comments';
+import { registerContactEmailRoutes } from './worker/contact-email';
+import { registerNewsletterRoutes } from './worker/newsletter';
+import { registerNotificationsRoutes } from './worker/notifications';
+import { registerCompactPostsRoutes } from './worker/posts-compact';
+import { registerPostsRoutes } from './worker/posts';
+import { registerReactionsRoutes } from './worker/reactions';
+import { registerWordpressRoutes } from './worker/wordpress';
 
-    return json({ csrfToken: token }, { headers });
-  } catch {
-    return json({ csrfToken: null }, { status: 200 });
-  }
-});l': 'no-store, max-age=0',
-    };
-
-    // Compatibility only: the Worker API is Bearer-token based and does not
-    // validate CSRFs || {}) },
-    status: init?.status ?? 200,
-  });
+// ============================================================================
+// ROUTER BOOTSTRAP
+// ============================================================================
 
 const router = Router();
 registerReactionsRoutes(router);
@@ -37,6 +26,38 @@ registerNotificationsRoutes(router);
 registerBookmarksRoutes(router);
 registerNewsletterRoutes(router);
 registerContactEmailRoutes(router);
+
+// Minimal JSON helper (mirrors src/worker/utils.ts)
+const json = (data: any, init?: ResponseInit): Response =>
+  new Response(JSON.stringify(data), {
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    status: init?.status ?? 200,
+  });
+
+// CORS preflight handler for API routes
+router.options('/api/*', (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+  return new Response(null, { status: 204, headers });
+});
+
+// CSRF TOKEN: compatibility endpoint for legacy clients
+// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
+// This endpoint exists only so clients expecting /api/csrf-token don't break.
+router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
+  try {
+    const token = crypto.randomUUID();
+    return json(
+      { csrfToken: token },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      },
+    );
+  } catch {
+    return json({ csrfToken: null }, { status: 200 });
+  }
+});
 
 // ============================================================================
 // TYPE DEFINITIONS
