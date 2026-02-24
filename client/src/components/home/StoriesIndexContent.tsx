@@ -322,7 +322,7 @@ export default function StoriesIndexContent() {
       const posts = Array.isArray(result.posts) ? result.posts : [];
       return {
         posts,
-        hasMore: Boolean(result.hasMore) && posts.length === 18,
+        hasMore: Boolean(result.hasMore),
         page,
       };
     },
@@ -1020,7 +1020,17 @@ export default function StoriesIndexContent() {
     if (categoryFilter !== 'all') {
       list = list.filter((p) => {
         const md = (p.metadata || {}) as Record<string, any>;
-        return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
+        const raw = String(md.themeCategory || '').trim();
+        if (raw) return raw.toLowerCase() === categoryFilter.toLowerCase();
+        try {
+          const derived = sharedDetermineThemeCategory(
+            String(p.title || ''),
+            String((p as any).content || (p as any).excerpt || ''),
+          );
+          return String(derived || '').toLowerCase() === categoryFilter.toLowerCase();
+        } catch {
+          return false;
+        }
       });
     }
 
@@ -1143,7 +1153,17 @@ export default function StoriesIndexContent() {
     if (categoryFilter !== 'all') {
       list = list.filter((p) => {
         const md = (p.metadata || {}) as Record<string, any>;
-        return String(md.themeCategory || '').toLowerCase() === categoryFilter.toLowerCase();
+        const raw = String(md.themeCategory || '').trim();
+        if (raw) return raw.toLowerCase() === categoryFilter.toLowerCase();
+        try {
+          const derived = sharedDetermineThemeCategory(
+            String(p.title || ''),
+            String((p as any).content || (p as any).excerpt || ''),
+          );
+          return String(derived || '').toLowerCase() === categoryFilter.toLowerCase();
+        } catch {
+          return false;
+        }
       });
     }
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -2173,7 +2193,10 @@ export default function StoriesIndexContent() {
                     try {
                       const current = visibleCount;
                       const needed = current + pageSize;
-                      if (needed > latestPosts.length && hasNextPage) {
+                      while (needed > latestPosts.length && hasNextPage) {
+                        // Keep fetching until we have enough items to reveal.
+                        // This avoids the "Read more" button appearing to do nothing when
+                        // the next page hasn't been loaded yet.
                         await fetchNextPage();
                       }
                       setVisibleCount((c) => {
