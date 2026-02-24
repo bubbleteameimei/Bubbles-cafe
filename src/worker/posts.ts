@@ -250,6 +250,57 @@ export function registerPostsRoutes(router: any) {
         }
       }
 
+      // Community posts live in a separate table.
+      try {
+        const communityUrl = new URL(`${baseUrl}/rest/v1/community_posts`);
+        communityUrl.searchParams.set(
+          'select',
+          'id,title,content,excerpt,slug,author_id,theme_category,metadata,created_at,updated_at',
+        );
+        communityUrl.searchParams.set('slug', `eq.${rawSlug}`);
+        communityUrl.searchParams.set('limit', '1');
+
+        const communityRes = await fetch(communityUrl.toString(), {
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token || env.SUPABASE_ANON_KEY}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (communityRes.ok) {
+          const rows = (await communityRes.json().catch(() => [])) as any[];
+          if (Array.isArray(rows) && rows.length > 0) {
+            const row = rows[0] as any;
+            const rawContent = typeof row.content === 'string' ? row.content : '';
+            const wordCount = stripHtml(rawContent).split(/\s+/).filter(Boolean).length;
+
+            const metadata = parseMetadata(row.metadata);
+            return json({
+              id: Number(row.id),
+              title: row.title ?? '',
+              content: rawContent,
+              slug: row.slug ?? '',
+              excerpt: row.excerpt ?? null,
+              authorId: row.author_id != null ? Number(row.author_id) : undefined,
+              isSecret: false,
+              isAdminPost: false,
+              matureContent: false,
+              themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
+              readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
+              likesCount: 0,
+              dislikesCount: 0,
+              baselineLikes: 0,
+              baselineDislikes: 0,
+              metadata: { ...metadata, isCommunityPost: true },
+              createdAt: row.created_at ?? new Date().toISOString(),
+            });
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       try {
         const wpBase =
           env.WORDPRESS_API ||
@@ -561,14 +612,14 @@ export function registerPostsRoutes(router: any) {
       const searchTermRaw = (search.get('search') || '').trim();
       const searchTerm = searchTermRaw.toLowerCase();
 
-      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      const baseUrl = env.SUPABASE_URL.replace(/\/\/+$/, '');
+      const postsUrl = new URL(`${baseUrl}/rest/v1/community_posts`);
       const includeContentParam = (search.get('includeContent') || '').toLowerCase();
       const includeContent = includeContentParam !== 'false';
       const selectAll =
-        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        'id,title,content,excerpt,slug,author_id,theme_category,metadata,created_at,updated_at';
       const selectWithoutContent =
-        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        'id,title,excerpt,slug,author_id,theme_category,metadata,created_at,updated_at';
       postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 
@@ -584,8 +635,6 @@ export function registerPostsRoutes(router: any) {
           postsUrl.searchParams.set('offset', String(offset));
         }
       }
-
-      postsUrl.searchParams.set('metadata->>isCommunityPost', 'eq.true');
 
       if (category) {
         postsUrl.searchParams.set('theme_category', `eq.${category}`);
@@ -628,7 +677,32 @@ export function registerPostsRoutes(router: any) {
         );
       }
 
-      const mapped = rows.map(mapSupabasePostRowToPost);
+      const mapped = rows.map((row: any) => {
+        const rawContent = typeof row.content === 'string' ? row.content : '';
+        const metadata = parseMetadata(row.metadata);
+        const wordCount = stripHtml(rawContent).split(/\s+/).filter(Boolean).length;
+        const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+        return {
+          id: Number(row.id),
+          title: row.title ?? '',
+          content: includeContent ? rawContent : '',
+          slug: row.slug ?? '',
+          excerpt: row.excerpt ?? null,
+          authorId: row.author_id != null ? Number(row.author_id) : undefined,
+          isSecret: false,
+          isAdminPost: false,
+          matureContent: false,
+          themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
+          readingTimeMinutes,
+          likesCount: 0,
+          dislikesCount: 0,
+          baselineLikes: 0,
+          baselineDislikes: 0,
+          metadata: { ...metadata, isCommunityPost: true },
+          createdAt: row.created_at ?? new Date().toISOString(),
+        };
+      });
 
       let posts = mapped;
       let hasMore = false;
