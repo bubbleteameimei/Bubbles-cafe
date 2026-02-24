@@ -1,20 +1,28 @@
-// src/index.ts
-import { Router } from 'itty-router';
-import { registerReactionsRoutes } from './worker/reactions';
-import { registerAnalyticsRoutes } from './worker/analytics';
-import { registerPostsRoutes } from './worker/posts';
-import { registerCompactPostsRoutes } from './worker/posts-compact';
-import { registerCommentsRoutes } from './worker/comments';
-import { registerWordpressRoutes } from './worker/wordpress';
-import { registerNotificationsRoutes } from './worker/notifications';
-import { registerBookmarksRoutes } from './worker/bookmarks';
-import { registerNewsletterRoutes } from './worker/newsletter';
-import { registerContactEmailRoutes } from './worker/contact-email';
+>/ CORS preflight handler for API routes
+router.options('/api/*', (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+  return new Response(null, { status: 204, headers });
+});
 
-// Minimal JSON helper to avoid extras dependency
-const json = (data: any, init?: ResponseInit) =>
-  new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+// CSRF TOKEN: compatibility endpoint for legacy clients
+// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
+// This endpoint exists only so clients expecting /api/csrf-token don't break.
+router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
+  try {
+    const token = crypto.randomUUID();
+    const headers: Record<string, string> = {
+      'Cache-Control': 'no-store, max-age=0',
+    };
+
+    return json({ csrfToken: token }, { headers });
+  } catch {
+    return json({ csrfToken: null }, { status: 200 });
+  }
+});l': 'no-store, max-age=0',
+    };
+
+    // Compatibility only: the Worker API is Bearer-token based and does not
+    // validate CSRFs || {}) },
     status: init?.status ?? 200,
   });
 
@@ -1062,8 +1070,36 @@ router.get('/health', async () => {
   return json({ status: 'ok' });
 });
 
+router.get('/api/supabase/health', async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ ok: false, error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+  const url = new URL(`${baseUrl}/rest/v1/posts`);
+  url.searchParams.set('select', 'id');
+  url.searchParams.set('limit', '1');
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    return json({ ok: false, status: res.status }, { status: 502 });
+  }
+
+  return json({ ok: true });
+});
+
 router.get('/', async () => {
-  return json({ error: 'Not Found' }, { </old_code><new_code>// Basic CORS support for API routes (Worker-native)
+  return json({ error: 'Not Found' }, { status: 404 });
+});
+
+// Basic CORS support for API routes (Worker-native)
 //
 // IMPORTANT: Unlike the legacy Express backend, the Worker must not reflect
 // arbitrary Origin headers. We only allow a configured allowlist, same-site
@@ -1167,7 +1203,8 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
     } else if (originRoot && apiRoot && originRoot === apiRoot) {
       // Same-site family (e.g., bubblescafe.space <-> api.bubblescafe.space)
       allowOrigin = origin;
-    } else if (isReplitOrigin(originHost) || isVercelOrigin(originHost) || isNetlifyOrigin(originHost) || isCloudflareOrigin(originHost)) {
+    } else if (!isProd && (isReplitOrigin(originHost) || isVercelOrigin(originHost) || isNetlifyOrigin(originHost) || isCloudflareOrigin(originHost))) {
+      // Preview domains are allowed in non-production only. In production, use ADDITIONAL_CORS_ORIGINS.
       allowOrigin = origin;
     } else if (!isProd) {
       // For convenience, allow unlisted origins in non-production.
@@ -1190,8 +1227,7 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
       headers['Access-Control-Allow-Credentials'] = 'true';
     }
   }
-
-  return headers;
+ return headers;
 }
 
 // CORS preflight handler for API routes
@@ -1201,36 +1237,18 @@ router.options('/api/*', (req: Request, env: Env) => {
 });
 
 // CSRF TOKEN: compatibility endpoint for legacy clients
-// Note: Worker APIs are JWT-based and do not require CSRF protection.
-// This endpoint returns a stateless token so clients expecting /api/csrf-token
-// can continue to function without relying on the leg</old_code><new_code>router.get('/api/csrf-token', async (req: Request, env: Env) => {
-  try {
-    const token = crypto.randomUUID();
-    const headers: Record<string, string> = {
-      'Cache-Control': 'no-store, max-age=0',
-    };
-
-    const isSecure = (() => {
-      try {
-        const u = new URL(req.url);
-        if (u.protocol === 'https:') return true;
-      } catch {
-        // ignore
-      }
-      return (env.NODE_ENV || '').toLowerCase() === 'production';
-    })();
-
-    try {
-      headers['Set-Cookie'] = `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax${
-        isSecure ? '; Secure' : ''
-      }`;
-    } catch {
-      // Ignore cookie errors (non-browser contexts)
-    }
-    return json({ csrfToken: token }, { headers });
-  } catch {
-    return json({ csrfToken: null }, { status: 200 });
-  }
+// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
+// This endpoint exists only so clients expecting /api/csrf-token don't break.
+router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
+  const token = crypto.randomUUID();
+  return json(
+    { csrfToken: token },
+    {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    },
+  );
 });
 
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
