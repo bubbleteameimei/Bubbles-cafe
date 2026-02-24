@@ -398,11 +398,16 @@ export function registerPostsRoutes(router: any) {
       const includeContentParam = (search.get('includeContent') || '').toLowerCase();
       const includeContent = includeContentParam !== 'false';
 
+      // Default behavior: no edge caching (keeps refreshes consistent and avoids stale data).
+      // To opt-in to caching for the default feed, pass ?cache=1.
+      const cacheParam = (search.get('cache') || '').toLowerCase();
+      const allowCache = cacheParam === '1' || cacheParam === 'true';
+
       const isFirstPageDefaultFeed =
-        !cursor && page === 1 && !category && !searchTerm && !!env.CACHE_KV;
+        allowCache && !cursor && page === 1 && !category && !searchTerm && !!env.CACHE_KV;
 
       const cacheKey = isFirstPageDefaultFeed
-        ? `posts:first-page:v2:limit=${limit}:includeContent=${includeContent ? '1' : '0'}`
+        ? `posts:first-page:v3:limit=${limit}:includeContent=${includeContent ? '1' : '0'}`
         : null;
 
       if (isFirstPageDefaultFeed && cacheKey) {
@@ -410,7 +415,7 @@ export function registerPostsRoutes(router: any) {
         if (cached) {
           return json(cached, {
             headers: {
-              'Cache-Control': 'max-age=300, stale-while-revalidate=300',
+              'Cache-Control': 'max-age=30, stale-while-revalidate=30',
             },
           });
         }
@@ -468,13 +473,15 @@ export function registerPostsRoutes(router: any) {
       if (!Array.isArray(rows) || rows.length === 0) {
         const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
         if (isFirstPageDefaultFeed && cacheKey) {
-          await setJsonCache(env, cacheKey, emptyPayload, 300);
+          await setJsonCache(env, cacheKey, emptyPayload, 30);
         }
         return json(emptyPayload, {
           headers: {
-            'Cache-Control': useCursor
-              ? 'max-age=60, stale-while-revalidate=120'
-              : 'max-age=300, stale-while-revalidate=300',
+            'Cache-Control': allowCache
+              ? useCursor
+                ? 'max-age=60, stale-while-revalidate=120'
+                : 'max-age=30, stale-while-revalidate=30'
+              : 'no-store, max-age=0',
           },
         });
       }
@@ -513,12 +520,14 @@ export function registerPostsRoutes(router: any) {
         payload.nextCursor = nextCursor;
       }
 
-      const cacheControl = useCursor
-        ? 'max-age=60, stale-while-revalidate=120'
-        : 'max-age=300, stale-while-revalidate=300';
+      const cacheControl = allowCache
+        ? useCursor
+          ? 'max-age=60, stale-while-revalidate=120'
+          : 'max-age=30, stale-while-revalidate=30'
+        : 'no-store, max-age=0';
 
       if (isFirstPageDefaultFeed && cacheKey) {
-        await setJsonCache(env, cacheKey, payload, 300);
+        await setJsonCache(env, cacheKey, payload, 30);
       }
 
       return json(payload, {
