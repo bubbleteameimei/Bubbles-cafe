@@ -1,15 +1,25 @@
 // Posts domain routes for Bubble's Cafe Worker.
 // Extracted from src/index.ts to keep the Worker entrypoint slimmer while
-// preserving existing behavior.
-
-import type { Env } from './utils';
+// preserving</old_code><new_code>import type { Env } from './utils';
 import {
+  json,
+  proxyToBackend,
+  getJsonFromCache,
+ on,
+  proxyToBackend,
+  getJsonFromCache,
+  setJsonCache,
+  buildPostSummaries,
+  getBearerToken,
+  getSupabaseCurrentUser,
+} from './utils';</old_code><new_code>import {
   json,
   proxyToBackend,
   getJsonFromCache,
   setJsonCache,
   buildPostSummaries,
   getBearerToken,
+  getSupabaseCurrentUser,
 } from './utils';
 
 function stripHtml(value: any): string {
@@ -591,6 +601,284 @@ export function registerPostsRoutes(router: any) {
     }
   });
 
+  // POST /api/posts - create a community post (stored in posts with metadata.isCommunityPost=true)
+  router.post('/api/posts', async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token).catch(() => null);
+    if (!currentUser) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    let body: any = null;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const title = typeof body?.title === 'string' ? body.title.trim() : '';
+    const content = typeof body?.content === 'string' ? body.content : '';
+    const excerpt = typeof body?.excerpt === 'string' ? body.excerpt : null;
+    const slug = typeof body?.slug === 'string' ? body.slug.trim() : '';
+    const themeCategory = typeof body?.themeCategory === 'string' ? body.themeCategory : null;
+    const isSecret = Boolean(body?.isSecret);
+    const matureContent = Boolean(body?.matureContent);
+
+    if (!title || title.length < 3) {
+      return json({ error: 'Title is required' }, { status: 400 });
+    }
+    if (!content || content.length < 25) {
+      return json({ error: 'Content is required' }, { status: 400 });
+    }
+    if (!slug) {
+      return json({ error: 'Slug is required' }, { status: 400 });
+    }
+
+    const readingTimeMinutes = Math.max(
+      1,
+      Math.ceil(stripHtml(content).split(/\s+/).filter(Boolean).length / 200),
+    );
+
+    const metadata = {
+      ...(body?.metadata && typeof body.metadata === 'object' ? body.metadata : {}),
+      isCommunityPost: true,
+      source: 'community',
+    };
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const url = new URL(`${baseUrl}/rest/v1/posts`);
+
+    const insertRes = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({
+        title,
+        content,
+        excerpt,
+        slug,
+        author_id: currentUser.id,
+        is_secret: isSecret,
+        isAdminPost: false,
+        mature_content: matureContent,
+        theme_category: themeCategory,
+        reading_time_minutes: readingTimeMinutes,
+        metadata,
+      }),
+    });
+
+    if (!insertRes.ok) {
+      const text = await insertRes.text().catch(() => '');
+      return json({ error: 'Failed to create post', detail: text.slice(0, 300) }, { status: 500 });
+    }
+
+    const rows = (await insertRes.json().catch(() => [])) as any[];
+    const created = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    if (!created) {
+      return json({ success: true }, { status: 201 });
+    }
+
+    return json(mapSupabasePostRowToPost(created), {
+      status: 201,
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  });
+
+  // PUT /api/posts/:id - update a community post (owner or admin)
+  router.put('/api/posts/:id', async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token).catch(() => null);
+    if (!currentUser) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split('/');
+    const idSegment = segments[segments.length - 1] || '';
+    const postId = parseInt(idSegment, 10);
+    if (!Number.isFinite(postId) || postId <= 0) {
+      return json({ error: 'Invalid post id' }, { status: 400 });
+    }
+
+    let body: any = null;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const fetchUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    fetchUrl.searchParams.set('select', 'id,author_id,metadata');
+    fetchUrl.searchParams.set('id', `eq.${postId}`);
+    fetchUrl.searchParams.set('limit', '1');
+
+    const existingRes = await fetch(fetchUrl.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const existingRows = existingRes.ok ? (((await existingRes.json().catch(() => [])) as any[]) || []) : [];
+    const existing = Array.isArray(existingRows) && existingRows.length > 0 ? existingRows[0] : null;
+    if (!existing) {
+      return json({ error: 'Post not found' }, { status: 404 });
+    }
+
+    const existingMeta = parseMetadata(existing.metadata);
+    if (existingMeta.isCommunityPost !== true) {
+      return json({ error: 'Only community posts can be edited via this endpoint' }, { status: 400 });
+    }
+
+    const ownerId = existing.author_id != null ? Number(existing.author_id) : null;
+    if (!currentUser.isAdmin && ownerId !== currentUser.id) {
+      return json({ error: 'Not allowed' }, { status: 403 });
+    }
+
+    const patch: any = {};
+    if (typeof body?.title === 'string') patch.title = body.title.trim();
+    if (typeof body?.content === 'string') patch.content = body.content;
+    if (typeof body?.excerpt === 'string' || body?.excerpt === null) patch.excerpt = body.excerpt;
+    if (typeof body?.themeCategory === 'string' || body?.themeCategory === null)
+      patch.theme_category = body.themeCategory;
+    if (typeof body?.matureContent === 'boolean') patch.mature_content = body.matureContent;
+    if (typeof body?.isSecret === 'boolean') patch.is_secret = body.isSecret;
+
+    if (patch.content) {
+      patch.reading_time_minutes = Math.max(
+        1,
+        Math.ceil(stripHtml(patch.content).split(/\s+/).filter(Boolean).length / 200),
+      );
+    }
+
+    if (body?.metadata && typeof body.metadata === 'object') {
+      patch.metadata = { ...existingMeta, ...body.metadata, isCommunityPost: true, source: 'community' };
+    }
+
+    const updateUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    updateUrl.searchParams.set('id', `eq.${postId}`);
+
+    const updateRes = await fetch(updateUrl.toString(), {
+      method: 'PATCH',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(patch),
+    });
+
+    if (!updateRes.ok) {
+      const text = await updateRes.text().catch(() => '');
+      return json({ error: 'Failed to update post', detail: text.slice(0, 300) }, { status: 500 });
+    }
+
+    const updatedRows = (await updateRes.json().catch(() => [])) as any[];
+    const updated = Array.isArray(updatedRows) && updatedRows.length > 0 ? updatedRows[0] : null;
+    return json(updated ? mapSupabasePostRowToPost(updated) : { success: true }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  });
+
+  // DELETE /api/posts/:id - delete a community post (owner or admin)
+  router.delete('/api/posts/:id', async (req: Request, env: Env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return proxyToBackend(req, env);
+    }
+
+    const token = getBearerToken(req);
+    if (!token) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const currentUser = await getSupabaseCurrentUser(env, token).catch(() => null);
+    if (!currentUser) {
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const urlObj = new URL(req.url);
+    const segments = urlObj.pathname.split('/');
+    const idSegment = segments[segments.length - 1] || '';
+    const postId = parseInt(idSegment, 10);
+    if (!Number.isFinite(postId) || postId <= 0) {
+      return json({ error: 'Invalid post id' }, { status: 400 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const fetchUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    fetchUrl.searchParams.set('select', 'id,author_id,metadata');
+    fetchUrl.searchParams.set('id', `eq.${postId}`);
+    fetchUrl.searchParams.set('limit', '1');
+
+    const existingRes = await fetch(fetchUrl.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const existingRows = existingRes.ok ? (((await existingRes.json().catch(() => [])) as any[]) || []) : [];
+    const existing = Array.isArray(existingRows) && existingRows.length > 0 ? existingRows[0] : null;
+    if (!existing) {
+      return json({ error: 'Post not found' }, { status: 404 });
+    }
+
+    const existingMeta = parseMetadata(existing.metadata);
+    if (existingMeta.isCommunityPost !== true) {
+      return json({ error: 'Only community posts can be deleted via this endpoint' }, { status: 400 });
+    }
+
+    const ownerId = existing.author_id != null ? Number(existing.author_id) : null;
+    if (!currentUser.isAdmin && ownerId !== currentUser.id) {
+      return json({ error: 'Not allowed' }, { status: 403 });
+    }
+
+    const deleteUrl = new URL(`${baseUrl}/rest/v1/posts`);
+    deleteUrl.searchParams.set('id', `eq.${postId}`);
+
+    const deleteRes = await fetch(deleteUrl.toString(), {
+      method: 'DELETE',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!deleteRes.ok) {
+      const text = await deleteRes.text().catch(() => '');
+      return json({ error: 'Failed to delete post', detail: text.slice(0, 300) }, { status: 500 });
+    }
+
+    return json({ success: true }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+  });
+
   router.get('/api/posts/community', async (req: Request, env: Env) => {
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
       return proxyToBackend(req, env);
@@ -613,13 +901,13 @@ export function registerPostsRoutes(router: any) {
       const searchTerm = searchTermRaw.toLowerCase();
 
       const baseUrl = env.SUPABASE_URL.replace(/\/\/+$/, '');
-      const postsUrl = new URL(`${baseUrl}/rest/v1/community_posts`);
+      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
       const includeContentParam = (search.get('includeContent') || '').toLowerCase();
       const includeContent = includeContentParam !== 'false';
       const selectAll =
-        'id,title,content,excerpt,slug,author_id,theme_category,metadata,created_at,updated_at';
+        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
       const selectWithoutContent =
-        'id,title,excerpt,slug,author_id,theme_category,metadata,created_at,updated_at';
+        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
       postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 
@@ -635,6 +923,9 @@ export function registerPostsRoutes(router: any) {
           postsUrl.searchParams.set('offset', String(offset));
         }
       }
+
+      // Canonical community storage: posts.metadata.isCommunityPost === true
+      postsUrl.searchParams.set('metadata->>isCommunityPost', 'eq.true');
 
       if (category) {
         postsUrl.searchParams.set('theme_category', `eq.${category}`);
@@ -677,32 +968,7 @@ export function registerPostsRoutes(router: any) {
         );
       }
 
-      const mapped = rows.map((row: any) => {
-        const rawContent = typeof row.content === 'string' ? row.content : '';
-        const metadata = parseMetadata(row.metadata);
-        const wordCount = stripHtml(rawContent).split(/\s+/).filter(Boolean).length;
-        const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
-
-        return {
-          id: Number(row.id),
-          title: row.title ?? '',
-          content: includeContent ? rawContent : '',
-          slug: row.slug ?? '',
-          excerpt: row.excerpt ?? null,
-          authorId: row.author_id != null ? Number(row.author_id) : undefined,
-          isSecret: false,
-          isAdminPost: false,
-          matureContent: false,
-          themeCategory: row.theme_category ?? (metadata as any)?.themeCategory ?? null,
-          readingTimeMinutes,
-          likesCount: 0,
-          dislikesCount: 0,
-          baselineLikes: 0,
-          baselineDislikes: 0,
-          metadata: { ...metadata, isCommunityPost: true },
-          createdAt: row.created_at ?? new Date().toISOString(),
-        };
-      });
+      const mapped = rows.map(mapSupabasePostRowToPost);
 
       let posts = mapped;
       let hasMore = false;
