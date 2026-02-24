@@ -1,18 +1,9 @@
 // Posts domain routes for Bubble's Cafe Worker.
 // Extracted from src/index.ts to keep the Worker entrypoint slimmer while
-// preserving</old_code><new_code>import type { Env } from './utils';
+// preserving existing behavior.
+
+import type { Env } from './utils';
 import {
-  json,
-  proxyToBackend,
-  getJsonFromCache,
- on,
-  proxyToBackend,
-  getJsonFromCache,
-  setJsonCache,
-  buildPostSummaries,
-  getBearerToken,
-  getSupabaseCurrentUser,
-} from './utils';</old_code><new_code>import {
   json,
   proxyToBackend,
   getJsonFromCache,

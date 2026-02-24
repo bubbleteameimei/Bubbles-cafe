@@ -642,6 +642,166 @@ export function registerWordpressRoutes(router: any) {
     }
   });
 
+  // WORDPRESS ADMIN: DIAGNOSTICS
+  // Useful for confirming WordPress -> Supabase mirroring and spotting stale caches.
+  router.get('/api/admin/wordpress/diagnostics', async (req: Request, env: Env) => {
+    const { response } = await requireAdmin(req, env);
+    if (response) return response;
+
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      return json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+    const headers: Record<string, string> = {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: 'application/json',
+    };
+
+    const kv: { lastStatus: string | null; lastTimestamp: string | null } = {
+      lastStatus: null,
+      lastTimestamp: null,
+    };
+
+    try {
+      kv.lastStatus = await env.SYNC_METADATA_KV.get('last_sync_status');
+      kv.lastTimestamp = await env.SYNC_METADATA_KV.get('last_sync_timestamp');
+    } catch {
+      // ignore
+    }
+
+    let wpCount = 0;
+    let communityCount = 0;
+
+    try {
+      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      postsUrl.searchParams.set('select', 'id');
+      postsUrl.searchParams.set('metadata->>source', 'eq.wordpress_api');
+      postsUrl.searchParams.set('limit', '1');
+
+      const res = await fetch(postsUrl.toString(), {
+        headers: {
+          ...headers,
+          Prefer: 'count=exact',
+        },
+      });
+
+      if (res.ok) {
+        const contentRange = res.headers.get('Content-Range');
+        if (contentRange && contentRange.includes('/')) {
+          const parts = contentRange.split('/');
+          const totalStr = parts[1];
+          const n = parseInt(totalStr, 10);
+          if (Number.isFinite(n)) {
+            wpCount = n;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
+      postsUrl.searchParams.set('select', 'id');
+      postsUrl.searchParams.set('metadata->>isCommunityPost', 'eq.true');
+      postsUrl.searchParams.set('limit', '1');
+
+      const res = await fetch(postsUrl.toString(), {
+        headers: {
+          ...headers,
+          Prefer: 'count=exact',
+        },
+      });
+
+      if (res.ok) {
+        const contentRange = res.headers.get('Content-Range');
+        if (contentRange && contentRange.includes('/')) {
+          const parts = contentRange.split('/');
+          const totalStr = parts[1];
+          const n = parseInt(totalStr, 10);
+          if (Number.isFinite(n)) {
+            communityCount = n;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    let newestWordpressPost: any = null;
+    let newestCommunityPost: any = null;
+
+    try {
+      const url = new URL(`${baseUrl}/rest/v1/posts`);
+      url.searchParams.set('select', 'id,slug,created_at,metadata');
+      url.searchParams.set('metadata->>source', 'eq.wordpress_api');
+      url.searchParams.set('order', 'created_at.desc');
+      url.searchParams.set('limit', '1');
+
+      const res = await fetch(url.toString(), { headers });
+      if (res.ok) {
+        const rows = ((await res.json().catch(() => [])) as any[]) || [];
+        if (Array.isArray(rows) && rows.length > 0) {
+          newestWordpressPost = rows[0];
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const url = new URL(`${baseUrl}/rest/v1/posts`);
+      url.searchParams.set('select', 'id,slug,created_at,metadata');
+      url.searchParams.set('metadata->>isCommunityPost', 'eq.true');
+      url.searchParams.set('order', 'created_at.desc');
+      url.searchParams.set('limit', '1');
+
+      const res = await fetch(url.toString(), { headers });
+      if (res.ok) {
+        const rows = ((await res.json().catch(() => [])) as any[]) || [];
+        if (Array.isArray(rows) && rows.length > 0) {
+          newestCommunityPost = rows[0];
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    let latestSyncRow: any = null;
+    try {
+      const url = new URL(`${baseUrl}/rest/v1/wordpress_sync`);
+      url.searchParams.set('select', '*');
+      url.searchParams.set('order', 'created_at.desc');
+      url.searchParams.set('limit', '1');
+
+      const res = await fetch(url.toString(), { headers });
+      if (res.ok) {
+        const rows = ((await res.json().catch(() => [])) as any[]) || [];
+        if (Array.isArray(rows) && rows.length > 0) {
+          latestSyncRow = rows[0];
+        }
+      }
+    } catch {
+      // ignore; table may not have created_at or may not exist
+    }
+
+    return json({
+      kv,
+      counts: {
+        wordpressPosts: wpCount,
+        communityPosts: communityCount,
+      },
+      newest: {
+        wordpress: newestWordpressPost,
+        community: newestCommunityPost,
+      },
+      latestSyncRow,
+    });
+  });
+
   // WORDPRESS ADMIN: MANUAL SYNC TRIGGER
   router.post('/api/admin/wordpress/sync', async (req: Request, env: Env) => {
     const { response } = await requireAdmin(req, env);
