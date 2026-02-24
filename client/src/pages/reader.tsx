@@ -1707,7 +1707,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
-                <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                isFetchingPost ? (
+                  <div className="text-sm text-muted-foreground py-2">Loading story…</div>
+                ) : (
+                  <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                )
               ) : null}
             </div>
             {/* Inline comment dialog (selection-based) */}

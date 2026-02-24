@@ -258,7 +258,7 @@ export function registerCompactPostsRoutes(router: any) {
           { posts: [], hasMore: false },
           {
             headers: {
-              'Cache-Control': 'max-age=60, stale-while-revalidate=120',
+              'Cache-Control': 'no-store, max-age=0',
             },
           },
         );
@@ -268,11 +268,14 @@ export function registerCompactPostsRoutes(router: any) {
 
       const hasMore = typeof total === 'number' ? page * limit < total : posts.length === limit;
 
+      const cacheParam = (search.get('cache') || '').toLowerCase();
+      const allowCache = cacheParam === '1' || cacheParam === 'true';
+
       return json(
         { posts, hasMore },
         {
           headers: {
-            'Cache-Control': 'max-age=60, stale-while-revalidate=120',
+            'Cache-Control': allowCache ? 'max-age=30, stale-while-revalidate=30' : 'no-store, max-age=0',
           },
         },
       );
