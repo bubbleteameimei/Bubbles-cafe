@@ -247,19 +247,51 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }, [theme, setUIHidden]);
 
   // Toggle UI with debug logging wrapper
-  const toggleUIWithDebug = (reason: string) => {
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+  const toggleUIWithDebug = useCallback(
+    (reason: string) => {
+      try {
+        if (debugEnabled) {
+          console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+        }
+      } catch {}
+      toggleUI();
+      try {
+        if (debugEnabled) {
+          console.log('[Reader.debug] toggleUI scheduled state flip');
+        }
+      } catch {}
+    },
+    [debugEnabled, isUIHidden, toggleUI],
+  );
+
+  const handleReaderNoDistractionToggle = useCallback(
+    (e: React.MouseEvent) => {
+      if (isAnyDialogOpen) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Ignore taps on interactive controls.
+      if (
+        target.closest(
+          'button,a,[role="button"],input,textarea,select,label,[data-no-distraction-toggle="false"]',
+        )
+      ) {
+        return;
       }
-    } catch {}
-    toggleUI();
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI scheduled state flip');
+
+      // Ignore when user is selecting text.
+      try {
+        const sel = window.getSelection?.();
+        if (sel && sel.toString().trim().length > 0) return;
+      } catch {
+        // ignore
       }
-    } catch {}
-  };
+
+      toggleUIWithDebug('tap');
+    },
+    [isAnyDialogOpen, toggleUIWithDebug],
+  );
 
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
