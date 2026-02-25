@@ -330,7 +330,8 @@ export default function StoriesIndexContent() {
         // Be defensive: if the server omits hasMore (or it is false due to count issues),
         // continue pagination while we keep receiving full pages.
         hasMore: serverHasMore === true || posts.length === 18,
-
+        page,
+      };
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
