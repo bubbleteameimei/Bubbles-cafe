@@ -433,22 +433,23 @@ export function registerPostsRoutes(router: any) {
       const urlObj = new URL(req.url);
       const search = urlObj.searchParams;
 
+      const includeContentParam = (search.get('includeContent') || '').toLowerCase();
+      const includeContent = includeContentParam !== 'false';
+
       const pageParam = parseInt(search.get('page') || '1', 10);
       const limitParam = parseInt(search.get('limit') || '16', 10);
       const cursor = search.get('cursor');
 
       const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
       const rawLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 16;
-      const limit = Math.max(1, Math.min(rawLimit, 100));
+      const limitMax = includeContent ? 100 : 500;
+      const limit = Math.max(1, Math.min(rawLimit, limitMax));
 
       const category = (search.get('category') || '').trim();
       const searchTermRaw = (search.get('search') || '').trim();
       const searchTerm = searchTermRaw.toLowerCase();
 
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-
-      const includeContentParam = (search.get('includeContent') || '').toLowerCase();
-      const includeContent = includeContentParam !== 'false';
 
       // Default behavior: no edge caching (keeps refreshes consistent and avoids stale data).
       // To opt-in to caching for the default feed, pass ?cache=1.

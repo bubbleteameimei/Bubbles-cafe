@@ -297,7 +297,7 @@ export default function StoriesIndexContent() {
   // Read cached first page from localStorage (shell-first rendering without skeletons)
   const cachedPage1 = useMemo(() => {
     try {
-      const raw = localStorage.getItem('cache:index:page1');
+      const raw = localStorage.getItem('cache:index:page1:v2');
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && Array.isArray(data.posts)) {
@@ -311,30 +311,29 @@ export default function StoriesIndexContent() {
     return null;
   }, []);
 
-  // Paginated query (Supabase-backed compact posts with WordPress handled behind /api/posts/compact)
+  // Paginated query (canonical posts listing; content omitted for speed)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{
     posts: Post[];
     hasMore: boolean;
     page: number;
   }>({
-    queryKey: ['posts', 'index', 'compact'],
+    queryKey: ['posts', 'index'],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const result = await getJson<{ posts?: Post[]; hasMore?: boolean }>(
-        `/api/posts/compact?page=${page}&limit=18`,
+        `/api/posts?page=${page}&limit=18&includeContent=false`,
       );
       const posts = Array.isArray(result.posts) ? result.posts : [];
       const serverHasMore = typeof result.hasMore === 'boolean' ? result.hasMore : null;
       return {
         posts,
-        // Be defensive: if the server omits hasMore (or it is false due to count issues),
-        // continue pagination while we keep receiving full pages.
+        // Keep pagination alive while we keep receiving full pages.
         hasMore: serverHasMore === true || posts.length === 18,
         page,
       };
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     refetchOnMount: cachedPage1 ? true : false,
     refetchOnWindowFocus: false,
     initialPageParam: 1,
@@ -351,7 +350,7 @@ export default function StoriesIndexContent() {
           // Persist a conservative "may have more" flag so we don't lock pagination.
           hasMore: Boolean(first.hasMore) || first.posts.length >= 18,
         };
-        localStorage.setItem('cache:index:page1', JSON.stringify(payload));
+        localStorage.setItem('cache:index:page1:v2', JSON.stringify(payload));
       }
     } catch {}
   }, [data]);

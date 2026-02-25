@@ -411,7 +411,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try {
         const endpoint = isCommunityContent
           ? '/api/posts/community?page=1&limit=100'
-          : '/api/posts/compact?page=1&limit=100';
+          : '/api/posts?page=1&limit=200&includeContent=false';
         const result = await getJson<{ posts: Post[]; hasMore?: boolean }>(endpoint);
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, hasMore: result.hasMore };
