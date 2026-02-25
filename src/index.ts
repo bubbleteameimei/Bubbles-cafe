@@ -1171,8 +1171,6 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
   const isProd = nodeEnv === 'production';
   const allowPreviewInProd =
     String(env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').toLowerCase() === 'true';
-  const allowPreviewInProd =
-    String(env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').to
 
   const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
 
