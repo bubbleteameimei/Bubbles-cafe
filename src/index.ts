@@ -73,6 +73,9 @@ interface Env {
 
   // Optional CORS allowlist (comma-separated origins)
   ADDITIONAL_CORS_ORIGINS?: string;
+  // Allow preview origins (vercel.app/netlify/pages.dev/replit) even when NODE_ENV=production.
+  // Prefer using ADDITIONAL_CORS_ORIGINS for strict allowlisting.
+  ALLOW_PREVIEW_ORIGINS_IN_PROD?: string;
 
   // Durable Objects
   LOCKS_DO: DurableObjectNamespace;
@@ -1166,6 +1169,10 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
 
   const nodeEnv = (env.NODE_ENV || '').toLowerCase();
   const isProd = nodeEnv === 'production';
+  const allowPreviewInProd =
+    String(env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').toLowerCase() === 'true';
+  const allowPreviewInProd =
+    String(env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').to
 
   const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
 
@@ -1224,8 +1231,16 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
     } else if (originRoot && apiRoot && originRoot === apiRoot) {
       // Same-site family (e.g., bubblescafe.space <-> api.bubblescafe.space)
       allowOrigin = origin;
-    } else if (!isProd && (isReplitOrigin(originHost) || isVercelOrigin(originHost) || isNetlifyOrigin(originHost) || isCloudflareOrigin(originHost))) {
-      // Preview domains are allowed in non-production only. In production, use ADDITIONAL_CORS_ORIGINS.
+    } else if (
+      (!isProd || allowPreviewInProd) &&
+      (isReplitOrigin(originHost) ||
+        isVercelOrigin(originHost) ||
+        isNetlifyOrigin(originHost) ||
+        isCloudflareOrigin(originHost))
+    ) {
+      // Preview domains are allowed in non-production only by default.
+      // To temporarily allow preview frontends against a production Worker, set ALLOW_PREVIEW_ORIGINS_IN_PROD=true.
+      // For strict allowlisting, prefer ADDITIONAL_CORS_ORIGINS.
       allowOrigin = origin;
     } else if (!isProd) {
       // For convenience, allow unlisted origins in non-production.
@@ -1248,7 +1263,7 @@ function getCorsHeaders(req: Request, env: Env): Record<string, string> {
       headers['Access-Control-Allow-Credentials'] = 'true';
     }
   }
- return headers;
+  return headers;
 }
 
 // CORS preflight handler for API routes
