@@ -324,11 +324,13 @@ export default function StoriesIndexContent() {
         `/api/posts/compact?page=${page}&limit=18`,
       );
       const posts = Array.isArray(result.posts) ? result.posts : [];
+      const serverHasMore = typeof result.hasMore === 'boolean' ? result.hasMore : null;
       return {
         posts,
-        hasMore: Boolean(result.hasMore),
-        page,
-      };
+        // Be defensive: if the server omits hasMore (or it is false due to count issues),
+        // continue pagination while we keep receiving full pages.
+        hasMore: serverHasMore === true || posts.length === 18,
+
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     staleTime: 5 * 60 * 1000,
