@@ -236,8 +236,13 @@ export function registerCompactPostsRoutes(router: any) {
       }
 
       const rows = (await res.json().catch(() => [])) as any[];
-      if (!Array.isArray(rows) || rows.length === 0) {
-        // If Supabase is configured but returns no rows, fall back to WordPress so the index isn't empty.
+
+      // If Supabase is configured but appears incomplete (common when WordPress -> Supabase mirroring
+      // is still catching up), use WordPress as a source of truth for the index listing.
+      const shouldPreferWordpressFallback =
+        !category && !searchValue && (typeof total !== 'number' || total < page * limit + 1);
+
+      if ((!Array.isArray(rows) || rows.length === 0) || (shouldPreferWordpressFallback && rows.length < limit)) {
         try {
           const wpFallback = await fetchWordpressCompactPosts(env, {
             page,
@@ -254,25 +259,30 @@ export function registerCompactPostsRoutes(router: any) {
           // ignore
         }
 
-        return json(
-          { posts: [], hasMore: false },
-          {
-            headers: {
-              'Cache-Control': 'max-age=60, stale-while-revalidate=120',
+        if (!Array.isArray(rows) || rows.length === 0) {
+          return json(
+            { posts: [], hasMore: false },
+            {
+              headers: {
+                'Cache-Control': 'no-store, max-age=0',
+              },
             },
-          },
-        );
+          );
+        }
       }
 
-      const posts = rows.map(mapCompactPostRow);
+      const posts = Array.isArray(rows) ? rows.map(mapCompactPostRow) : [];
 
       const hasMore = typeof total === 'number' ? page * limit < total : posts.length === limit;
+
+      const cacheParam = (search.get('cache') || '').toLowerCase();
+      const allowCache = cacheParam === '1' || cacheParam === 'true';
 
       return json(
         { posts, hasMore },
         {
           headers: {
-            'Cache-Control': 'max-age=60, stale-while-revalidate=120',
+            'Cache-Control': allowCache ? 'max-age=30, stale-while-revalidate=30' : 'no-store, max-age=0',
           },
         },
       );

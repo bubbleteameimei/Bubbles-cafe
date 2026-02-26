@@ -1,22 +1,19 @@
-// src/index.ts
 import { Router } from 'itty-router';
-import { registerReactionsRoutes } from './worker/reactions';
-import { registerAnalyticsRoutes } from './worker/analytics';
-import { registerPostsRoutes } from './worker/posts';
-import { registerCompactPostsRoutes } from './worker/posts-compact';
-import { registerCommentsRoutes } from './worker/comments';
-import { registerWordpressRoutes } from './worker/wordpress';
-import { registerNotificationsRoutes } from './worker/notifications';
-import { registerBookmarksRoutes } from './worker/bookmarks';
-import { registerNewsletterRoutes } from './worker/newsletter';
-import { registerContactEmailRoutes } from './worker/contact-email';
 
-// Minimal JSON helper to avoid extras dependency
-const json = (data: any, init?: ResponseInit) =>
-  new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    status: init?.status ?? 200,
-  });
+import { registerAnalyticsRoutes } from './worker/analytics';
+import { registerBookmarksRoutes } from './worker/bookmarks';
+import { registerCommentsRoutes } from './worker/comments';
+import { registerContactEmailRoutes } from './worker/contact-email';
+import { registerNewsletterRoutes } from './worker/newsletter';
+import { registerNotificationsRoutes } from './worker/notifications';
+import { registerCompactPostsRoutes } from './worker/posts-compact';
+import { registerPostsRoutes } from './worker/posts';
+import { registerReactionsRoutes } from './worker/reactions';
+import { registerWordpressRoutes } from './worker/wordpress';
+
+// ============================================================================
+// ROUTER BOOTSTRAP
+// ============================================================================
 
 const router = Router();
 registerReactionsRoutes(router);
@@ -30,6 +27,38 @@ registerBookmarksRoutes(router);
 registerNewsletterRoutes(router);
 registerContactEmailRoutes(router);
 
+// Minimal JSON helper (mirrors src/worker/utils.ts)
+const json = (data: any, init?: ResponseInit): Response =>
+  new Response(JSON.stringify(data), {
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    status: init?.status ?? 200,
+  });
+
+// CORS preflight handler for API routes
+router.options('/api/*', (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+  return new Response(null, { status: 204, headers });
+});
+
+// CSRF TOKEN: compatibility endpoint for legacy clients
+// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
+// This endpoint exists only so clients expecting /api/csrf-token don't break.
+router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
+  try {
+    const token = crypto.randomUUID();
+    return json(
+      { csrfToken: token },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      },
+    );
+  } catch {
+    return json({ csrfToken: null }, { status: 200 });
+  }
+});
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -41,6 +70,12 @@ interface Env {
   SYNC_METADATA_KV: KVNamespace;
   ANALYTICS_KV: KVNamespace;
   CACHE_KV: KVNamespace;
+
+  // Optional CORS allowlist (comma-separated origins)
+  ADDITIONAL_CORS_ORIGINS?: string;
+  // Allow preview origins (vercel.app/netlify/pages.dev/replit) even when NODE_ENV=production.
+  // Prefer using ADDITIONAL_CORS_ORIGINS for strict allowlisting.
+  ALLOW_PREVIEW_ORIGINS_IN_PROD?: string;
 
   // Durable Objects
   LOCKS_DO: DurableObjectNamespace;
@@ -1059,33 +1094,173 @@ router.get('/health', async () => {
   return json({ status: 'ok' });
 });
 
+router.get('/api/supabase/health', async (_req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ ok: false, error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+  const url = new URL(`${baseUrl}/rest/v1/posts`);
+  url.searchParams.set('select', 'id');
+  url.searchParams.set('limit', '1');
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    return json({ ok: false, status: res.status }, { status: 502 });
+  }
+
+  return json({ ok: true });
+});
+
 router.get('/', async () => {
   return json({ error: 'Not Found' }, { status: 404 });
 });
 
-// Basic CORS support for API routes
+// Basic CORS support for API routes (Worker-native)
+//
+// IMPORTANT: Unlike the legacy Express backend, the Worker must not reflect
+// arbitrary Origin headers. We only allow a configured allowlist, same-site
+// origins, and known preview domains.
 function getCorsHeaders(req: Request, env: Env): Record<string, string> {
-  const origin =
-    req.headers.get('Origin') ||
-    req.headers.get('origin') ||
-    '';
+  const originHeader = req.headers.get('Origin') || req.headers.get('origin') || '';
+  const origin = originHeader && originHeader !== 'null' ? originHeader : '';
+
+  const normalize = (value: string): string => {
+    try {
+      const u = new URL(value);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return value;
+    }
+  };
+
+  const getRoot = (host?: string): string | null => {
+    if (!host) return null;
+    try {
+      const h = host.toLowerCase().split(':')[0].trim();
+      const parts = h.split('.').filter(Boolean);
+      if (parts.length < 2) return h;
+      return parts.slice(-2).join('.');
+    } catch {
+      return null;
+    }
+  };
+
+  const isReplitOrigin = (o?: string) =>
+    !!o &&
+    (/\.repl\.co$/.test(o) ||
+      /\.replit\.dev$/.test(o) ||
+      /\.replit\.app$/.test(o) ||
+      o.includes('.replit.') ||
+      o.includes('repl.co'));
+
+  const isVercelOrigin = (o?: string) => !!o && (/\.vercel\.app$/.test(o) || /\.vercel\.dev$/.test(o));
+
+  const isNetlifyOrigin = (o?: string) => !!o && /\.netlify\.app$/.test(o);
+
+  const isCloudflareOrigin = (o?: string) => !!o && /\.pages\.dev$/.test(o);
+
+  const nodeEnv = (env.NODE_ENV || '').toLowerCase();
+  const isProd = nodeEnv === 'production';
+  const allowPreviewInProd =
+    String(env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').toLowerCase() === 'true';
 
   const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/+$/, '');
 
-  const allowOrigin = origin && origin !== 'null' ? origin : frontendBase;
-
-  const headers: Record<string, string> = {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers':
-      'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
-    Vary: 'Origin',
-  };
-
-  if (allowOrigin !== '*') {
-    headers['Access-Control-Allow-Credentials'] = 'true';
+  const allowed = new Set<string>();
+  for (const item of [frontendBase, env.BACKEND_BASE_URL].filter((v) => typeof v === 'string' && v.trim())) {
+    allowed.add(normalize(String(item)));
   }
 
+  // Allow local dev origins in non-production
+  if (!isProd) {
+    allowed.add('http://localhost:3000');
+    allowed.add('http://localhost:5173');
+    allowed.add('http://localhost:5174');
+  }
+
+  // Additional allowlisted origins (comma-separated)
+  try {
+    const extra = (env.ADDITIONAL_CORS_ORIGINS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    for (const v of extra) {
+      allowed.add(normalize(v));
+    }
+  } catch {
+    // ignore
+  }
+
+  let allowOrigin: string | null = null;
+
+  if (!origin) {
+    // Non-browser clients (no Origin) can be wildcarded safely (no credentials).
+    allowOrigin = '*';
+  } else {
+    const normalizedOrigin = normalize(origin);
+    const originHost = (() => {
+      try {
+        return new URL(origin).host;
+      } catch {
+        return '';
+      }
+    })();
+    const originRoot = getRoot(originHost);
+
+    const reqHost = (() => {
+      try {
+        return new URL(req.url).host;
+      } catch {
+        return '';
+      }
+    })();
+    const apiRoot = getRoot(reqHost);
+
+    if (allowed.has(normalizedOrigin)) {
+      allowOrigin = origin;
+    } else if (originRoot && apiRoot && originRoot === apiRoot) {
+      // Same-site family (e.g., bubblescafe.space <-> api.bubblescafe.space)
+      allowOrigin = origin;
+    } else if (
+      (!isProd || allowPreviewInProd) &&
+      (isReplitOrigin(originHost) ||
+        isVercelOrigin(originHost) ||
+        isNetlifyOrigin(originHost) ||
+        isCloudflareOrigin(originHost))
+    ) {
+      // Preview domains are allowed in non-production only by default.
+      // To temporarily allow preview frontends against a production Worker, set ALLOW_PREVIEW_ORIGINS_IN_PROD=true.
+      // For strict allowlisting, prefer ADDITIONAL_CORS_ORIGINS.
+      allowOrigin = origin;
+    } else if (!isProd) {
+      // For convenience, allow unlisted origins in non-production.
+      allowOrigin = origin;
+    } else {
+      // Blocked origin: do not emit ACAO.
+      allowOrigin = null;
+    }
+  }
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key',
+    Vary: 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers',
+  };
+
+  if (allowOrigin) {
+    headers['Access-Control-Allow-Origin'] = allowOrigin;
+    if (allowOrigin !== '*') {
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
+  }
   return headers;
 }
 
@@ -1096,25 +1271,18 @@ router.options('/api/*', (req: Request, env: Env) => {
 });
 
 // CSRF TOKEN: compatibility endpoint for legacy clients
-// Note: Worker APIs are JWT-based and do not require CSRF protection.
-// This endpoint returns a stateless token so clients expecting /api/csrf-token
-// can continue to function without relying on the legacy Express backend.
-router.get('/api/csrf-token', async (_req: Request) => {
-  try {
-    const token = crypto.randomUUID();
-    const headers: Record<string, string> = {
-      'Cache-Control': 'no-store, max-age=0',
-    };
-    try {
-      headers['Set-Cookie'] =
-        `XSRF-TOKEN=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Secure`;
-    } catch {
-      // Ignore cookie errors (non-browser contexts)
-    }
-    return json({ csrfToken: token }, { headers });
-  } catch {
-    return json({ csrfToken: null }, { status: 200 });
-  }
+// Note: Worker APIs are Bearer/JWT based and do not validate CSRF tokens server-side.
+// This endpoint exists only so clients expecting /api/csrf-token don't break.
+router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
+  const token = crypto.randomUUID();
+  return json(
+    { csrfToken: token },
+    {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    },
+  );
 });
 
 // CONFIG: Public client bootstrap (Supabase, URLs, Google OAuth)
@@ -9106,7 +9274,8 @@ export default {
 
       if (shouldRunSync) {
         try {
-          await fetch('https://api.bubblescafe.space/api/wordpress/sync/manual', {
+          const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
+          await fetch(`${base}/api/wordpress/sync/manual`, {
             method: 'POST',
             headers: {
               'X-Scheduler': 'true',

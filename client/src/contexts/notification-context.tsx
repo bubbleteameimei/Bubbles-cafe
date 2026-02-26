@@ -260,7 +260,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const checkForNewStories = async () => {
       try {
         const result = await apiRequest<{ posts?: Array<{ id: number; slug: string; title: string; createdAt: string }> }>(
-          '/api/posts/compact?page=1&limit=1',
+          '/api/posts?limit=1&includeContent=false',
         );
         const posts = Array.isArray(result.posts) ? result.posts : [];
         if (!posts.length) return;

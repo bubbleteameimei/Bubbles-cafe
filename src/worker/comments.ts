@@ -31,9 +31,77 @@ function parseCookies(header: string | null): Record<string, string> {
   return result;
 }
 
-function getAnonCommentIdFromCookie(header: string | null): string | null {
+function base64UrlEncode(bytes: ArrayBuffer): string {
+  const u8 = new Uint8Array(bytes);
+  let str = '';
+  for (const b of u8) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+async function signAnonCommentId(env: Env, id: string): Promise<string> {
+  const secret = (env.CSRF_SECRET || '').trim();
+  if (!secret) return id;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(id));
+  return `${id}.${base64UrlEncode(sig)}`;
+}
+
+async function verifySignedAnonCommentId(env: Env, signed: string): Promise<string | null> {
+  const secret = (env.CSRF_SECRET || '').trim();
+  if (!secret) return signed || null;
+
+  const lastDot = signed.lastIndexOf('.');
+  if (lastDot <= 0) return null;
+
+  const id = signed.slice(0, lastDot);
+  const sigB64 = signed.slice(lastDot + 1);
+  if (!id || !sigB64) return null;
+
+  let sigBytes: Uint8Array;
+  try {
+    const padded = sigB64.replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(padded + '==='.slice((padded.length + 3) % 4));
+    sigBytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) sigBytes[i] = raw.charCodeAt(i);
+  } catch {
+    return null;
+  }
+
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    );
+
+    const ok = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      sigBytes,
+      new TextEncoder().encode(id),
+    );
+
+    return ok ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getAnonCommentIdFromCookie(env: Env, header: string | null): Promise<string | null> {
   const cookies = parseCookies(header);
-  return cookies['anon_comment_id'] || null;
+  const raw = cookies['anon_comment_id'] || null;
+  if (!raw) return null;
+  return verifySignedAnonCommentId(env, raw);
 }
 
 function makeAnonCommentId(): string {
@@ -103,9 +171,10 @@ export function registerCommentsRoutes(router: any) {
           userKey = String(userId);
         }
       }
+
       if (!userKey) {
         const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-        const anonId = getAnonCommentIdFromCookie(cookieHeader);
+        const anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
         if (anonId) {
           userKey = `anon:${anonId}`;
         }
@@ -129,6 +198,7 @@ export function registerCommentsRoutes(router: any) {
           (row as any).approved === undefined
             ? Boolean(row.is_approved)
             : Boolean((row as any).approved);
+
         const ownerKey = meta && meta.ownerKey != null ? String(meta.ownerKey) : null;
         const isOwner = !!userKey && !!ownerKey && String(ownerKey) === userKey;
         const uxApproved = baseApproved || isOwner;
@@ -201,16 +271,15 @@ export function registerCommentsRoutes(router: any) {
       }
 
       const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-      let anonId = getAnonCommentIdFromCookie(cookieHeader);
+      let anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
       let setAnonCookie = false;
-      if (!userId) {
-        if (!anonId) {
-          anonId = makeAnonCommentId();
-          setAnonCookie = true;
-        }
+      if (!userId && !anonId) {
+        anonId = makeAnonCommentId();
+        setAnonCookie = true;
       }
 
-      const userKey = userId != null && Number.isFinite(userId) ? String(userId) : `anon:${anonId}`;
+      const userKey =
+        userId != null && Number.isFinite(userId) ? String(userId) : `anon:${String(anonId)}`;
 
       const authorFromBody = typeof body.author === 'string' ? body.author.trim() : '';
       const author = authorFromBody || (userId != null ? 'User' : 'Guest');
@@ -328,8 +397,9 @@ export function registerCommentsRoutes(router: any) {
 
       const headersInit: Record<string, string> = {};
       if (setAnonCookie && !userId && anonId) {
+        const signed = await signAnonCommentId(env, anonId);
         headersInit['Set-Cookie'] = `anon_comment_id=${encodeURIComponent(
-          anonId,
+          signed,
         )}; Path=/; Max-Age=31536000; SameSite=Lax`;
       }
 
@@ -408,9 +478,10 @@ export function registerCommentsRoutes(router: any) {
           userKey = String(userId);
         }
       }
+
       if (!userKey) {
         const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-        const anonId = getAnonCommentIdFromCookie(cookieHeader);
+        const anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
         userKey = anonId ? `anon:${anonId}` : 'anon';
       }
 
@@ -533,6 +604,7 @@ export function registerCommentsRoutes(router: any) {
       if (!res.ok) {
         return json({ error: 'Failed to update comment' }, { status: 500 });
       }
+
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
         return json({ error: 'Comment not found' }, { status: 404 });
@@ -551,7 +623,7 @@ export function registerCommentsRoutes(router: any) {
       }
 
       const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-      const anonId = getAnonCommentIdFromCookie(cookieHeader);
+      const anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
       const userKey =
         currentUserId != null && Number.isFinite(currentUserId)
           ? String(currentUserId)
@@ -638,12 +710,11 @@ export function registerCommentsRoutes(router: any) {
 
       const baseApproved = upd.is_approved === true;
       const updatedOwnerKey =
-        metaOut && (metaOut as any).ownerKey != null
-          ? String((metaOut as any).ownerKey)
-          : ownerKey;
+        metaOut && (metaOut as any).ownerKey != null ? String((metaOut as any).ownerKey) : ownerKey;
       const isOwnerNow =
         (userKey && updatedOwnerKey && userKey === updatedOwnerKey) ||
         (currentUserId != null && upd.user_id != null && Number(upd.user_id) === currentUserId);
+
       const approved = baseApproved || isOwnerNow;
 
       const mapped = {
@@ -687,10 +758,7 @@ export function registerCommentsRoutes(router: any) {
       };
 
       const getUrl = new URL(`${baseUrl}/rest/v1/comments`);
-      getUrl.searchParams.set(
-        'select',
-        'id,content,user_id,metadata,is_approved,parent_id,created_at',
-      );
+      getUrl.searchParams.set('select', 'id,content,user_id,metadata,is_approved,parent_id,created_at');
       getUrl.searchParams.set('id', `eq.${commentId}`);
       getUrl.searchParams.set('limit', '1');
 
@@ -698,6 +766,7 @@ export function registerCommentsRoutes(router: any) {
       if (!res.ok) {
         return json({ error: 'Failed to delete comment' }, { status: 500 });
       }
+
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
         return json({ error: 'Comment not found' }, { status: 404 });
@@ -716,7 +785,7 @@ export function registerCommentsRoutes(router: any) {
       }
 
       const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-      const anonId = getAnonCommentIdFromCookie(cookieHeader);
+      const anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
       const userKey =
         currentUserId != null && Number.isFinite(currentUserId)
           ? String(currentUserId)
@@ -844,15 +913,13 @@ export function registerCommentsRoutes(router: any) {
         supabaseUserId = await getSupabaseUserIdFromJwt(env, token);
       }
 
-      let cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
-      let anonId = getAnonCommentIdFromCookie(cookieHeader);
+      const cookieHeader = req.headers.get('Cookie') || req.headers.get('cookie') || '';
+      let anonId = await getAnonCommentIdFromCookie(env, cookieHeader);
       let setAnonCookie = false;
 
-      if (!supabaseUserId) {
-        if (!anonId) {
-          anonId = makeAnonCommentId();
-          setAnonCookie = true;
-        }
+      if (!supabaseUserId && !anonId) {
+        anonId = makeAnonCommentId();
+        setAnonCookie = true;
       }
 
       const userKey =
@@ -910,17 +977,9 @@ export function registerCommentsRoutes(router: any) {
 
       let newState: 'none' | 'upvote' | 'downvote';
       if (isUpvote) {
-        if (existingVote && existingVote.is_upvote === true) {
-          newState = 'none';
-        } else {
-          newState = 'upvote';
-        }
+        newState = existingVote && existingVote.is_upvote === true ? 'none' : 'upvote';
       } else {
-        if (existingVote && existingVote.is_upvote === false) {
-          newState = 'none';
-        } else {
-          newState = 'downvote';
-        }
+        newState = existingVote && existingVote.is_upvote === false ? 'none' : 'downvote';
       }
 
       if (newState === 'none' && existingVote) {
@@ -935,7 +994,7 @@ export function registerCommentsRoutes(router: any) {
             Prefer: 'return=minimal',
           },
         }).catch(() => {});
-      } else if (newState === 'upvote' || newState === 'downvote') {
+      } else {
         const votePayload = {
           comment_id: commentId,
           user_id: userKey,
@@ -968,12 +1027,8 @@ export function registerCommentsRoutes(router: any) {
         }
       }
 
-      const currentUp = Number(
-        (meta.votes && meta.votes.upvotes) ?? meta.upvotes ?? 0,
-      );
-      const currentDown = Number(
-        (meta.votes && meta.votes.downvotes) ?? meta.downvotes ?? 0,
-      );
+      const currentUp = Number((meta.votes && meta.votes.upvotes) ?? meta.upvotes ?? 0);
+      const currentDown = Number((meta.votes && meta.votes.downvotes) ?? meta.downvotes ?? 0);
 
       let upvotes = isNaN(currentUp) ? 0 : currentUp;
       let downvotes = isNaN(currentDown) ? 0 : currentDown;
@@ -1000,10 +1055,7 @@ export function registerCommentsRoutes(router: any) {
 
       meta.upvotes = upvotes;
       meta.downvotes = downvotes;
-      meta.votes = {
-        upvotes,
-        downvotes,
-      };
+      meta.votes = { upvotes, downvotes };
 
       const updateCommentUrl = new URL(`${baseUrl}/rest/v1/comments`);
       updateCommentUrl.searchParams.set('id', `eq.${commentId}`);
@@ -1020,8 +1072,9 @@ export function registerCommentsRoutes(router: any) {
 
       const responseHeaders: Record<string, string> = {};
       if (setAnonCookie && anonId) {
+        const signed = await signAnonCommentId(env, anonId);
         responseHeaders['Set-Cookie'] = `anon_comment_id=${encodeURIComponent(
-          anonId,
+          signed,
         )}; Path=/; Max-Age=31536000; SameSite=Lax`;
       }
 

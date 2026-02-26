@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -247,19 +247,51 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }, [theme, setUIHidden]);
 
   // Toggle UI with debug logging wrapper
-  const toggleUIWithDebug = (reason: string) => {
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+  const toggleUIWithDebug = useCallback(
+    (reason: string) => {
+      try {
+        if (debugEnabled) {
+          console.log('[Reader.debug] toggleUI invoked', { reason, isUIHiddenBefore: isUIHidden });
+        }
+      } catch {}
+      toggleUI();
+      try {
+        if (debugEnabled) {
+          console.log('[Reader.debug] toggleUI scheduled state flip');
+        }
+      } catch {}
+    },
+    [debugEnabled, isUIHidden, toggleUI],
+  );
+
+  const handleReaderNoDistractionToggle = useCallback(
+    (e: React.MouseEvent) => {
+      if (isAnyDialogOpen) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Ignore taps on interactive controls.
+      if (
+        target.closest(
+          'button,a,[role="button"],input,textarea,select,label,[data-no-distraction-toggle="false"]',
+        )
+      ) {
+        return;
       }
-    } catch {}
-    toggleUI();
-    try {
-      if (debugEnabled) {
-        console.log('[Reader.debug] toggleUI scheduled state flip');
+
+      // Ignore when user is selecting text.
+      try {
+        const sel = window.getSelection?.();
+        if (sel && sel.toString().trim().length > 0) return;
+      } catch {
+        // ignore
       }
-    } catch {}
-  };
+
+      toggleUIWithDebug('tap');
+    },
+    [isAnyDialogOpen, toggleUIWithDebug],
+  );
 
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
@@ -411,7 +443,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       try {
         const endpoint = isCommunityContent
           ? '/api/posts/community?page=1&limit=100'
-          : '/api/posts/compact?page=1&limit=100';
+          : '/api/posts?page=1&limit=200&includeContent=false';
         const result = await getJson<{ posts: Post[]; hasMore?: boolean }>(endpoint);
         const posts = Array.isArray(result.posts) ? result.posts : [];
         return { posts, hasMore: result.hasMore };
@@ -706,6 +738,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }
 
   // Get current post: prefer fully-fetched content
+  // Avoid the "no content" phase for initial loads: if we're on a slug route,
+  // wait for the full post fetch before rendering the reader.
+  if (routeSlug && isFetchingPost && !currentPostFull) {
+    return <RouteLoader label="Loading story" minHeight="60vh" />;
+  }
+
   const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
 
   if (!currentPost && routeSlug) {
@@ -1707,7 +1745,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
-                <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                isFetchingPost ? (
+                  <div className="text-sm text-muted-foreground py-2">Loading story…</div>
+                ) : (
+                  <div className="text-sm text-muted-foreground py-2">Content unavailable.</div>
+                )
               ) : null}
             </div>
             {/* Inline comment dialog (selection-based) */}

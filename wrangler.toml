@@ -8,10 +8,12 @@ account_id = "50154307e88967cd12ab1262230de6ac"
 # Environment variables
 [vars]
 FRONTEND_URL = "https://bubblescafe.space"
+BACKEND_BASE_URL = "https://api.bubblescafe.space"
 NODE_ENV = "production"
-ENABLE_WORDPRESS_SCHEDULER = "true"
-# Ensure we don't accidentally serve any legacy/local auth flows from the API
 DISABLE_LOCAL_AUTH = "true"
+# Temporary: allow Vercel preview frontends to call the production Worker API.
+# Prefer setting ADDITIONAL_CORS_ORIGINS to a specific preview URL instead.
+ALLOW_PREVIEW_ORIGINS_IN_PROD = "true"
 
 # WordPress public API base (no query string). Used for sync fallback.
 WORDPRESS_API = "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts"
