@@ -935,11 +935,27 @@ function getApiBase(env: Env): string {
 
 const trendingQueries = new Map<string, number>();
 
+const MAX_TRENDING_QUERIES = 500;
+const MAX_SEARCH_CACHE_ENTRIES = 200;
+
+function pruneMapToSize<K, V>(map: Map<K, V>, maxSize: number): void {
+  try {
+    while (map.size > maxSize) {
+      const first = map.keys().next();
+      if (first.done) break;
+      map.delete(first.value);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function recordTrendingQuery(query: string): void {
   try {
     const key = query.trim().toLowerCase().slice(0, 80);
     if (!key) return;
     trendingQueries.set(key, (trendingQueries.get(key) || 0) + 1);
+    pruneMapToSize(trendingQueries, MAX_TRENDING_QUERIES);
   } catch {
     // ignore
   }
@@ -953,6 +969,27 @@ interface SearchCacheEntry {
 }
 
 const searchCache = new Map<string, SearchCacheEntry>();
+
+function pruneSearchCache(): void {
+  try {
+    const now = Date.now();
+
+    // TTL eviction
+    for (const [key, entry] of searchCache.entries()) {
+      if (!entry || typeof entry.ts !== 'number') {
+        searchCache.delete(key);
+        continue;
+      }
+      if (now - entry.ts > SEARCH_CACHE_TTL_MS) {
+        searchCache.delete(key);
+      }
+    }
+
+    pruneMapToSize(searchCache, MAX_SEARCH_CACHE_ENTRIES);
+  } catch {
+    // ignore
+  }
+}
 
 function makeSearchCacheKey(params: {
   q: string;
@@ -5439,6 +5476,8 @@ router.get('/api/search', async (req: Request, env: Env) => {
       tags: tagFilters,
     });
 
+    pruneSearchCache();
+
     const cached = searchCache.get(cacheKey);
     if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
       return json(cached.data);
@@ -5461,6 +5500,7 @@ router.get('/api/search', async (req: Request, env: Env) => {
         },
       };
       searchCache.set(cacheKey, { ts: Date.now(), data: payload });
+      pruneSearchCache();
       return json(payload);
     }
 
@@ -5545,6 +5585,7 @@ router.get('/api/search', async (req: Request, env: Env) => {
 
         recordTrendingQuery(searchQuery);
         searchCache.set(cacheKey, { ts: Date.now(), data: payload });
+        pruneSearchCache();
         return json(payload);
       }
     }
@@ -5566,6 +5607,7 @@ router.get('/api/search', async (req: Request, env: Env) => {
     };
     recordTrendingQuery(searchQuery);
     searchCache.set(cacheKey, { ts: Date.now(), data: payload });
+    pruneSearchCache();
     return json(payload);
   } catch {
     return json({ error: 'An error occurred during search', results: [] }, { status: 500 });

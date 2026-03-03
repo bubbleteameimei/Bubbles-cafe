@@ -112,24 +112,35 @@ const envSchema = z.object({
 
 // Validate environment variables
 function validateEnv() {
-  try {
-    const env = envSchema.parse(process.env);
-    return env;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      try {
-        process.stderr.write('Environment validation failed:\n');
-        error.errors.forEach((err) => {
-          process.stderr.write(`  - ${err.path.join('.')}: ${err.message}\n`);
-        });
-        process.stderr.write('\nPlease check your environment variables and try again.\n');
-      } catch {}
-      // Do not exit; allow the app to start with best-effort defaults
-      // Missing critical vars (like DATABASE_URL) will be handled by downstream code
-      return process.env as any;
-    }
-    throw error;
+  const nodeEnv = (process.env.NODE_ENV || 'development').toLowerCase();
+  const isProd = nodeEnv === 'production';
+
+  const parsed = envSchema.safeParse(process.env);
+  if (parsed.success) {
+    return parsed.data;
   }
+
+  try {
+    process.stderr.write('Environment validation failed:\n');
+    parsed.error.errors.forEach((err) => {
+      process.stderr.write(`  - ${err.path.join('.')}: ${err.message}\n`);
+    });
+    process.stderr.write('\n');
+  } catch {}
+
+  if (isProd) {
+    // In production, fail fast on invalid/missing configuration.
+    try {
+      process.stderr.write('Refusing to start in production with invalid environment configuration.\n');
+    } catch {}
+    process.exit(1);
+  }
+
+  // In development/test, allow best-effort startup.
+  try {
+    process.stderr.write('Continuing with best-effort environment defaults (non-production).\n');
+  } catch {}
+  return process.env as any;
 }
 
 // Export validated environment variables
@@ -195,7 +206,7 @@ export const config = {
 // Type for the config object
 export type Config = typeof config;
 
-// Warn (do not exit) on weak session secret in production
+// Fail fast on weak session secret in production
 if (config.isProd) {
   const weakDefaults = new Set([
     'horror-stories-session-secret-development-only-change-this-in-production-environment'
@@ -203,9 +214,9 @@ if (config.isProd) {
   const secret = config.session.secret || '';
   if (secret.length < 64 || weakDefaults.has(secret)) {
     try {
-      process.stderr.write('WARNING: SESSION_SECRET is weak or using a development default.\n');
+      process.stderr.write('ERROR: SESSION_SECRET is weak or using a development default.\n');
       process.stderr.write('Provide a strong random SESSION_SECRET (>= 64 chars) in the environment.\n');
     } catch {}
-    // Continue without exiting to avoid early termination on platforms that inject env later
+    process.exit(1);
   }
 }

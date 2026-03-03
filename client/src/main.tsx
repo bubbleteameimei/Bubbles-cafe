@@ -20,6 +20,10 @@ import { enableViewTransitions } from "@/lib/view-transitions";
 // Global unhandled promise rejection handler (gate repeated logs once per session)
 window.addEventListener("unhandledrejection", (event) => {
   try {
+    // Respect cookie consent: only send client errors if analytics/performance consent is granted.
+    const allowReporting = isCategoryAllowed("analytics") || isCategoryAllowed("performance");
+    if (!allowReporting) return;
+
     const msg = event?.reason instanceof Error ? event.reason.message : String(event?.reason ?? "Unknown");
     const gateKey = `once_unhandled_${btoa(unescape(encodeURIComponent(String(msg))).slice(0, 64))}`;
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(gateKey)) return;
@@ -150,14 +154,18 @@ try {
   let msg = "Unknown boot error";
   try {
     msg = e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown boot error";
-    const API_BASE = getApiBaseUrl();
-    const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: "boot-failure", message: String(msg) }),
-      credentials: "include",
-    }).catch(() => {});
+
+    const allowReporting = isCategoryAllowed("analytics") || isCategoryAllowed("performance");
+    if (allowReporting) {
+      const API_BASE = getApiBaseUrl();
+      const url = API_BASE ? `${API_BASE}/api/errors` : "/api/errors";
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "boot-failure", message: String(msg) }),
+        credentials: "include",
+      }).catch(() => {});
+    }
   } catch {}
 
   try {

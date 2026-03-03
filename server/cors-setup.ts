@@ -65,13 +65,16 @@ export function setupCors(app: Express) {
     /\.pages\.dev$/.test(o)
   );
 
-  
+  const debugLogs = process.env.DEV_REQUEST_LOGGING === 'true';
+  const allowPreviewInProd = String(process.env.ALLOW_PREVIEW_ORIGINS_IN_PROD || '').toLowerCase() === 'true';
 
   // CORS middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin ? String(req.headers.origin) : undefined;
 
-    console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
+    if (debugLogs) {
+      console.log(`[CORS] Request from origin: ${origin || 'none'}, NODE_ENV: ${process.env.NODE_ENV}`);
+    }
 
     // Helper to compute naive registrable domain (eTLD+1) for same-site allowances.
     const getRoot = (host?: string): string | null => {
@@ -95,57 +98,76 @@ export function setupCors(app: Express) {
     const apiHost = apiHostHeader.split(',')[0].trim();
     const apiRoot = getRoot(apiHost);
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Allow specific origins and include credentials
     if (origin && normalizedAllowed.has(originNormalized!)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed configured origin: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed configured origin: ${origin}`);
     }
     // Same-site family: allow origins that share the same registrable domain as the API host (e.g., bubblescafe.space <-> api.bubblescafe.space)
     else if (origin && originRoot && apiRoot && originRoot === apiRoot) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed same-site origin: ${origin} (root: ${originRoot})`);
+      if (debugLogs) console.log(`[CORS] Allowed same-site origin: ${origin} (root: ${originRoot})`);
     }
-    // Check for Replit domains (works for both dev and prod)
-    else if (isReplitOrigin(origin)) {
+    // Preview domains are only allowed outside production, unless explicitly enabled.
+    else if (origin && !isProd && isReplitOrigin(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed Replit domain: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed Replit domain: ${origin}`);
     }
-    // Allow Vercel preview domains (works in production previews)
-    else if (isVercelOrigin(origin)) {
+    else if (origin && !isProd && isVercelOrigin(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed Vercel preview domain: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed Vercel preview domain: ${origin}`);
     }
-    // Allow Netlify preview domains
-    else if (isNetlifyOrigin(origin)) {
+    else if (origin && !isProd && isNetlifyOrigin(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed Netlify preview domain: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed Netlify preview domain: ${origin}`);
     }
-    // Allow Cloudflare Pages preview domains
-    else if (isCloudflareOrigin(origin)) {
+    else if (origin && !isProd && isCloudflareOrigin(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin as string);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed Cloudflare Pages domain: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed Cloudflare Pages domain: ${origin}`);
+    }
+    else if (origin && isProd && allowPreviewInProd && isReplitOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      if (debugLogs) console.log(`[CORS] Allowed Replit domain (prod override): ${origin}`);
+    }
+    else if (origin && isProd && allowPreviewInProd && isVercelOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      if (debugLogs) console.log(`[CORS] Allowed Vercel preview domain (prod override): ${origin}`);
+    }
+    else if (origin && isProd && allowPreviewInProd && isNetlifyOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      if (debugLogs) console.log(`[CORS] Allowed Netlify preview domain (prod override): ${origin}`);
+    }
+    else if (origin && isProd && allowPreviewInProd && isCloudflareOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin as string);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      if (debugLogs) console.log(`[CORS] Allowed Cloudflare Pages domain (prod override): ${origin}`);
     }
     // If no match but we're not in production, allow the origin anyway for development convenience
-    else if (origin && process.env.NODE_ENV !== 'production') {
+    else if (origin && !isProd) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      console.log(`[CORS] Allowed unlisted origin in development: ${origin}`);
+      if (debugLogs) console.log(`[CORS] Allowed unlisted origin in development: ${origin}`);
     }
     // In production, be more restrictive but still log what's being blocked
-    else if (origin && process.env.NODE_ENV === 'production') {
-      console.warn(`[CORS] Blocked unauthorized origin in production: ${origin}`);
+    else if (origin && isProd) {
+      if (debugLogs) console.warn(`[CORS] Blocked unauthorized origin in production: ${origin}`);
     }
     // No origin header (like direct API calls)
     else if (!origin) {
       // No credentials for wildcard; do not set credentials when origin is absent
       res.setHeader("Access-Control-Allow-Origin", "*");
-      console.log(`[CORS] Allowed request without origin header`);
+      if (debugLogs) console.log(`[CORS] Allowed request without origin header`);
     }
 
     // Allow specific headers
