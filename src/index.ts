@@ -8603,6 +8603,168 @@ router.get('/api/posts/admin/themes', async (req: Request, env: Env) => {
   }
 });
 
+// Health + diagnostics
+router.get('/api/health', (_req: Request, _env: Env) => {
+  return json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+router.get('/api/health/supabase', async (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+
+  const required = {
+    SUPABASE_URL: !!(env.SUPABASE_URL && String(env.SUPABASE_URL).trim()),
+    SUPABASE_ANON_KEY: !!(env.SUPABASE_ANON_KEY && String(env.SUPABASE_ANON_KEY).trim()),
+    SUPABASE_SERVICE_ROLE_KEY: !!(
+      env.SUPABASE_SERVICE_ROLE_KEY && String(env.SUPABASE_SERVICE_ROLE_KEY).trim()
+    ),
+  };
+
+  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
+
+  const result: any = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    required,
+    connectivity: {
+      authHealth: null as any,
+      restSiteSettingsAnon: null as any,
+      restSiteSettingsServiceRole: null as any,
+    },
+    rpc: {
+      upsert_wordpress_post: null as any,
+      log_activity: null as any,
+      update_site_setting: null as any,
+      apply_post_reaction: null as any,
+    },
+  };
+
+  if (!required.SUPABASE_URL || !required.SUPABASE_ANON_KEY) {
+    result.status = 'error';
+    result.error = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY';
+    return json(result, { status: 500, headers });
+  }
+
+  const anonHeaders: Record<string, string> = {
+    apikey: env.SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+    Accept: 'application/json',
+  };
+
+  const serviceHeaders: Record<string, string> = required.SUPABASE_SERVICE_ROLE_KEY
+    ? {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${String(env.SUPABASE_SERVICE_ROLE_KEY).trim()}`,
+        Accept: 'application/json',
+      }
+    : anonHeaders;
+
+  try {
+    const healthRes = await fetch(`${baseUrl}/auth/v1/health`, {
+      headers: { apikey: env.SUPABASE_ANON_KEY, Accept: 'application/json' },
+    });
+    const text = await healthRes.text().catch(() => '');
+    result.connectivity.authHealth = {
+      ok: healthRes.ok,
+      status: healthRes.status,
+      body: text.slice(0, 300),
+    };
+  } catch (err) {
+    result.connectivity.authHealth = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  try {
+    const u = new URL(`${baseUrl}/rest/v1/site_settings`);
+    u.searchParams.set('select', 'key');
+    u.searchParams.set('limit', '1');
+    const res = await fetch(u.toString(), { headers: anonHeaders });
+    const body = await res.text().catch(() => '');
+    result.connectivity.restSiteSettingsAnon = {
+      ok: res.ok,
+      status: res.status,
+      body: body.slice(0, 300),
+      note: 'May be blocked by RLS; 401/403 here can still be OK depending on your policies',
+    };
+  } catch (err) {
+    result.connectivity.restSiteSettingsAnon = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  try {
+    const u = new URL(`${baseUrl}/rest/v1/site_settings`);
+    u.searchParams.set('select', 'key');
+    u.searchParams.set('limit', '1');
+    const res = await fetch(u.toString(), { headers: serviceHeaders });
+    const body = await res.text().catch(() => '');
+    result.connectivity.restSiteSettingsServiceRole = {
+      ok: res.ok,
+      status: res.status,
+      body: body.slice(0, 300),
+      note: required.SUPABASE_SERVICE_ROLE_KEY
+        ? 'Should succeed if the service role key is correct'
+        : 'No service role key provided; this used anon headers',
+    };
+  } catch (err) {
+    result.connectivity.restSiteSettingsServiceRole = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const rpcNames = [
+    'upsert_wordpress_post',
+    'log_activity',
+    'update_site_setting',
+    'apply_post_reaction',
+  ] as const;
+  for (const name of rpcNames) {
+    try {
+      const res = await fetch(`${baseUrl}/rest/v1/rpc/${name}`, {
+        method: 'POST',
+        headers: {
+          ...serviceHeaders,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const body = await res.text().catch(() => '');
+      result.rpc[name] = {
+        exists: res.status !== 404,
+        ok: res.ok,
+        status: res.status,
+        body: body.slice(0, 300),
+        note:
+          res.status === 404
+            ? 'RPC is missing in Supabase'
+            : 'RPC endpoint reachable (payload may still be invalid)',
+      };
+    } catch (err) {
+      result.rpc[name] = {
+        exists: false,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  const anyMissingRpc = Object.values(result.rpc).some((r: any) => r && r.exists === false);
+  const authHealthOk = result.connectivity.authHealth?.ok === true;
+
+  if (
+    !authHealthOk ||
+    anyMissingRpc ||
+    result.connectivity.restSiteSettingsServiceRole?.ok === false
+  ) {
+    result.status = 'degraded';
+  }
+
+  return json(result, { headers });
+});
+
 // API DOMAIN FALLBACK: no legacy backend proxy; return 404 for unknown routes
 router.all('*', async (_req: Request, _env: Env) => {
   return json({ error: 'Not Found' }, { status: 404 });
