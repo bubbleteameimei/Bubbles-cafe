@@ -10,6 +10,8 @@ import { registerCompactPostsRoutes } from './worker/posts-compact';
 import { registerPostsRoutes } from './worker/posts';
 import { registerReactionsRoutes } from './worker/reactions';
 import { registerWordpressRoutes } from './worker/wordpress';
+import { callSupabaseRpc, mapDbUserRowToApiUser } from './worker/shared';
+
 
 // ============================================================================
 // ROUTER BOOTSTRAP
@@ -117,41 +119,6 @@ interface Env {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * NOTE: Several helpers in this file (Supabase RPC, auth helpers, post
- * mapping, etc.) are also mirrored in src/worker/utils.ts so that modular
- * route files can be used without importing from this entrypoint.
- *
- * Until the Worker entrypoint is fully consolidated, keep the
- * implementations in sync when making changes here or in src/worker/utils.ts.
- */
-async function callSupabaseRpc(
-  env: Env,
-  functionName: string,
-  payload: Record<string, any>,
-): Promise<Response> {
-  // Normalize Supabase URL and strip trailing slashes. We avoid optional chaining
-  // here because some bundlers mis-parse it in Worker builds.
-  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) {
-    throw new Error('Supabase is not configured for RPC calls');
-  }
-
-  const url = `${baseUrl}/rest/v1/rpc/${functionName}`;
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${serviceKey}`,
-      'X-Client-Info': 'bubbles-worker',
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
 async function verifySupabaseJwt(token: string, env: Env): Promise<boolean> {
   try {
     const url = `${env.SUPABASE_URL}/auth/v1/user`;
@@ -199,30 +166,7 @@ async function getSupabaseAuthUser(env: Env, token: string): Promise<SupabaseAut
   }
 }
 
-function mapDbUserRowToApiUser(row: any): {
-  id: number;
-  email: string;
-  username: string;
-  isAdmin: boolean;
-  fullName?: string | null;
-  bio?: string | null;
-  avatar?: string | null;
-} {
-  const meta =
-    row && typeof row.metadata === 'object' && row.metadata !== null ? (row.metadata as any) : {};
-  const fullName = meta.fullName ?? meta.displayName ?? null;
-  const avatar = meta.avatar ?? meta.photoURL ?? null;
-  const bio = meta.bio ?? null;
-  return {
-    id: Number(row.id),
-    email: String(row.email || ''),
-    username: String(row.username || ''),
-    isAdmin: row.is_admin === true || row.isAdmin === true,
-    fullName,
-    bio,
-    avatar,
-  };
-}
+
 
 async function upsertLocalUserFromSupabaseAuth(
   env: Env,
@@ -793,124 +737,7 @@ function stripHtml(value: any): string {
   }
 }
 
-/**
- * Best-effort upsert of a text-based site setting in Supabase.
- * Uses service role key when available but falls back to anon key.
- */
-async function updateSiteSetting(env: Env, key: string, value: string): Promise<void> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
 
-  const url = new URL(`${baseUrl}/rest/v1/site_settings`);
-  url.searchParams.set('on_conflict', 'key');
-
-  try {
-    await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${serviceKey}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify({
-        key,
-        value,
-        category: 'wordpress',
-        description: `Managed WordPress setting: ${key}`,
-        updated_at: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // Non-fatal; callers treat failure as best-effort
-  }
-}
-
-/**
- * Log a WordPress sync activity record into the activity_logs table.
- */
-async function logWordPressSyncActivity(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    triggeredBy?: string | null;
-    isScheduler?: boolean;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
-
-  const details: any = {
-    type: 'wordpress_sync',
-    status: info.success ? 'success' : 'error',
-    postsProcessed: info.postsProcessed,
-    startedAt: info.startedAt.toISOString(),
-    finishedAt: info.finishedAt.toISOString(),
-    durationMs,
-    error: info.error || null,
-    triggeredBy: info.triggeredBy || null,
-    isScheduler: info.isScheduler === true,
-  };
-
-  if (info.failedPostIds && info.failedPostIds.length) {
-    details.failedPostIds = info.failedPostIds;
-  }
-
-  try {
-    await callSupabaseRpc(env, 'log_activity', {
-      action: 'wordpress_sync',
-      details,
-    });
-  } catch (err) {
-    console.error('Failed to write WordPress sync activity_log', err);
-  }
-}
-
-/**
- * Update both site settings and activity logs after a WordPress sync run.
- */
-async function updateWordPressSyncMetadata(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    isScheduler?: boolean;
-    triggeredBy?: string | null;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  try {
-    const statusValue = info.success ? 'success' : 'error';
-    const lastSyncIso = info.finishedAt.toISOString();
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_status',
-      value: statusValue,
-      category: 'sync',
-      description: 'Last WordPress sync status',
-    });
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_time',
-      value: lastSyncIso,
-      category: 'sync',
-      description: 'Last WordPress sync completion time',
-    });
-
-    await logWordPressSyncActivity(env, info);
-  } catch (err) {
-    console.error('Failed to update WordPress sync metadata', err);
-  }
-}
 
 function getApiBase(env: Env): string {
   try {

@@ -1,9 +1,11 @@
+export type SupabaseEnv = {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+};
+
 export async function callSupabaseRpc(
-  env: {
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    SUPABASE_SERVICE_ROLE_KEY?: string;
-  },
+  env: SupabaseEnv,
   functionName: string,
   payload: Record<string, any>,
 ): Promise<Response> {
