@@ -20,6 +20,9 @@ export interface Env {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
+
+  // Optional: helps /api/health/supabase detect config mismatches
+  EXPECTED_SUPABASE_URL?: string;
   SUPABASE_POOLER_URL?: string;
   DATABASE_URL?: string;
 

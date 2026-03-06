@@ -66,6 +66,8 @@ router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
 // ============================================================================
 
 interface Env {
+  EXPECTED_SUPABASE_URL?: string;
+
   // KV namespaces
   IDEMPOTENCY_KV: KVNamespace;
   USER_CACHE_KV: KVNamespace;
@@ -8621,9 +8623,35 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
 
   const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
 
+  const urlObj = new URL(req.url);
+  const expectedUrl = (
+    urlObj.searchParams.get('expected') ||
+    env.EXPECTED_SUPABASE_URL ||
+    ''
+  )
+    .trim()
+    .replace(/\/+$/, '');
+  const allowServiceWrites = urlObj.searchParams.get('allowWrites') === 'true';
+
+  if (allowServiceWrites && !required.SUPABASE_SERVICE_ROLE_KEY) {
+    const result: any = {
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      supabaseUrl: baseUrl,
+      expectedSupabaseUrl: expectedUrl || null,
+      allowWrites: true,
+      required,
+      error: 'allowWrites=true requires SUPABASE_SERVICE_ROLE_KEY to be set',
+    };
+    return json(result, { status: 500, headers });
+  }
+
   const result: any = {
     status: 'ok',
     timestamp: new Date().toISOString(),
+    supabaseUrl: baseUrl,
+    expectedSupabaseUrl: expectedUrl || null,
+    allowWrites: allowServiceWrites,
     required,
     connectivity: {
       authHealth: null as any,
@@ -8636,11 +8664,30 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
       update_site_setting: null as any,
       apply_post_reaction: null as any,
     },
+    schema: {
+      tables: {
+        users: null as any,
+        posts: null as any,
+        analytics: null as any,
+        site_settings: null as any,
+        activity_logs: null as any,
+        newsletter_subscriptions: null as any,
+        contact_messages: null as any,
+      },
+    },
   };
+
+  if (expectedUrl && baseUrl && expectedUrl !== baseUrl) {
+    result.status = 'error';
+    result.error = `SUPABASE_URL mismatch: expected ${expectedUrl} but worker is configured with ${baseUrl}`;
+    result.hint = 'Set SUPABASE_URL in your Worker env to match your Supabase project URL';
+    return json(result, { status: 500, headers });
+  }
 
   if (!required.SUPABASE_URL || !required.SUPABASE_ANON_KEY) {
     result.status = 'error';
     result.error = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY';
+    result.hint = 'Set SUPABASE_URL and SUPABASE_ANON_KEY in your Worker environment variables';
     return json(result, { status: 500, headers });
   }
 
@@ -8657,6 +8704,9 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
         Accept: 'application/json',
       }
     : anonHeaders;
+
+  const effectiveRpcHeaders = allowServiceWrites ? serviceHeaders : anonHeaders;
+  const effectiveTableHeaders = allowServiceWrites ? serviceHeaders : anonHeaders;
 
   try {
     const healthRes = await fetch(`${baseUrl}/auth/v1/health`, {
@@ -8715,21 +8765,91 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
     };
   }
 
-  const rpcNames = [
-    'upsert_wordpress_post',
-    'log_activity',
-    'update_site_setting',
-    'apply_post_reaction',
-  ] as const;
-  for (const name of rpcNames) {
+  // Schema/table presence checks (non-destructive): one-row selects.
+  const tableChecks: Array<{
+    name: keyof typeof result.schema.tables;
+    select: string;
+    note?: string;
+  }> = [
+    { name: 'users', select: 'id', note: 'RLS may require JWT; service role should bypass' },
+    { name: 'posts', select: 'id' },
+    { name: 'analytics', select: 'post_id' },
+    { name: 'site_settings', select: 'key' },
+    { name: 'activity_logs', select: 'id' },
+    { name: 'newsletter_subscriptions', select: 'id' },
+    { name: 'contact_messages', select: 'id' },
+  ];
+
+  for (const t of tableChecks) {
+    try {
+      const u = new URL(`${baseUrl}/rest/v1/${t.name}`);
+      u.searchParams.set('select', t.select);
+      u.searchParams.set('limit', '1');
+      const res = await fetch(u.toString(), {
+        headers: effectiveTableHeaders,
+      });
+      const body = await res.text().catch(() => '');
+      result.schema.tables[t.name] = {
+        ok: res.ok,
+        status: res.status,
+        body: body.slice(0, 300),
+        note:
+          t.note ||
+          (res.status === 404
+            ? 'Table/view missing'
+            : !allowServiceWrites
+            ? 'Ran using anon headers; set allowWrites=true to check with service role'
+            : undefined),
+      };
+    } catch (err) {
+      result.schema.tables[t.name] = {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  const rpcChecks: Array<{ name: keyof typeof result.rpc; payload: any }> = [
+    {
+      name: 'upsert_wordpress_post',
+      payload: {
+        post_id: 0,
+        title: '',
+        content: '',
+        excerpt: '',
+        slug: 'health-check',
+        date: new Date().toISOString(),
+      },
+    },
+    {
+      name: 'log_activity',
+      payload: { action: 'health_check', details: { source: 'api/health/supabase' } },
+    },
+    {
+      name: 'update_site_setting',
+      payload: {
+        key: 'health_check',
+        value: 'ok',
+        category: 'system',
+        description: 'Health check (no-op preferred)',
+      },
+    },
+    {
+      name: 'apply_post_reaction',
+      payload: { post_id: 0, reaction: 'none' },
+    },
+  ];
+
+  for (const check of rpcChecks) {
+    const name = check.name;
     try {
       const res = await fetch(`${baseUrl}/rest/v1/rpc/${name}`, {
         method: 'POST',
         headers: {
-          ...serviceHeaders,
+          ...effectiveRpcHeaders,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify(check.payload),
       });
       const body = await res.text().catch(() => '');
       result.rpc[name] = {
@@ -8740,7 +8860,9 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
         note:
           res.status === 404
             ? 'RPC is missing in Supabase'
-            : 'RPC endpoint reachable (payload may still be invalid)',
+            : res.ok
+            ? 'RPC reachable and accepted payload (may still be a no-op)'
+            : 'RPC reachable but rejected payload/permissions',
       };
     } catch (err) {
       result.rpc[name] = {
@@ -8753,13 +8875,26 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
 
   const anyMissingRpc = Object.values(result.rpc).some((r: any) => r && r.exists === false);
   const authHealthOk = result.connectivity.authHealth?.ok === true;
+  const anySchemaMissingOrUnauthorized = Object.values(result.schema.tables).some((t: any) => {
+    if (!t) return true;
+    if (t.status === 404) return true;
+    // If running with service role, 401/403 indicates a real problem.
+    if (allowServiceWrites && (t.status === 401 || t.status === 403)) return true;
+    return false;
+  });
 
   if (
     !authHealthOk ||
     anyMissingRpc ||
-    result.connectivity.restSiteSettingsServiceRole?.ok === false
+    result.connectivity.restSiteSettingsServiceRole?.ok === false ||
+    anySchemaMissingOrUnauthorized
   ) {
     result.status = 'degraded';
+  }
+
+  if (!allowServiceWrites) {
+    result.note =
+      'RPC and table checks ran using anon headers by default. If you want to validate service-role permissions and schema access, call /api/health/supabase?allowWrites=true';
   }
 
   return json(result, { headers });
@@ -8812,8 +8947,11 @@ export default {
       // Allow dashboard toggle (wordpress_sync_enabled) to override env flag when available
       if (shouldRunSync && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
-          const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const baseUrl = env.SUPABASE_URL.replace(/\/\/+$/, '');
+          const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+          if (!serviceKey) {
+            throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to read site_settings for cron');
+          }
           const headers: Record<string, string> = {
             apikey: env.SUPABASE_ANON_KEY,
             Authorization: `Bearer ${serviceKey}`,
@@ -8837,8 +8975,12 @@ export default {
               }
             }
           }
-        } catch {
-          // Ignore setting lookup failures; fall back to env flag
+        } catch (err) {
+          console.error(
+            '[cron] Failed to resolve wordpress_sync_enabled from site_settings',
+            err instanceof Error ? err.message : String(err),
+          );
+          // Fall back to env flag
         }
       }
 
@@ -8847,15 +8989,21 @@ export default {
         if (syncKey) {
           try {
             const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
-            await fetch(`${base}/api/wordpress/sync/manual`, {
+            const target = `${base}/api/wordpress/sync/manual`;
+            const res = await fetch(target, {
               method: 'POST',
               headers: {
                 'X-Scheduler': 'true',
                 'X-Sync-Key': syncKey,
               },
             });
-          } catch {
-            // Ignore sync failures; cron will try again on next run
+
+            if (!res.ok) {
+              const t = await res.text().catch(() => '');
+              console.error('[cron] WordPress sync failed', res.status, t.slice(0, 200));
+            }
+          } catch (err) {
+            console.error('[cron] WordPress sync threw', err instanceof Error ? err.message : String(err));
           }
         }
       }
@@ -8867,16 +9015,25 @@ export default {
         for (const key of batch) {
           const eventData = await env.ANALYTICS_KV.get(key.name);
           if (eventData) {
-            await callSupabaseRpc(env, 'log_analytics_event', {
-              event_type: key.name.split('-')[0],
-              data: JSON.parse(eventData),
-            });
-            await env.ANALYTICS_KV.delete(key.name);
+            try {
+              await callSupabaseRpc(env, 'log_analytics_event', {
+                event_type: key.name.split('-')[0],
+                data: JSON.parse(eventData),
+              });
+              await env.ANALYTICS_KV.delete(key.name);
+            } catch (err) {
+              console.error(
+                '[cron] Failed to flush analytics event',
+                key.name,
+                err instanceof Error ? err.message : String(err),
+              );
+            }
           }
         }
       }
-    } catch {
-      // Allow cron to fail silently to avoid retries storms
+    } catch (err) {
+      console.error('[cron] scheduled handler failed', err instanceof Error ? err.message : String(err));
+      // Allow cron to fail without throwing to avoid retries storms
     }
   },
 };
