@@ -9273,17 +9273,20 @@ export default {
       }
 
       if (shouldRunSync) {
-        try {
-          const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
-          await fetch(`${base}/api/wordpress/sync/manual`, {
-            method: 'POST',
-            headers: {
-              'X-Scheduler': 'true',
-              'X-Sync-Key': env.WORDPRESS_SYNC_KEY || 'scheduler',
-            },
-          });
-        } catch {
-          // Ignore sync failures; cron will try again on next run
+        const syncKey = (env.WORDPRESS_SYNC_KEY || '').trim();
+        if (syncKey) {
+          try {
+            const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
+            await fetch(`${base}/api/wordpress/sync/manual`, {
+              method: 'POST',
+              headers: {
+                'X-Scheduler': 'true',
+                'X-Sync-Key': syncKey,
+              },
+            });
+          } catch {
+            // Ignore sync failures; cron will try again on next run
+          }
         }
       }
 
