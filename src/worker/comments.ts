@@ -221,8 +221,10 @@ export function registerCommentsRoutes(router: any) {
       });
 
       return json(enhanced);
-    } catch {
-      return proxyToBackend(req, env);
+    } catch (err) {
+      const debugId = crypto.randomUUID();
+      console.error('[comments] GET /api/posts/:postId/comments failed', { debugId, err });
+      return json({ error: 'Failed to fetch comments', debugId }, { status: 500 });
     }
   });
 
@@ -250,7 +252,13 @@ export function registerCommentsRoutes(router: any) {
 
       const localPostId = await resolveLocalPostIdFromExternal(env, rawPostId);
       if (!Number.isFinite(localPostId || NaN)) {
-        return json({ error: 'Post not found' }, { status: 404 });
+        return json(
+          {
+            error: 'Post not found',
+            hint: 'If this is a WordPress ID, ensure posts are synced into Supabase and the Worker has SUPABASE_SERVICE_ROLE_KEY set',
+          },
+          { status: 404 },
+        );
       }
 
       const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
@@ -360,7 +368,20 @@ export function registerCommentsRoutes(router: any) {
         return proxyToBackend(req, env);
       }
       if (!insertRes.ok) {
-        return json({ error: 'Failed to create comment' }, { status: 500 });
+        const debugId = crypto.randomUUID();
+        const t = await insertRes.text().catch(() => '');
+        console.error('[comments] Failed to create comment', {
+          debugId,
+          status: insertRes.status,
+          body: t.slice(0, 500),
+        });
+        return json(
+          {
+            error: 'Failed to create comment',
+            debugId,
+          },
+          { status: 500 },
+        );
       }
 
       const rows = (await insertRes.json().catch(() => [])) as any[];
@@ -407,8 +428,10 @@ export function registerCommentsRoutes(router: any) {
         status: 201,
         headers: headersInit,
       });
-    } catch {
-      return proxyToBackend(req, env);
+    } catch (err) {
+      const debugId = crypto.randomUUID();
+      console.error('[comments] POST /api/posts/:postId/comments failed', { debugId, err });
+      return json({ error: 'Failed to create comment', debugId }, { status: 500 });
     }
   });
 
