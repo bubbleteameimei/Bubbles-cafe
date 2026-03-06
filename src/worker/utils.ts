@@ -81,7 +81,12 @@ export function getBearerToken(req: Request): string | null {
   }
 }
 
-export { callSupabaseRpc, mapDbUserRowToApiUser } from './shared';
+export {
+  callSupabaseRpc,
+  callSupabaseRpcAsAnon,
+  callSupabaseRpcAsServiceRole,
+  mapDbUserRowToApiUser,
+} from './shared';
 
 /**
  * Resolve numeric user id from Supabase JWT via the users table.

@@ -202,7 +202,8 @@ export function registerWordpressRoutes(router: any) {
     try {
       const key = req.headers.get('X-Sync-Key');
       const isScheduler = req.headers.get('X-Scheduler') === 'true';
-      if (!isScheduler && env.WORDPRESS_SYNC_KEY && key !== env.WORDPRESS_SYNC_KEY) {
+      const expectedKey = (env.WORDPRESS_SYNC_KEY || '').trim();
+      if (!expectedKey || !key || key !== expectedKey) {
         return json({ error: 'Unauthorized' }, { status: 403 });
       }
 
@@ -340,8 +341,8 @@ export function registerWordpressRoutes(router: any) {
               body: JSON.stringify({ key: 'wordpress-sync', action: 'release' }),
             }),
           );
-        } catch {
-          // ignore lock release errors
+        } catch (err) {
+          console.error('[WordPress] Failed to release sync lock', err);
         }
       }
     } catch (error) {

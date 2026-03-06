@@ -1,4 +1,4 @@
-import { callSupabaseRpc, type SupabaseEnv } from './shared';
+import { callSupabaseRpcAsServiceRole, type SupabaseEnv } from './shared';
 
 export type WordPressSyncInfo = {
   success: boolean;
@@ -18,7 +18,10 @@ export async function updateSiteSetting(
 ): Promise<void> {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
   const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+  const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if (!serviceKey) {
+    throw new Error('Supabase service role key is required to update site settings');
+  }
 
   const url = new URL(`${baseUrl}/rest/v1/site_settings`);
   url.searchParams.set('on_conflict', 'key');
@@ -66,7 +69,7 @@ export async function logWordPressSyncActivity(env: SupabaseEnv, info: WordPress
   }
 
   try {
-    await callSupabaseRpc(env, 'log_activity', {
+    await callSupabaseRpcAsServiceRole(env, 'log_activity', {
       action: 'wordpress_sync',
       details,
     });
@@ -80,14 +83,14 @@ export async function updateWordPressSyncMetadata(env: SupabaseEnv, info: WordPr
     const statusValue = info.success ? 'success' : 'error';
     const lastSyncIso = info.finishedAt.toISOString();
 
-    await callSupabaseRpc(env, 'update_site_setting', {
+    await callSupabaseRpcAsServiceRole(env, 'update_site_setting', {
       key: 'wordpress_last_sync_status',
       value: statusValue,
       category: 'sync',
       description: 'Last WordPress sync status',
     });
 
-    await callSupabaseRpc(env, 'update_site_setting', {
+    await callSupabaseRpcAsServiceRole(env, 'update_site_setting', {
       key: 'wordpress_last_sync_time',
       value: lastSyncIso,
       category: 'sync',

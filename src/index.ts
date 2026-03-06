@@ -1364,6 +1364,206 @@ router.post('/api/auth/forgot-password', async (req: Request, env: Env) => {
   }
 });
 
+// AUTH: update local user profile (users table) and optionally Supabase auth email
+router.post('/api/auth/update-profile', async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  let body: any = {};
+  try {
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const username = typeof body.username === 'string' ? body.username.trim() : '';
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
+  const bio = typeof body.bio === 'string' ? body.bio.trim() : '';
+  const avatar = typeof body.avatar === 'string' ? body.avatar.trim() : '';
+
+  if (!username || username.length < 3) {
+    return json({ error: 'Username must be at least 3 characters long' }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+
+    const authUser = await getSupabaseAuthUser(env, token);
+    if (!authUser || !authUser.id) {
+      return json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Email update (Supabase Auth)
+    if (email && authUser.email && email !== authUser.email.toLowerCase()) {
+      const authRes = await fetch(`${baseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!authRes.ok) {
+        const t = await authRes.text().catch(() => '');
+        return json({ error: `Failed to update email: ${t.slice(0, 200)}` }, { status: 400 });
+      }
+    }
+
+    // Update local users row (RLS protected by JWT)
+    const usersUrl = new URL(`${baseUrl}/rest/v1/users`);
+    usersUrl.searchParams.set('select', 'id,metadata');
+    usersUrl.searchParams.set('limit', '1');
+
+    const currentRes = await fetch(usersUrl.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!currentRes.ok) {
+      const t = await currentRes.text().catch(() => '');
+      return json({ error: `Failed to load user profile: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    const rows = (await currentRes.json().catch(() => [])) as any[];
+    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!row || row.id == null) {
+      return json({ error: 'User profile not found' }, { status: 404 });
+    }
+
+    const prevMeta = row.metadata && typeof row.metadata === 'object' ? (row.metadata as any) : {};
+    const nextMeta = {
+      ...prevMeta,
+      fullName: fullName || prevMeta.fullName || null,
+      bio: bio || null,
+      avatar: avatar || prevMeta.avatar || null,
+    };
+
+    const patchUrl = new URL(`${baseUrl}/rest/v1/users`);
+    patchUrl.searchParams.set('id', `eq.${row.id}`);
+
+    const patchRes = await fetch(patchUrl.toString(), {
+      method: 'PATCH',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({
+        username,
+        metadata: nextMeta,
+      }),
+    });
+
+    if (!patchRes.ok) {
+      const t = await patchRes.text().catch(() => '');
+      return json({ error: `Failed to update profile: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    const updatedRows = (await patchRes.json().catch(() => [])) as any[];
+    const updatedRow = Array.isArray(updatedRows) && updatedRows.length ? updatedRows[0] : row;
+
+    return json({
+      success: true,
+      user: mapDbUserRowToApiUser(updatedRow),
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: msg }, { status: 500 });
+  }
+});
+
+// AUTH: change password (verifies current password via password grant)
+router.post('/api/auth/change-password', async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  let body: any = {};
+  try {
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+  const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+
+  if (!currentPassword || !newPassword) {
+    return json({ error: 'currentPassword and newPassword are required' }, { status: 400 });
+  }
+
+  if (newPassword.length < 8) {
+    return json({ error: 'New password must be at least 8 characters long' }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const authUser = await getSupabaseAuthUser(env, token);
+    const email = authUser?.email || '';
+
+    if (!email) {
+      return json({ error: 'Password change requires an email/password account' }, { status: 400 });
+    }
+
+    // Verify current password via password grant
+    const verifyRes = await fetch(`${baseUrl}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email, password: currentPassword }),
+    });
+
+    if (!verifyRes.ok) {
+      return json({ error: 'Current password is incorrect' }, { status: 400 });
+    }
+
+    // Update password for the currently authenticated user
+    const updateRes = await fetch(`${baseUrl}/auth/v1/user`, {
+      method: 'PUT',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ password: newPassword }),
+    });
+
+    if (!updateRes.ok) {
+      const t = await updateRes.text().catch(() => '');
+      return json({ error: `Failed to update password: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    return json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: msg }, { status: 500 });
+  }
+});
+
 // ERROR REPORTING endpoint used by client metrics logger
 router.post('/api/errors', async (req: Request) => {
   try {
