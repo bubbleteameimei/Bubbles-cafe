@@ -75,7 +75,8 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
     if (Array.isArray(rows) && rows.length > 0) {
       existing = rows[0];
     }
-  } catch {
+  } catch (err) {
+    console.error('[newsletter] Failed to check existing subscription', err);
     // Treat as no existing subscription; we'll still attempt to insert
   }
 
@@ -169,8 +170,8 @@ async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Respon
         emailSent = true;
         emailMessage = 'Welcome email sent successfully';
       }
-    } catch {
-      // ignore email failures
+    } catch (err) {
+      console.error('[newsletter] Failed to send welcome email', err);
     }
   }
 

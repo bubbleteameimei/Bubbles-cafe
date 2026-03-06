@@ -4,128 +4,7 @@
 
 import type { Env } from './utils';
 import { json, proxyToBackend, callSupabaseRpc, getBearerToken, getSupabaseCurrentUser } from './utils';
-
-/**
- * Best-effort upsert of a text-based site setting in Supabase.
- * Uses service role key when available but falls back to anon key.
- * Copied from src/index.ts for WordPress sync admin toggles.
- */
-async function updateSiteSetting(env: Env, key: string, value: string): Promise<void> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-
-  const url = new URL(`${baseUrl}/rest/v1/site_settings`);
-  url.searchParams.set('on_conflict', 'key');
-
-  try {
-    await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${serviceKey}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify({
-        key,
-        value,
-        category: 'wordpress',
-        description: `Managed WordPress setting: ${key}`,
-        updated_at: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // Non-fatal; callers treat failure as best-effort
-  }
-}
-
-/**
- * Log a WordPress sync activity record into the activity_logs table.
- * Copied from src/index.ts.
- */
-async function logWordPressSyncActivity(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    triggeredBy?: string | null;
-    isScheduler?: boolean;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
-
-  const details: any = {
-    type: 'wordpress_sync',
-    status: info.success ? 'success' : 'error',
-    postsProcessed: info.postsProcessed,
-    startedAt: info.startedAt.toISOString(),
-    finishedAt: info.finishedAt.toISOString(),
-    durationMs,
-    error: info.error || null,
-    triggeredBy: info.triggeredBy || null,
-    isScheduler: info.isScheduler === true,
-  };
-
-  if (info.failedPostIds && info.failedPostIds.length) {
-    details.failedPostIds = info.failedPostIds;
-  }
-
-  try {
-    await callSupabaseRpc(env, 'log_activity', {
-      action: 'wordpress_sync',
-      details,
-    });
-  } catch (err) {
-    console.error('Failed to write WordPress sync activity_log', err);
-  }
-}
-
-/**
- * Update both site settings and activity logs after a WordPress sync run.
- * Copied from src/index.ts.
- */
-async function updateWordPressSyncMetadata(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    isScheduler?: boolean;
-    triggeredBy?: string | null;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  try {
-    const statusValue = info.success ? 'success' : 'error';
-    const lastSyncIso = info.finishedAt.toISOString();
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_status',
-      value: statusValue,
-      category: 'sync',
-      description: 'Last WordPress sync status',
-    });
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_time',
-      value: lastSyncIso,
-      category: 'sync',
-      description: 'Last WordPress sync completion time',
-    });
-
-    await logWordPressSyncActivity(env, info);
-  } catch (err) {
-    console.error('Failed to update WordPress sync metadata', err);
-  }
-}
+import { updateSiteSetting, updateWordPressSyncMetadata } from './wordpress-shared';
 
 interface AdminSyncLog {
   id: string;
@@ -323,7 +202,8 @@ export function registerWordpressRoutes(router: any) {
     try {
       const key = req.headers.get('X-Sync-Key');
       const isScheduler = req.headers.get('X-Scheduler') === 'true';
-      if (!isScheduler && env.WORDPRESS_SYNC_KEY && key !== env.WORDPRESS_SYNC_KEY) {
+      const expectedKey = (env.WORDPRESS_SYNC_KEY || '').trim();
+      if (!expectedKey || !key || key !== expectedKey) {
         return json({ error: 'Unauthorized' }, { status: 403 });
       }
 
@@ -461,8 +341,8 @@ export function registerWordpressRoutes(router: any) {
               body: JSON.stringify({ key: 'wordpress-sync', action: 'release' }),
             }),
           );
-        } catch {
-          // ignore lock release errors
+        } catch (err) {
+          console.error('[WordPress] Failed to release sync lock', err);
         }
       }
     } catch (error) {

@@ -11,6 +11,7 @@ FRONTEND_URL = "https://bubblescafe.space"
 BACKEND_BASE_URL = "https://api.bubblescafe.space"
 NODE_ENV = "production"
 DISABLE_LOCAL_AUTH = "true"
+EXPECTED_SUPABASE_URL = "https://rqoqtusrlsapcbdimwpn.supabase.co"
 # Temporary: allow Vercel preview frontends to call the production Worker API.
 # Prefer setting ADDITIONAL_CORS_ORIGINS to a specific preview URL instead.
 ALLOW_PREVIEW_ORIGINS_IN_PROD = "true"

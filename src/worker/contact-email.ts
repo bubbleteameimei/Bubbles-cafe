@@ -104,6 +104,8 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
   let savedRecord: any = null;
   let emailStatus: 'success' | 'failed' = 'failed';
 
+  let supabaseError: string | null = null;
+
   if (hasSupabase) {
     try {
       const baseUrl = env.SUPABASE_URL!.replace(/\/+$/, '');
@@ -132,11 +134,17 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
         } else {
           savedRecord = { name, email, subject, message };
         }
+      } else {
+        const bodyText = await res.text().catch(() => '');
+        supabaseError = `Supabase insert failed: ${res.status} ${bodyText.slice(0, 200)}`;
       }
-    } catch {
-      // Best-effort: continue even if Supabase insert fails
+    } catch (err) {
+      supabaseError = err instanceof Error ? err.message : String(err);
+      console.error('[contact] Failed to persist contact message', supabaseError);
     }
   }
+
+  let emailError: string | null = null;
 
   if (hasEmail) {
     try {
@@ -160,8 +168,13 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
       });
 
       emailStatus = sent ? 'success' : 'failed';
-    } catch {
+      if (!sent) {
+        emailError = 'Brevo send failed or is not configured';
+      }
+    } catch (err) {
       emailStatus = 'failed';
+      emailError = err instanceof Error ? err.message : String(err);
+      console.error('[contact] Failed to send contact email', emailError);
     }
   }
 
@@ -170,6 +183,10 @@ async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
       'Thank you for your message. We have received it and will get back to you soon.',
     data: savedRecord || { name, email, subject },
     emailStatus,
+    warnings: {
+      supabase: supabaseError,
+      email: emailError,
+    },
   };
 
   return json(responseBody, { status: 201 });
@@ -328,26 +345,25 @@ async function handleEmailSend(req: Request, env: Env): Promise<Response> {
       return json({ success: true, messageId: crypto.randomUUID() });
     }
 
-    // If only Gmail app password is configured, we cannot open SMTP from a Worker.
-    // Log a simulated send so there is an audit trail, and return success for UX.
-    if (env.GMAIL_APP_PASSWORD && env.GMAIL_ADMIN_EMAIL) {
-      console.log('[EmailSend/Gmail-only] Simulated email', {
-        from: env.GMAIL_ADMIN_EMAIL,
+    // If Brevo is configured, use it for admin-sent emails as well.
+    if (env.BREVO_API_KEY && (env.BREVO_FROM_EMAIL || env.GMAIL_ADMIN_EMAIL)) {
+      const sent = await sendBrevoEmail(env, {
         to: body.to,
         subject: body.subject,
+        html: body.html,
       });
 
-      return json({
-        success: true,
-        messageId: crypto.randomUUID(),
-        service: 'gmail-simulated',
-      });
+      if (!sent) {
+        return json({ error: 'Failed to send email (Brevo request failed)' }, { status: 500 });
+      }
+
+      return json({ success: true, messageId: crypto.randomUUID(), service: 'brevo' });
     }
 
     return json(
       {
         error:
-          'Email provider is not fully configured. Set either EMAIL_PROVIDER_API_KEY (SendGrid) or GMAIL_APP_PASSWORD + GMAIL_ADMIN_EMAIL.',
+          'Email provider is not fully configured. Set BREVO_API_KEY + (BREVO_FROM_EMAIL or GMAIL_ADMIN_EMAIL), or set EMAIL_PROVIDER_API_KEY (SendGrid) + GMAIL_ADMIN_EMAIL.',
       },
       { status: 500 },
     );

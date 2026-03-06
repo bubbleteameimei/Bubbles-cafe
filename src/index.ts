@@ -10,6 +10,8 @@ import { registerCompactPostsRoutes } from './worker/posts-compact';
 import { registerPostsRoutes } from './worker/posts';
 import { registerReactionsRoutes } from './worker/reactions';
 import { registerWordpressRoutes } from './worker/wordpress';
+import { callSupabaseRpc, mapDbUserRowToApiUser } from './worker/shared';
+
 
 // ============================================================================
 // ROUTER BOOTSTRAP
@@ -64,6 +66,8 @@ router.get('/api/csrf-token', async (_req: Request, _env: Env) => {
 // ============================================================================
 
 interface Env {
+  EXPECTED_SUPABASE_URL?: string;
+
   // KV namespaces
   IDEMPOTENCY_KV: KVNamespace;
   USER_CACHE_KV: KVNamespace;
@@ -117,41 +121,6 @@ interface Env {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * NOTE: Several helpers in this file (Supabase RPC, auth helpers, post
- * mapping, etc.) are also mirrored in src/worker/utils.ts so that modular
- * route files can be used without importing from this entrypoint.
- *
- * Until the Worker entrypoint is fully consolidated, keep the
- * implementations in sync when making changes here or in src/worker/utils.ts.
- */
-async function callSupabaseRpc(
-  env: Env,
-  functionName: string,
-  payload: Record<string, any>,
-): Promise<Response> {
-  // Normalize Supabase URL and strip trailing slashes. We avoid optional chaining
-  // here because some bundlers mis-parse it in Worker builds.
-  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) {
-    throw new Error('Supabase is not configured for RPC calls');
-  }
-
-  const url = `${baseUrl}/rest/v1/rpc/${functionName}`;
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${serviceKey}`,
-      'X-Client-Info': 'bubbles-worker',
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
 async function verifySupabaseJwt(token: string, env: Env): Promise<boolean> {
   try {
     const url = `${env.SUPABASE_URL}/auth/v1/user`;
@@ -199,30 +168,7 @@ async function getSupabaseAuthUser(env: Env, token: string): Promise<SupabaseAut
   }
 }
 
-function mapDbUserRowToApiUser(row: any): {
-  id: number;
-  email: string;
-  username: string;
-  isAdmin: boolean;
-  fullName?: string | null;
-  bio?: string | null;
-  avatar?: string | null;
-} {
-  const meta =
-    row && typeof row.metadata === 'object' && row.metadata !== null ? (row.metadata as any) : {};
-  const fullName = meta.fullName ?? meta.displayName ?? null;
-  const avatar = meta.avatar ?? meta.photoURL ?? null;
-  const bio = meta.bio ?? null;
-  return {
-    id: Number(row.id),
-    email: String(row.email || ''),
-    username: String(row.username || ''),
-    isAdmin: row.is_admin === true || row.isAdmin === true,
-    fullName,
-    bio,
-    avatar,
-  };
-}
+
 
 async function upsertLocalUserFromSupabaseAuth(
   env: Env,
@@ -793,124 +739,7 @@ function stripHtml(value: any): string {
   }
 }
 
-/**
- * Best-effort upsert of a text-based site setting in Supabase.
- * Uses service role key when available but falls back to anon key.
- */
-async function updateSiteSetting(env: Env, key: string, value: string): Promise<void> {
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return;
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
 
-  const url = new URL(`${baseUrl}/rest/v1/site_settings`);
-  url.searchParams.set('on_conflict', 'key');
-
-  try {
-    await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${serviceKey}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify({
-        key,
-        value,
-        category: 'wordpress',
-        description: `Managed WordPress setting: ${key}`,
-        updated_at: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // Non-fatal; callers treat failure as best-effort
-  }
-}
-
-/**
- * Log a WordPress sync activity record into the activity_logs table.
- */
-async function logWordPressSyncActivity(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    triggeredBy?: string | null;
-    isScheduler?: boolean;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  const durationMs = info.finishedAt.getTime() - info.startedAt.getTime();
-
-  const details: any = {
-    type: 'wordpress_sync',
-    status: info.success ? 'success' : 'error',
-    postsProcessed: info.postsProcessed,
-    startedAt: info.startedAt.toISOString(),
-    finishedAt: info.finishedAt.toISOString(),
-    durationMs,
-    error: info.error || null,
-    triggeredBy: info.triggeredBy || null,
-    isScheduler: info.isScheduler === true,
-  };
-
-  if (info.failedPostIds && info.failedPostIds.length) {
-    details.failedPostIds = info.failedPostIds;
-  }
-
-  try {
-    await callSupabaseRpc(env, 'log_activity', {
-      action: 'wordpress_sync',
-      details,
-    });
-  } catch (err) {
-    console.error('Failed to write WordPress sync activity_log', err);
-  }
-}
-
-/**
- * Update both site settings and activity logs after a WordPress sync run.
- */
-async function updateWordPressSyncMetadata(
-  env: Env,
-  info: {
-    success: boolean;
-    postsProcessed: number;
-    startedAt: Date;
-    finishedAt: Date;
-    error?: string | null;
-    isScheduler?: boolean;
-    triggeredBy?: string | null;
-    failedPostIds?: number[];
-  },
-): Promise<void> {
-  try {
-    const statusValue = info.success ? 'success' : 'error';
-    const lastSyncIso = info.finishedAt.toISOString();
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_status',
-      value: statusValue,
-      category: 'sync',
-      description: 'Last WordPress sync status',
-    });
-
-    await callSupabaseRpc(env, 'update_site_setting', {
-      key: 'wordpress_last_sync_time',
-      value: lastSyncIso,
-      category: 'sync',
-      description: 'Last WordPress sync completion time',
-    });
-
-    await logWordPressSyncActivity(env, info);
-  } catch (err) {
-    console.error('Failed to update WordPress sync metadata', err);
-  }
-}
 
 function getApiBase(env: Env): string {
   try {
@@ -1537,6 +1366,206 @@ router.post('/api/auth/forgot-password', async (req: Request, env: Env) => {
   }
 });
 
+// AUTH: update local user profile (users table) and optionally Supabase auth email
+router.post('/api/auth/update-profile', async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  let body: any = {};
+  try {
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const username = typeof body.username === 'string' ? body.username.trim() : '';
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
+  const bio = typeof body.bio === 'string' ? body.bio.trim() : '';
+  const avatar = typeof body.avatar === 'string' ? body.avatar.trim() : '';
+
+  if (!username || username.length < 3) {
+    return json({ error: 'Username must be at least 3 characters long' }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+
+    const authUser = await getSupabaseAuthUser(env, token);
+    if (!authUser || !authUser.id) {
+      return json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Email update (Supabase Auth)
+    if (email && authUser.email && email !== authUser.email.toLowerCase()) {
+      const authRes = await fetch(`${baseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!authRes.ok) {
+        const t = await authRes.text().catch(() => '');
+        return json({ error: `Failed to update email: ${t.slice(0, 200)}` }, { status: 400 });
+      }
+    }
+
+    // Update local users row (RLS protected by JWT)
+    const usersUrl = new URL(`${baseUrl}/rest/v1/users`);
+    usersUrl.searchParams.set('select', 'id,metadata');
+    usersUrl.searchParams.set('limit', '1');
+
+    const currentRes = await fetch(usersUrl.toString(), {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!currentRes.ok) {
+      const t = await currentRes.text().catch(() => '');
+      return json({ error: `Failed to load user profile: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    const rows = (await currentRes.json().catch(() => [])) as any[];
+    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!row || row.id == null) {
+      return json({ error: 'User profile not found' }, { status: 404 });
+    }
+
+    const prevMeta = row.metadata && typeof row.metadata === 'object' ? (row.metadata as any) : {};
+    const nextMeta = {
+      ...prevMeta,
+      fullName: fullName || prevMeta.fullName || null,
+      bio: bio || null,
+      avatar: avatar || prevMeta.avatar || null,
+    };
+
+    const patchUrl = new URL(`${baseUrl}/rest/v1/users`);
+    patchUrl.searchParams.set('id', `eq.${row.id}`);
+
+    const patchRes = await fetch(patchUrl.toString(), {
+      method: 'PATCH',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({
+        username,
+        metadata: nextMeta,
+      }),
+    });
+
+    if (!patchRes.ok) {
+      const t = await patchRes.text().catch(() => '');
+      return json({ error: `Failed to update profile: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    const updatedRows = (await patchRes.json().catch(() => [])) as any[];
+    const updatedRow = Array.isArray(updatedRows) && updatedRows.length ? updatedRows[0] : row;
+
+    return json({
+      success: true,
+      user: mapDbUserRowToApiUser(updatedRow),
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: msg }, { status: 500 });
+  }
+});
+
+// AUTH: change password (verifies current password via password grant)
+router.post('/api/auth/change-password', async (req: Request, env: Env) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return json({ error: 'Supabase not configured' }, { status: 500 });
+  }
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  let body: any = {};
+  try {
+    body = (await (req as any).json?.().catch(() => ({}))) || {};
+  } catch {
+    body = {};
+  }
+
+  const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+  const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+
+  if (!currentPassword || !newPassword) {
+    return json({ error: 'currentPassword and newPassword are required' }, { status: 400 });
+  }
+
+  if (newPassword.length < 8) {
+    return json({ error: 'New password must be at least 8 characters long' }, { status: 400 });
+  }
+
+  try {
+    const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+    const authUser = await getSupabaseAuthUser(env, token);
+    const email = authUser?.email || '';
+
+    if (!email) {
+      return json({ error: 'Password change requires an email/password account' }, { status: 400 });
+    }
+
+    // Verify current password via password grant
+    const verifyRes = await fetch(`${baseUrl}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email, password: currentPassword }),
+    });
+
+    if (!verifyRes.ok) {
+      return json({ error: 'Current password is incorrect' }, { status: 400 });
+    }
+
+    // Update password for the currently authenticated user
+    const updateRes = await fetch(`${baseUrl}/auth/v1/user`, {
+      method: 'PUT',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ password: newPassword }),
+    });
+
+    if (!updateRes.ok) {
+      const t = await updateRes.text().catch(() => '');
+      return json({ error: `Failed to update password: ${t.slice(0, 200)}` }, { status: 500 });
+    }
+
+    return json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: msg }, { status: 500 });
+  }
+});
+
 // ERROR REPORTING endpoint used by client metrics logger
 router.post('/api/errors', async (req: Request) => {
   try {
@@ -1558,625 +1587,6 @@ router.post('/api/errors', async (req: Request) => {
 // ANALYTICS: routes are registered via src/worker/analytics.ts
 
 // BOOKMARKS: routes are registered via src/worker/bookmarks.ts
-
-// NEWSLETTER SUBSCRIBE / UNSUBSCRIBE (Worker-native, Supabase-backed)
-async function handleNewsletterSubscribe(req: Request, env: Env): Promise<Response> {
-  let email: string | null = null;
-  let metadata: Record<string, any> | undefined;
-
-  try {
-    const body = (await (req as any).json?.()) || {};
-    email = typeof body.email === 'string' ? body.email.trim() : '';
-    metadata =
-      body && typeof body.metadata === 'object' && body.metadata !== null
-        ? (body.metadata as Record<string, any>)
-        : undefined;
-  } catch {
-    return json({ success: false, message: 'Invalid subscription data' }, { status: 400 });
-  }
-
-  if (!email) {
-    return json({ success: false, message: 'Please enter a valid email address' }, { status: 400 });
-  }
-
-  const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  if (!simpleEmailRegex.test(email)) {
-    return json({ success: false, message: 'Please enter a valid email address' }, { status: 400 });
-  }
-
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return json({ success: false, message: 'Newsletter service not configured' }, { status: 500 });
-  }
-
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const headers: Record<string, string> = {
-    apikey: env.SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-
-  let existing: any | null = null;
-  try {
-    const url = new URL(`${baseUrl}/rest/v1/newsletter_subscriptions`);
-    url.searchParams.set('select', 'id,email,status,metadata,created_at,updated_at');
-    url.searchParams.set('email', `eq.${email}`);
-    url.searchParams.set('limit', '1');
-
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      headers,
-    });
-    if (!res.ok && res.status !== 406) {
-      return json(
-        { success: false, message: 'An error occurred while subscribing to the newsletter' },
-        { status: 500 },
-      );
-    }
-    const rows = (await res.json().catch(() => [])) as any[];
-    if (Array.isArray(rows) && rows.length > 0) {
-      existing = rows[0];
-    }
-  } catch {
-    // Treat as no existing subscription; we'll still attempt to insert
-  }
-
-  let subscription = existing;
-  let alreadySubscribed = false;
-
-  try {
-    if (existing && existing.status === 'active') {
-      alreadySubscribed = true;
-    } else if (existing) {
-      // Reactivate existing subscription
-      const patchUrl = new URL(`${baseUrl}/rest/v1/newsletter_subscriptions`);
-      patchUrl.searchParams.set('email', `eq.${email}`);
-
-      const res = await fetch(patchUrl.toString(), {
-        method: 'PATCH',
-        headers: {
-          ...headers,
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify({
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        }),
-      });
-
-      if (!res.ok) {
-        return json(
-          { success: false, message: 'An error occurred while subscribing to the newsletter' },
-          { status: 500 },
-        );
-      }
-      const rows = (await res.json().catch(() => [])) as any[];
-      subscription = Array.isArray(rows) && rows.length > 0 ? rows[0] : existing;
-    } else {
-      // Create new subscription
-      const res = await fetch(`${baseUrl}/rest/v1/newsletter_subscriptions`, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify({
-          email,
-          status: 'active',
-          metadata: metadata || {},
-        }),
-      });
-
-      if (!res.ok) {
-        return json(
-          { success: false, message: 'An error occurred while subscribing to the newsletter' },
-          { status: 500 },
-        );
-      }
-
-      const rows = (await res.json().catch(() => [])) as any[];
-      subscription = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-    }
-  } catch {
-    return json(
-      { success: false, message: 'An error occurred while subscribing to the newsletter' },
-      { status: 500 },
-    );
-  }
-
-  // Send a welcome email best-effort; do not fail subscription if this fails
-  let emailSent = false;
-  let emailMessage =
-    'Welcome email could not be sent at this time, but your subscription is active';
-
-  if (!alreadySubscribed && env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL) {
-    try {
-      const welcomeRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email }] }],
-          from: { email: env.GMAIL_ADMIN_EMAIL },
-          subject: "Welcome to Bubble's Cafe Newsletter",
-          content: [
-            {
-              type: 'text/html',
-              value:
-                "<p>Thank you for subscribing to Bubble's Cafe newsletter.</p><p>You'll hear from us soon.</p>",
-            },
-          ],
-        }),
-      });
-
-      if (welcomeRes.ok) {
-        emailSent = true;
-        emailMessage = 'Welcome email sent successfully';
-      }
-    } catch {
-      // ignore email failures
-    }
-  }
-
-  if (alreadySubscribed) {
-    return json({
-      success: true,
-      message: 'You are already subscribed to the newsletter',
-      data: subscription,
-      alreadySubscribed: true,
-    });
-  }
-
-  return json({
-    success: true,
-    message: 'Successfully subscribed to the newsletter',
-    data: subscription,
-    email: {
-      sent: emailSent,
-      message: emailMessage,
-    },
-  });
-}
-
-async function handleNewsletterUnsubscribe(req: Request, env: Env): Promise<Response> {
-  let email: string | null = null;
-
-  try {
-    const body = (await (req as any).json?.()) || {};
-    email = typeof body.email === 'string' ? body.email.trim() : '';
-  } catch {
-    return json({ success: false, message: 'Invalid email address' }, { status: 400 });
-  }
-
-  if (!email) {
-    return json({ success: false, message: 'Invalid email address' }, { status: 400 });
-  }
-
-  const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  if (!simpleEmailRegex.test(email)) {
-    return json({ success: false, message: 'Invalid email address' }, { status: 400 });
-  }
-
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-    return json(
-      { success: false, message: 'An error occurred while unsubscribing from the newsletter' },
-      { status: 500 },
-    );
-  }
-
-  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-  const headers: Record<string, string> = {
-    apikey: env.SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-
-  try {
-    const patchUrl = new URL(`${baseUrl}/rest/v1/newsletter_subscriptions`);
-    patchUrl.searchParams.set('email', `eq.${email}`);
-
-    const res = await fetch(patchUrl.toString(), {
-      method: 'PATCH',
-      headers: {
-        ...headers,
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify({
-        status: 'unsubscribed',
-        updated_at: new Date().toISOString(),
-      }),
-    });
-
-    if (!res.ok) {
-      return json(
-        { success: false, message: 'An error occurred while unsubscribing from the newsletter' },
-        { status: 500 },
-      );
-    }
-
-    const rows = (await res.json().catch(() => [])) as any[];
-    const subscription = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-
-    return json({
-      success: true,
-      message: 'Successfully unsubscribed from the newsletter',
-      data: subscription,
-    });
-  } catch {
-    return json(
-      { success: false, message: 'An error occurred while unsubscribing from the newsletter' },
-      { status: 500 },
-    );
-  }
-}
-
-router.post('/api/newsletter/subscribe', async (req: Request, env: Env) =>
-  handleNewsletterSubscribe(req, env),
-);
-
-router.post('/api/newsletter-direct/subscribe', async (req: Request, env: Env) =>
-  handleNewsletterSubscribe(req, env),
-);
-
-router.post('/api/newsletter/unsubscribe', async (req: Request, env: Env) =>
-  handleNewsletterUnsubscribe(req, env),
-);
-
-// CONTACT FORM: create contact_messages row in Supabase and notify admin via email
-async function handleContactSubmit(req: Request, env: Env): Promise<Response> {
-  // Basic IP-based rate limiting to reduce spam: 10 requests per 10 minutes per IP
-  const ip = req.headers.get("cf-connecting-ip") || "unknown";
-  const allowed = await checkRateLimit(env, `contact-${ip}`, 10, 600);
-  if (!allowed) {
-    return json({ error: "Rate limited" }, { status: 429 });
-  }
-
-  let body: any;
-  try {
-    body = (await (req as any).json?.().catch(() => ({}))) || {};
-  } catch {
-    body = {};
-  }
-
-  const name =
-    typeof body.name === "string" ? body.name.trim() : "";
-  const email =
-    typeof body.email === "string" ? body.email.trim() : "";
-  const subjectRaw =
-    typeof body.subject === "string" ? body.subject.trim() : "";
-  const message =
-    typeof body.message === "string" ? body.message.trim() : "";
-  const metadata =
-    body && typeof body.metadata === "object" && body.metadata !== null
-      ? (body.metadata as Record<string, any>)
-      : undefined;
-
-  const errors: Record<string, string> = {};
-
-  if (!name || name.length < 2) {
-    errors.name = "Name must be at least 2 characters long";
-  }
-
-  const simpleEmailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  if (!email || !simpleEmailRegex.test(email)) {
-    errors.email = "Please enter a valid email address";
-  }
-
-  const subject = subjectRaw || "General Inquiry";
-  if (!subject || subject.length < 3) {
-    errors.subject = "Subject must be at least 3 characters long";
-  }
-
-  if (!message || message.length < 10) {
-    errors.message = "Message must be at least 10 characters long";
-  }
-
-  if (Object.keys(errors).length > 0) {
-    return json(
-      {
-        error: "Validation failed",
-        details: errors,
-      },
-      { status: 400 },
-    );
-  }
-
-  const hasSupabase = !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY);
-  const hasEmail = !!(env.EMAIL_PROVIDER_API_KEY && env.GMAIL_ADMIN_EMAIL);
-
-  if (!hasSupabase && !hasEmail) {
-    return json(
-      { error: "Contact service not configured" },
-      { status: 500 },
-    );
-  }
-
-  const mergedMetadata: Record<string, any> = {
-    ...(metadata || {}),
-    ip: ip !== "unknown" ? ip : undefined,
-    userAgent: req.headers.get("user-agent") || undefined,
-    referer:
-      req.headers.get("referer") ||
-      req.headers.get("referrer") ||
-      undefined,
-    receivedAt: new Date().toISOString(),
-  };
-
-  // Remove undefined fields from metadata to keep payload clean
-  for (const key of Object.keys(mergedMetadata)) {
-    if (mergedMetadata[key] === undefined) {
-      delete mergedMetadata[key];
-    }
-  }
-
-  let savedRecord: any = null;
-  let emailStatus: "success" | "failed" = "failed";
-
-  // Persist message to Supabase when configured
-  if (hasSupabase) {
-    try {
-      const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
-      const res = await fetch(`${baseUrl}/rest/v1/contact_messages`, {
-        method: "POST",
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          subject,
-          message,
-          metadata: mergedMetadata,
-        }),
-      });
-
-      if (res.ok) {
-        const rows = (await res.json().catch(() => [])) as any[];
-        if (Array.isArray(rows) && rows.length > 0) {
-          savedRecord = rows[0];
-        } else {
-          savedRecord = { name, email, subject, message };
-        }
-      }
-    } catch {
-      // Best-effort: continue even if Supabase insert fails
-    }
-  }
-
-  // Send notification email to admin when email provider is configured
-  if (hasEmail) {
-    try {
-      const textBody = [
-        `New contact message from ${name}`,
-        "",
-        `Email: ${email}`,
-        `Subject: ${subject}`,
-        "",
-        "Message:",
-        message,
-        "",
-        "Metadata:",
-        JSON.stringify(mergedMetadata, null, 2),
-      ].join("\n");
-
-      const emailRes = await fetch(
-        "https://api.sendgrid.com/v3/mail/send",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            personalizations: [
-              { to: [{ email: env.GMAIL_ADMIN_EMAIL }] },
-            ],
-            from: { email: env.GMAIL_ADMIN_EMAIL },
-            subject: `[Contact] ${subject}`,
-            content: [
-              {
-                type: "text/plain",
-                value: textBody,
-              },
-            ],
-          }),
-        },
-      );
-
-      emailStatus = emailRes.ok ? "success" : "failed";
-    } catch {
-      emailStatus = "failed";
-    }
-  }
-
-  const responseBody: any = {
-    message:
-      "Thank you for your message. We have received it and will get back to you soon.",
-    data: savedRecord || { name, email, subject },
-    emailStatus,
-  };
-
-  return json(responseBody, { status: 201 });
-}
-
-router.post(
-  "/api/contact",
-  async (req: Request, env: Env) =>
-    withIdempotency(req, env, "contact", 60 * 60 * 1000, () =>
-      handleContactSubmit(req, env),
-    ),
-);
-
-// EMAIL SERVICE
-router.get('/api/email/status', async (_req: Request, env: Env) => {
-  try {
-    const gmailAvailable = !!env.GMAIL_APP_PASSWORD && !!env.GMAIL_ADMIN_EMAIL;
-    const sendgridAvailable = !!env.EMAIL_PROVIDER_API_KEY && !!env.GMAIL_ADMIN_EMAIL;
-    const mailersendAvailable = false;
-
-    let primaryService: 'gmail' | 'sendgrid' | 'mailersend' | 'none' = 'none';
-    if (sendgridAvailable) {
-      primaryService = 'sendgrid';
-    } else if (gmailAvailable) {
-      primaryService = 'gmail';
-    } else if (mailersendAvailable) {
-      primaryService = 'mailersend';
-    }
-
-    return json({
-      success: primaryService !== 'none',
-      services: {
-        gmail: gmailAvailable,
-        sendgrid: sendgridAvailable,
-        mailersend: mailersendAvailable,
-      },
-      primaryService,
-    });
-  } catch (error) {
-    return json(
-      {
-        success: false,
-        services: {
-          gmail: false,
-          sendgrid: false,
-          mailersend: false,
-        },
-        primaryService: 'none',
-        error: String(error),
-      },
-      { status: 500 },
-    );
-  }
-});
-
-router.post('/api/email/test', async (req: Request, env: Env) => {
-  if (!env.EMAIL_PROVIDER_API_KEY || !env.GMAIL_ADMIN_EMAIL) {
-    return json(
-      {
-        success: false,
-        message: 'Email provider is not configured on the server',
-      },
-      { status: 500 },
-    );
-  }
-
-  try {
-    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-    const allowed = await checkRateLimit(env, `email-test-${ip}`, 5, 3600);
-    if (!allowed) {
-      return json({ success: false, message: 'Rate limited' }, { status: 429 });
-    }
-
-    const body = (await (req as any).json?.().catch(() => ({}))) || {};
-
-    const to = typeof body.to === 'string' ? body.to.trim() : '';
-    if (!to) {
-      return json(
-        { success: false, message: 'Recipient email address is required' },
-        { status: 400 },
-      );
-    }
-
-    const subject =
-      typeof body.subject === 'string' && body.subject.trim()
-        ? body.subject.trim()
-        : "Test Email from Bubble's Cafe";
-    const text =
-      typeof body.text === 'string' && body.text.trim()
-        ? body.text
-        : "This is a test email from the Bubble's Cafe admin panel.";
-    const html =
-      typeof body.html === 'string' && body.html.trim()
-        ? body.html
-        : `<h1>${subject}</h1><p>${text}</p>`;
-
-    const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: env.GMAIL_ADMIN_EMAIL },
-        subject,
-        content: [
-          { type: 'text/plain', value: text },
-          { type: 'text/html', value: html },
-        ],
-      }),
-    });
-
-    if (!emailRes.ok) {
-      const errText = await emailRes.text().catch(() => '');
-      return json(
-        {
-          success: false,
-          message: 'Failed to send test email',
-          error: errText.slice(0, 200),
-        },
-        { status: 500 },
-      );
-    }
-
-    const messageId = crypto.randomUUID();
-    return json({
-      success: true,
-      message: 'Test email sent successfully',
-      details: {
-        service: 'sendgrid',
-        messageId,
-      },
-    });
-  } catch (error) {
-    return json({ success: false, message: String(error) }, { status: 500 });
-  }
-});
-
-router.post('/api/email-service/send', async (req: Request, env: Env) => {
-  try {
-    const ip = req.headers.get('cf-connecting-ip') || 'unknown';
-    const allowed = await checkRateLimit(env, `email-${ip}`, 10, 3600);
-    if (!allowed) {
-      return json({ error: 'Rate limited' }, { status: 429 });
-    }
-
-    const body = (await (req as any).json?.()) || {};
-
-    if (!body.to || !body.subject || !body.html) {
-      return json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    const emailRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.EMAIL_PROVIDER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: body.to }] }],
-        from: { email: env.GMAIL_ADMIN_EMAIL },
-        subject: body.subject,
-        content: [{ type: 'text/html', value: body.html }],
-      }),
-    });
-
-    if (!emailRes.ok) {
-      return json({ error: 'Failed to send email' }, { status: 500 });
-    }
-
-    return json({ success: true, messageId: crypto.randomUUID() });
-  } catch (error) {
-    return json({ error: String(error) }, { status: 500 });
-  }
-});
 
 // WORDPRESS routes are registered via src/worker/wordpress.ts
 
@@ -9195,6 +8605,301 @@ router.get('/api/posts/admin/themes', async (req: Request, env: Env) => {
   }
 });
 
+// Health + diagnostics
+router.get('/api/health', (_req: Request, _env: Env) => {
+  return json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+router.get('/api/health/supabase', async (req: Request, env: Env) => {
+  const headers = getCorsHeaders(req, env);
+
+  const required = {
+    SUPABASE_URL: !!(env.SUPABASE_URL && String(env.SUPABASE_URL).trim()),
+    SUPABASE_ANON_KEY: !!(env.SUPABASE_ANON_KEY && String(env.SUPABASE_ANON_KEY).trim()),
+    SUPABASE_SERVICE_ROLE_KEY: !!(
+      env.SUPABASE_SERVICE_ROLE_KEY && String(env.SUPABASE_SERVICE_ROLE_KEY).trim()
+    ),
+  };
+
+  const baseUrl = (env.SUPABASE_URL || '').replace(/\/+$/, '');
+
+  const urlObj = new URL(req.url);
+  const expectedUrl = (
+    urlObj.searchParams.get('expected') ||
+    env.EXPECTED_SUPABASE_URL ||
+    ''
+  )
+    .trim()
+    .replace(/\/+$/, '');
+  const allowServiceWrites = urlObj.searchParams.get('allowWrites') === 'true';
+
+  if (allowServiceWrites && !required.SUPABASE_SERVICE_ROLE_KEY) {
+    const result: any = {
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      supabaseUrl: baseUrl,
+      expectedSupabaseUrl: expectedUrl || null,
+      allowWrites: true,
+      required,
+      error: 'allowWrites=true requires SUPABASE_SERVICE_ROLE_KEY to be set',
+    };
+    return json(result, { status: 500, headers });
+  }
+
+  const result: any = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    supabaseUrl: baseUrl,
+    expectedSupabaseUrl: expectedUrl || null,
+    allowWrites: allowServiceWrites,
+    required,
+    connectivity: {
+      authHealth: null as any,
+      restSiteSettingsAnon: null as any,
+      restSiteSettingsServiceRole: null as any,
+    },
+    rpc: {
+      upsert_wordpress_post: null as any,
+      log_activity: null as any,
+      update_site_setting: null as any,
+      apply_post_reaction: null as any,
+    },
+    schema: {
+      tables: {
+        users: null as any,
+        posts: null as any,
+        analytics: null as any,
+        site_settings: null as any,
+        activity_logs: null as any,
+        newsletter_subscriptions: null as any,
+        contact_messages: null as any,
+      },
+    },
+  };
+
+  if (expectedUrl && baseUrl && expectedUrl !== baseUrl) {
+    result.status = 'error';
+    result.error = `SUPABASE_URL mismatch: expected ${expectedUrl} but worker is configured with ${baseUrl}`;
+    result.hint = 'Set SUPABASE_URL in your Worker env to match your Supabase project URL';
+    return json(result, { status: 500, headers });
+  }
+
+  if (!required.SUPABASE_URL || !required.SUPABASE_ANON_KEY) {
+    result.status = 'error';
+    result.error = 'Missing SUPABASE_URL or SUPABASE_ANON_KEY';
+    result.hint = 'Set SUPABASE_URL and SUPABASE_ANON_KEY in your Worker environment variables';
+    return json(result, { status: 500, headers });
+  }
+
+  const anonHeaders: Record<string, string> = {
+    apikey: env.SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+    Accept: 'application/json',
+  };
+
+  const serviceHeaders: Record<string, string> = required.SUPABASE_SERVICE_ROLE_KEY
+    ? {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${String(env.SUPABASE_SERVICE_ROLE_KEY).trim()}`,
+        Accept: 'application/json',
+      }
+    : anonHeaders;
+
+  const effectiveRpcHeaders = allowServiceWrites ? serviceHeaders : anonHeaders;
+  const effectiveTableHeaders = allowServiceWrites ? serviceHeaders : anonHeaders;
+
+  try {
+    const healthRes = await fetch(`${baseUrl}/auth/v1/health`, {
+      headers: { apikey: env.SUPABASE_ANON_KEY, Accept: 'application/json' },
+    });
+    const text = await healthRes.text().catch(() => '');
+    result.connectivity.authHealth = {
+      ok: healthRes.ok,
+      status: healthRes.status,
+      body: text.slice(0, 300),
+    };
+  } catch (err) {
+    result.connectivity.authHealth = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  try {
+    const u = new URL(`${baseUrl}/rest/v1/site_settings`);
+    u.searchParams.set('select', 'key');
+    u.searchParams.set('limit', '1');
+    const res = await fetch(u.toString(), { headers: anonHeaders });
+    const body = await res.text().catch(() => '');
+    result.connectivity.restSiteSettingsAnon = {
+      ok: res.ok,
+      status: res.status,
+      body: body.slice(0, 300),
+      note: 'May be blocked by RLS; 401/403 here can still be OK depending on your policies',
+    };
+  } catch (err) {
+    result.connectivity.restSiteSettingsAnon = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  try {
+    const u = new URL(`${baseUrl}/rest/v1/site_settings`);
+    u.searchParams.set('select', 'key');
+    u.searchParams.set('limit', '1');
+    const res = await fetch(u.toString(), { headers: serviceHeaders });
+    const body = await res.text().catch(() => '');
+    result.connectivity.restSiteSettingsServiceRole = {
+      ok: res.ok,
+      status: res.status,
+      body: body.slice(0, 300),
+      note: required.SUPABASE_SERVICE_ROLE_KEY
+        ? 'Should succeed if the service role key is correct'
+        : 'No service role key provided; this used anon headers',
+    };
+  } catch (err) {
+    result.connectivity.restSiteSettingsServiceRole = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  // Schema/table presence checks (non-destructive): one-row selects.
+  const tableChecks: Array<{
+    name: keyof typeof result.schema.tables;
+    select: string;
+    note?: string;
+  }> = [
+    { name: 'users', select: 'id', note: 'RLS may require JWT; service role should bypass' },
+    { name: 'posts', select: 'id' },
+    { name: 'analytics', select: 'post_id' },
+    { name: 'site_settings', select: 'key' },
+    { name: 'activity_logs', select: 'id' },
+    { name: 'newsletter_subscriptions', select: 'id' },
+    { name: 'contact_messages', select: 'id' },
+  ];
+
+  for (const t of tableChecks) {
+    try {
+      const u = new URL(`${baseUrl}/rest/v1/${t.name}`);
+      u.searchParams.set('select', t.select);
+      u.searchParams.set('limit', '1');
+      const res = await fetch(u.toString(), {
+        headers: effectiveTableHeaders,
+      });
+      const body = await res.text().catch(() => '');
+      result.schema.tables[t.name] = {
+        ok: res.ok,
+        status: res.status,
+        body: body.slice(0, 300),
+        note:
+          t.note ||
+          (res.status === 404
+            ? 'Table/view missing'
+            : !allowServiceWrites
+            ? 'Ran using anon headers; set allowWrites=true to check with service role'
+            : undefined),
+      };
+    } catch (err) {
+      result.schema.tables[t.name] = {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  const rpcChecks: Array<{ name: keyof typeof result.rpc; payload: any }> = [
+    {
+      name: 'upsert_wordpress_post',
+      payload: {
+        post_id: 0,
+        title: '',
+        content: '',
+        excerpt: '',
+        slug: 'health-check',
+        date: new Date().toISOString(),
+      },
+    },
+    {
+      name: 'log_activity',
+      payload: { action: 'health_check', details: { source: 'api/health/supabase' } },
+    },
+    {
+      name: 'update_site_setting',
+      payload: {
+        key: 'health_check',
+        value: 'ok',
+        category: 'system',
+        description: 'Health check (no-op preferred)',
+      },
+    },
+    {
+      name: 'apply_post_reaction',
+      payload: { post_id: 0, reaction: 'none' },
+    },
+  ];
+
+  for (const check of rpcChecks) {
+    const name = check.name;
+    try {
+      const res = await fetch(`${baseUrl}/rest/v1/rpc/${name}`, {
+        method: 'POST',
+        headers: {
+          ...effectiveRpcHeaders,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(check.payload),
+      });
+      const body = await res.text().catch(() => '');
+      result.rpc[name] = {
+        exists: res.status !== 404,
+        ok: res.ok,
+        status: res.status,
+        body: body.slice(0, 300),
+        note:
+          res.status === 404
+            ? 'RPC is missing in Supabase'
+            : res.ok
+            ? 'RPC reachable and accepted payload (may still be a no-op)'
+            : 'RPC reachable but rejected payload/permissions',
+      };
+    } catch (err) {
+      result.rpc[name] = {
+        exists: false,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  const anyMissingRpc = Object.values(result.rpc).some((r: any) => r && r.exists === false);
+  const authHealthOk = result.connectivity.authHealth?.ok === true;
+  const anySchemaMissingOrUnauthorized = Object.values(result.schema.tables).some((t: any) => {
+    if (!t) return true;
+    if (t.status === 404) return true;
+    // If running with service role, 401/403 indicates a real problem.
+    if (allowServiceWrites && (t.status === 401 || t.status === 403)) return true;
+    return false;
+  });
+
+  if (
+    !authHealthOk ||
+    anyMissingRpc ||
+    result.connectivity.restSiteSettingsServiceRole?.ok === false ||
+    anySchemaMissingOrUnauthorized
+  ) {
+    result.status = 'degraded';
+  }
+
+  if (!allowServiceWrites) {
+    result.note =
+      'RPC and table checks ran using anon headers by default. If you want to validate service-role permissions and schema access, call /api/health/supabase?allowWrites=true';
+  }
+
+  return json(result, { headers });
+});
+
 // API DOMAIN FALLBACK: no legacy backend proxy; return 404 for unknown routes
 router.all('*', async (_req: Request, _env: Env) => {
   return json({ error: 'Not Found' }, { status: 404 });
@@ -9242,8 +8947,11 @@ export default {
       // Allow dashboard toggle (wordpress_sync_enabled) to override env flag when available
       if (shouldRunSync && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
-          const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
-          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const baseUrl = env.SUPABASE_URL.replace(/\/\/+$/, '');
+          const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+          if (!serviceKey) {
+            throw new Error('SUPABASE_SERVICE_ROLE_KEY is required to read site_settings for cron');
+          }
           const headers: Record<string, string> = {
             apikey: env.SUPABASE_ANON_KEY,
             Authorization: `Bearer ${serviceKey}`,
@@ -9267,23 +8975,36 @@ export default {
               }
             }
           }
-        } catch {
-          // Ignore setting lookup failures; fall back to env flag
+        } catch (err) {
+          console.error(
+            '[cron] Failed to resolve wordpress_sync_enabled from site_settings',
+            err instanceof Error ? err.message : String(err),
+          );
+          // Fall back to env flag
         }
       }
 
       if (shouldRunSync) {
-        try {
-          const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
-          await fetch(`${base}/api/wordpress/sync/manual`, {
-            method: 'POST',
-            headers: {
-              'X-Scheduler': 'true',
-              'X-Sync-Key': env.WORDPRESS_SYNC_KEY || 'scheduler',
-            },
-          });
-        } catch {
-          // Ignore sync failures; cron will try again on next run
+        const syncKey = (env.WORDPRESS_SYNC_KEY || '').trim();
+        if (syncKey) {
+          try {
+            const base = (env.BACKEND_BASE_URL || 'https://api.bubblescafe.space').replace(/\/*$/, '');
+            const target = `${base}/api/wordpress/sync/manual`;
+            const res = await fetch(target, {
+              method: 'POST',
+              headers: {
+                'X-Scheduler': 'true',
+                'X-Sync-Key': syncKey,
+              },
+            });
+
+            if (!res.ok) {
+              const t = await res.text().catch(() => '');
+              console.error('[cron] WordPress sync failed', res.status, t.slice(0, 200));
+            }
+          } catch (err) {
+            console.error('[cron] WordPress sync threw', err instanceof Error ? err.message : String(err));
+          }
         }
       }
 
@@ -9294,16 +9015,25 @@ export default {
         for (const key of batch) {
           const eventData = await env.ANALYTICS_KV.get(key.name);
           if (eventData) {
-            await callSupabaseRpc(env, 'log_analytics_event', {
-              event_type: key.name.split('-')[0],
-              data: JSON.parse(eventData),
-            });
-            await env.ANALYTICS_KV.delete(key.name);
+            try {
+              await callSupabaseRpc(env, 'log_analytics_event', {
+                event_type: key.name.split('-')[0],
+                data: JSON.parse(eventData),
+              });
+              await env.ANALYTICS_KV.delete(key.name);
+            } catch (err) {
+              console.error(
+                '[cron] Failed to flush analytics event',
+                key.name,
+                err instanceof Error ? err.message : String(err),
+              );
+            }
           }
         }
       }
-    } catch {
-      // Allow cron to fail silently to avoid retries storms
+    } catch (err) {
+      console.error('[cron] scheduled handler failed', err instanceof Error ? err.message : String(err));
+      // Allow cron to fail without throwing to avoid retries storms
     }
   },
 };

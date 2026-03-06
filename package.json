@@ -42,6 +42,7 @@
     "deps:audit:light": "node scripts/deps-audit.mjs",
     "budget": "node scripts/bundle-budget.cjs",
     "check:routes": "node scripts/check-route-parity.mjs",
+    "health:supabase": "node scripts/health-check-supabase.mjs",
     "test": "vitest run --coverage",
     "e2e": "playwright test --config=playwright.config.ts"
   },
