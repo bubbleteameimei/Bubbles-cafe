@@ -1,5 +1,7 @@
 // Shared Worker utilities for Bubble's Cafe Cloudflare Worker.
 
+import { callSupabaseRpcAsServiceRole } from './shared';
+
 export interface Env {
   // KV namespaces
   IDEMPOTENCY_KV: KVNamespace;
@@ -183,9 +185,10 @@ export async function resolveLocalPostIdFromExternal(
   }
 
   const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+  const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY).trim();
   const serviceHeaders: Record<string, string> = {
     apikey: env.SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+    Authorization: `Bearer ${serviceKey}`,
     Accept: 'application/json',
     'Content-Type': 'application/json',
   };
@@ -207,8 +210,9 @@ export async function resolveLocalPostIdFromExternal(
         }
       }
     }
-  } catch {
-    // ignore and continue
+  } catch (err) {
+    console.error('[resolveLocalPostIdFromExternal] Failed direct id lookup', err);
+    // continue
   }
 
   // 2) metadata.wordpressId mapping
@@ -228,8 +232,9 @@ export async function resolveLocalPostIdFromExternal(
         }
       }
     }
-  } catch {
-    // ignore and continue
+  } catch (err) {
+    console.error('[resolveLocalPostIdFromExternal] Failed wordpressId lookup', err);
+    // continue
   }
 
   // 3) Fetch from WordPress API, upsert via RPC, then lookup by slug
@@ -249,7 +254,7 @@ export async function resolveLocalPostIdFromExternal(
             ? post.slug.trim()
             : `wordpress-post-${externalId}`;
         try {
-          await callSupabaseRpc(env, 'upsert_wordpress_post', {
+          await callSupabaseRpcAsServiceRole(env, 'upsert_wordpress_post', {
             post_id: externalId,
             title: post.title?.rendered ?? '',
             content: post.content?.rendered ?? '',

@@ -8633,6 +8633,9 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
     .replace(/\/+$/, '');
   const allowServiceWrites = urlObj.searchParams.get('allowWrites') === 'true';
 
+  const serviceRoleKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const serviceRoleLooksLikeJwt = serviceRoleKey.split('.').length === 3;
+
   if (allowServiceWrites && !required.SUPABASE_SERVICE_ROLE_KEY) {
     const result: any = {
       status: 'error',
@@ -8642,6 +8645,21 @@ router.get('/api/health/supabase', async (req: Request, env: Env) => {
       allowWrites: true,
       required,
       error: 'allowWrites=true requires SUPABASE_SERVICE_ROLE_KEY to be set',
+      hint: 'Set SUPABASE_SERVICE_ROLE_KEY to the service_role API key from Supabase Dashboard → Project Settings → API',
+    };
+    return json(result, { status: 500, headers });
+  }
+
+  if (allowServiceWrites && required.SUPABASE_SERVICE_ROLE_KEY && !serviceRoleLooksLikeJwt) {
+    const result: any = {
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      supabaseUrl: baseUrl,
+      expectedSupabaseUrl: expectedUrl || null,
+      allowWrites: true,
+      required,
+      error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a JWT (expected 3 dot-separated parts)',
+      hint: 'Your service role key appears invalid (Supabase returned: "Expected 3 parts in JWT; got 1"). Re-copy the service_role API key from Supabase Dashboard → Project Settings → API.',
     };
     return json(result, { status: 500, headers });
   }
