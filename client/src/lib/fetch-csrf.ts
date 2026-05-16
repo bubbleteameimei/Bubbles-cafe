@@ -26,12 +26,18 @@ async function fetchWithCSRF(input: RequestInfo | URL, init?: RequestInit): Prom
 
   if (method !== 'GET') {
     try {
+      // Try to fetch CSRF token, but don't block if it fails
       await fetchCsrfTokenIfNeeded();
       const options = applyCSRFToken(withCreds);
       return originalFetch(url, options);
-    } catch {
-      // Fall through to original fetch if CSRF instrumentation fails
-      return originalFetch(url, withCreds);
+    } catch (error) {
+      // If CSRF token fetch fails, try to proceed anyway (token might not be required)
+      try {
+        return originalFetch(url, withCreds);
+      } catch {
+        // If the actual request fails, re-throw the original error
+        throw error;
+      }
     }
   }
 

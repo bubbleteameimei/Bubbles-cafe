@@ -42,6 +42,7 @@ export function clearCsrfToken(): void {
 /**
  * Fetch a new CSRF token from the server
  * SECURITY FIX: Now uses secure endpoint instead of cookies
+ * Returns null if fetching fails (non-blocking)
  */
 export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
@@ -60,7 +61,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     } catch { /* no-op */ }
 
     // Attempt to get a token directly (prefer same-origin first, then fall back)
-    const getToken = async (): Promise<string | null> => {
+    const getToken = async (timeoutMs: number = 5000): Promise<string | null> => {
       const candidates = [
         '/api/csrf-token',
         API_BASE ? `${API_BASE}/api/csrf-token` : null
@@ -68,24 +69,32 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
 
       for (const url of candidates) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
           const resp = await fetch(url, {
             method: 'GET',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
+
           if (!resp.ok) continue;
           const data = await resp.json().catch(() => ({}));
           const token = data?.csrfToken || null;
           if (token) return token;
-        } catch {
-          // try next
+        } catch (err) {
+          // Log but continue to next candidate
+          logger.debug(`CSRF token fetch failed for ${url}`, err);
         }
       }
       return null;
     };
 
-    // First try fetching the token
-    let token = await getToken();
+    // First try fetching the token with short timeout
+    let token = await getToken(3000);
     if (token) {
       csrfToken = token;
       return csrfToken;
@@ -99,27 +108,35 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
 
     for (const h of healthCandidates) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
         await fetch(h, {
           method: 'GET',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
         break;
-      } catch {
-        // try next
+      } catch (err) {
+        logger.debug(`Health check failed for ${h}`, err);
       }
     }
 
-    token = await getToken();
+    token = await getToken(3000);
     if (token) {
       csrfToken = token;
       return csrfToken;
     }
 
-    logger.error('Failed to obtain CSRF token after retry');
+    logger.warn('Failed to obtain CSRF token after retry - continuing without token');
+    // Don't throw, just return null - the app should work without CSRF token
+    // CSRF protection will be skipped for non-GET requests if no token is available
     return null;
   } catch (error) {
-    logger.error('Error fetching CSRF token', error);
+    logger.warn('Error fetching CSRF token - continuing without token', error);
     return null;
   }
 }
