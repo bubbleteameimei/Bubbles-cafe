@@ -14,7 +14,7 @@
     "dev:full": "run-p dev:worker dev:client",
     "build": "vite build && node scripts/generate-icons.js && node scripts/generate-sitemaps.mjs && tsx scripts/optimize-public-images.ts",
     "build:client": "vite build",
-    "start": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port 3000",
     "check": "tsc",
     "check:watch": "tsc --watch",
     "db:generate": "drizzle-kit generate:pg",

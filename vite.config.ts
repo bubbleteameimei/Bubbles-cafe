@@ -11,7 +11,9 @@ const __dirname = dirname(__filename);
 
 export default defineConfig(({ mode }) => {
 	const plugins = [
-		react(),
+		react({
+			jsxImportSource: 'react',
+		}),
 		themePlugin(),
 		VitePWA({
 			registerType: "autoUpdate",
