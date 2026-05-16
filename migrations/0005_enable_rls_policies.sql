@@ -49,30 +49,44 @@ CREATE POLICY "Allow service_role full access to contact_messages"
   WITH CHECK (true);
 
 -- ============================================================
--- 4. post_reactions – authenticated users can manage own, public read
+-- 4. post_reactions – public read, service_role write
+--    (created outside migrations, may not exist in all environments)
 -- ============================================================
-ALTER TABLE "public"."post_reactions" ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'post_reactions') THEN
+    ALTER TABLE "public"."post_reactions" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow public read of post_reactions"
-  ON "public"."post_reactions"
-  FOR SELECT
-  USING (true);
+    CREATE POLICY "Allow public read of post_reactions"
+      ON "public"."post_reactions"
+      FOR SELECT
+      USING (true);
 
-CREATE POLICY "Allow service_role full access to post_reactions"
-  ON "public"."post_reactions"
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+    CREATE POLICY "Allow service_role full access to post_reactions"
+      ON "public"."post_reactions"
+      FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true);
+  ELSE
+    RAISE NOTICE 'Table post_reactions does not exist, skipping RLS setup';
+  END IF;
+END $$;
 
 -- ============================================================
 -- 5. wordpress_sync_runs – service_role only
+--    (created outside migrations, may not exist in all environments)
 -- ============================================================
-ALTER TABLE "public"."wordpress_sync_runs" ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'wordpress_sync_runs') THEN
+    ALTER TABLE "public"."wordpress_sync_runs" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow service_role full access to wordpress_sync_runs"
-  ON "public"."wordpress_sync_runs"
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+    CREATE POLICY "Allow service_role full access to wordpress_sync_runs"
+      ON "public"."wordpress_sync_runs"
+      FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true);
+  ELSE
+    RAISE NOTICE 'Table wordpress_sync_runs does not exist, skipping RLS setup';
+  END IF;
+END $$;
