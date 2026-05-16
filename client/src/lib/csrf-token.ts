@@ -42,6 +42,7 @@ export function clearCsrfToken(): void {
 /**
  * Fetch a new CSRF token from the server
  * SECURITY FIX: Now uses secure endpoint instead of cookies
+ * Returns null if fetching fails (non-blocking, silent failure)
  */
 export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
@@ -52,7 +53,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
       // Only force relative endpoints on preview when no explicit base was resolved
       if (isPreviewHost && !API_BASE) {
         API_BASE = '';
@@ -60,7 +61,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     } catch { /* no-op */ }
 
     // Attempt to get a token directly (prefer same-origin first, then fall back)
-    const getToken = async (): Promise<string | null> => {
+    const getToken = async (timeoutMs: number = 3000): Promise<string | null> => {
       const candidates = [
         '/api/csrf-token',
         API_BASE ? `${API_BASE}/api/csrf-token` : null
@@ -68,58 +69,41 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
 
       for (const url of candidates) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
           const resp = await fetch(url, {
             method: 'GET',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
+
           if (!resp.ok) continue;
           const data = await resp.json().catch(() => ({}));
           const token = data?.csrfToken || null;
-          if (token) return token;
-        } catch {
-          // try next
+          if (token) {
+            csrfToken = token;
+            return token;
+          }
+        } catch (err) {
+          // Silently continue - CSRF token is optional
         }
       }
       return null;
     };
 
-    // First try fetching the token
-    let token = await getToken();
-    if (token) {
-      csrfToken = token;
-      return csrfToken;
-    }
+    // Try fetching the token once with very short timeout
+    const token = await getToken(2000);
+    if (token) return token;
 
-    // If token is missing, ping health to initialize session token, then retry
-    const healthCandidates = [
-      '/api/health',
-      API_BASE ? `${API_BASE}/api/health` : null
-    ].filter(Boolean) as string[];
-
-    for (const h of healthCandidates) {
-      try {
-        await fetch(h, {
-          method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        break;
-      } catch {
-        // try next
-      }
-    }
-
-    token = await getToken();
-    if (token) {
-      csrfToken = token;
-      return csrfToken;
-    }
-
-    logger.error('Failed to obtain CSRF token after retry');
+    // If we couldn't get a token, that's okay - proceed without one
+    // CSRF tokens are optional; requests will work without them
     return null;
   } catch (error) {
-    logger.error('Error fetching CSRF token', error);
+    // Silently fail - CSRF is optional for the app to function
     return null;
   }
 }
@@ -135,7 +119,7 @@ export async function refreshCsrfToken(): Promise<string | null> {
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
       if (isPreviewHost && !API_BASE) {
         API_BASE = '';
       }

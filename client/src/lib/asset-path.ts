@@ -28,6 +28,23 @@ export function getApiBaseUrl(): string {
       (import.meta.env.VITE_DEFAULT_API_URL as string | undefined);
 
     if (devExplicit) {
+      // Check if this is a remote preview (Builder.io, Vercel, etc.) trying to use localhost
+      try {
+        const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
+        const isRemotePreview =
+          /\.builderio\.xyz$/.test(host) ||
+          /\.vercel\.app$/.test(host) ||
+          /\.vercel\.dev$/.test(host) ||
+          /\.repl\.co$/.test(host) ||
+          /\.replit\.dev$/.test(host) ||
+          /\.replit\.app$/.test(host);
+
+        // If on remote preview and trying to use localhost, use canonical backend instead
+        if (isRemotePreview && devExplicit.includes('127.0.0.1')) {
+          return 'https://api.bubblescafe.space';
+        }
+      } catch { /* no-op */ }
+
       return normalizeUrl(devExplicit);
     }
 
@@ -57,13 +74,14 @@ export function getApiBaseUrl(): string {
       return `${protocol}//${hostname}`;
     }
 
-    // Preview hosts (Vercel/Replit) typically rely on rewrites; prefer a safe default backend domain
+    // Preview hosts (Vercel/Replit/Builder.io) typically rely on rewrites; prefer a safe default backend domain
     const isPreviewHost =
       /\.vercel\.app$/.test(hostname) ||
       /\.vercel\.dev$/.test(hostname) ||
       /\.repl\.co$/.test(hostname) ||
       /\.replit\.dev$/.test(hostname) ||
-      /\.replit\.app$/.test(hostname);
+      /\.replit\.app$/.test(hostname) ||
+      /\.builderio\.xyz$/.test(hostname);
 
     if (isPreviewHost) {
       // Fallback to canonical backend domain when no explicit base is set.
