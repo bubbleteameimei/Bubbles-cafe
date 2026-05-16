@@ -1,217 +1,116 @@
 /**
- * CSRF Token Utilities
- * 
- * This module provides utilities for handling CSRF tokens and automatically applying
- * CSRF tokens to API requests for enhanced security.
+ * CSRF helpers for legacy Express session auth (mock-server / local dev).
+ * Production Cloudflare Worker APIs use Supabase Bearer JWT and do not validate CSRF.
  */
 import logger from '@/utils/secure-client-logger';
 import { getApiBaseUrl } from '@/lib/asset-path';
 
-// Constants for CSRF token handling
 export const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
-// Store the CSRF token in memory (not in cookies for security)
 let csrfToken: string | null = null;
 
-/**
- * Get the CSRF token from memory
- * @returns The CSRF token or null if not found
- */
-export function getCsrfToken(): string | null {
-  // Return cached token if available
-  if (csrfToken) return csrfToken;
-  
-  return null;
+/** Session CSRF is opt-in; production Worker + JWT does not need it. */
+export function isCsrfRequired(): boolean {
+  return String(import.meta.env.VITE_ENABLE_CSRF || '').toLowerCase() === 'true';
 }
 
-/**
- * Set the CSRF token in memory
- * @param token The CSRF token to store
- */
+export function getCsrfToken(): string | null {
+  if (!isCsrfRequired()) return null;
+  return csrfToken;
+}
+
 export function setCsrfToken(token: string): void {
   csrfToken = token;
 }
 
-/**
- * Clear the CSRF token from memory
- */
 export function clearCsrfToken(): void {
   csrfToken = null;
 }
 
-/**
- * Fetch a new CSRF token from the server
- * SECURITY FIX: Now uses secure endpoint instead of cookies
- * Returns null if fetching fails (non-blocking, silent failure)
- */
+async function fetchTokenFromServer(): Promise<string | null> {
+  const API_BASE_RAW = getApiBaseUrl();
+  let API_BASE = API_BASE_RAW;
+  try {
+    const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
+    const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
+    if (isPreviewHost && !API_BASE) {
+      API_BASE = '';
+    }
+  } catch {
+    /* no-op */
+  }
+
+  const candidates = [
+    '/api/csrf-token',
+    API_BASE ? `${API_BASE}/api/csrf-token` : null,
+  ].filter(Boolean) as string[];
+
+  for (const url of candidates) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const resp = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      clearTimeout(timeoutId);
+      if (!resp.ok) continue;
+      const data = await resp.json().catch(() => ({}));
+      const token = data?.csrfToken || null;
+      if (token) {
+        csrfToken = token;
+        return token;
+      }
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
 export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
+  if (!isCsrfRequired()) return null;
   if (csrfToken) return csrfToken;
-
-  try {
-    // Determine base URL intelligently; prefer explicit API base when available (works on previews)
-    const API_BASE_RAW = getApiBaseUrl();
-    let API_BASE = API_BASE_RAW;
-    try {
-      const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
-      // Only force relative endpoints on preview when no explicit base was resolved
-      if (isPreviewHost && !API_BASE) {
-        API_BASE = '';
-      }
-    } catch { /* no-op */ }
-
-    // Attempt to get a token directly (prefer same-origin first, then fall back)
-    const getToken = async (timeoutMs: number = 3000): Promise<string | null> => {
-      const candidates = [
-        '/api/csrf-token',
-        API_BASE ? `${API_BASE}/api/csrf-token` : null
-      ].filter(Boolean) as string[];
-
-      for (const url of candidates) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-          const resp = await fetch(url, {
-            method: 'GET',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!resp.ok) continue;
-          const data = await resp.json().catch(() => ({}));
-          const token = data?.csrfToken || null;
-          if (token) {
-            csrfToken = token;
-            return token;
-          }
-        } catch (err) {
-          // Silently continue - CSRF token is optional
-        }
-      }
-      return null;
-    };
-
-    // Try fetching the token once with very short timeout
-    const token = await getToken(2000);
-    if (token) return token;
-
-    // If we couldn't get a token, that's okay - proceed without one
-    // CSRF tokens are optional; requests will work without them
-    return null;
-  } catch (error) {
-    // Silently fail - CSRF is optional for the app to function
-    return null;
-  }
+  return fetchTokenFromServer();
 }
 
-/**
- * Force-refresh the CSRF token from the server, ignoring any cached token.
- * Useful after a 403 CSRF failure due to a rotated session.
- */
 export async function refreshCsrfToken(): Promise<string | null> {
-  try {
-    // Prefer explicit base when available; fall back to relative on previews
-    const API_BASE_RAW = getApiBaseUrl();
-    let API_BASE = API_BASE_RAW;
-    try {
-      const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
-      if (isPreviewHost && !API_BASE) {
-        API_BASE = '';
-      }
-    } catch { /* no-op */ }
-
-    const url = API_BASE ? `${API_BASE}/api/csrf-token` : '/api/csrf-token';
-    const resp = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!resp.ok) {
-      logger.warn('[CSRF] Failed to refresh CSRF token', { status: resp.status });
-      return null;
-    }
-    const data = await resp.json().catch(() => ({}));
-    const token = data?.csrfToken || null;
-    if (token) {
-      setCsrfToken(token);
-      return token;
-    }
-    logger.warn('[CSRF] No token in refresh response');
-    return null;
-  } catch (error) {
-    logger.error('[CSRF] Error refreshing token', error);
-    return null;
-  }
+  if (!isCsrfRequired()) return null;
+  clearCsrfToken();
+  return fetchTokenFromServer();
 }
 
-/**
- * Apply CSRF token to fetch options
- * @param options The fetch options to update
- * @returns Updated fetch options with CSRF token
- */
 export function applyCSRFToken(options: RequestInit = {}): RequestInit {
-  try {
-    let token = getCsrfToken();
-    
-    // If no token in memory, try to fetch one
-    if (!token) {
-      // Note: This is async but we can't make this function async
-      // The caller should ensure fetchCsrfTokenIfNeeded() is called first
-      logger.warn('[CSRF] No token available, ensure fetchCsrfTokenIfNeeded() is called first');
-      return options;
-    }
+  if (!isCsrfRequired()) return options;
 
-    // Create new headers object if none exists
-    const headers = new Headers(options.headers);
-    headers.set(CSRF_HEADER_NAME, token);
-    
-    return {
-      ...options,
-      headers,
-    };
-  } catch (e) {
-    logger.error('[CSRF] Error applying CSRF token', e);
-    return options;
-  }
+  const token = getCsrfToken();
+  if (!token) return options;
+
+  const headers = new Headers(options.headers);
+  headers.set(CSRF_HEADER_NAME, token);
+  return { ...options, headers };
 }
 
-/**
- * Create fetch options with CSRF token for non-GET requests
- * @param method The HTTP method
- * @param body The request body
- * @returns Fetch options with CSRF token and content type
- */
-export function createCSRFRequest(method: string, body?: any): RequestInit {
+export function createCSRFRequest(method: string, body?: unknown): RequestInit {
   const options: RequestInit = {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
   };
-
-  if (body) {
+  if (body !== undefined) {
     options.body = JSON.stringify(body);
   }
-
-  // Apply CSRF token
   return applyCSRFToken(options);
 }
 
-/**
- * Initialize CSRF protection for the application
- * SECURITY FIX: Now uses secure endpoint instead of cookie-based approach
- */
 export async function initCSRFProtection(): Promise<void> {
+  if (!isCsrfRequired()) return;
   try {
-    // Fetch initial CSRF token
     await fetchCsrfTokenIfNeeded();
-    logger.info('CSRF protection initialized successfully');
+    logger.info('CSRF protection initialized');
   } catch (error) {
     logger.error('Failed to initialize CSRF protection', error);
   }

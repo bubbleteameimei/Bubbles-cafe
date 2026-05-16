@@ -1,25 +1,12 @@
-
-let csrfToken: string | null = null;
+import { fetchCsrfTokenIfNeeded, getCsrfToken, isCsrfRequired, setCsrfToken } from './csrf-token';
 
 export async function initializeCSRF(): Promise<void> {
-  try {
-    const response = await fetch('/api/csrf-token', {
-      credentials: 'include'
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      csrfToken = data.csrfToken;
-    }
-  } catch (error) {
-    console.error('Failed to initialize CSRF token:', error);
-  }
+  if (!isCsrfRequired()) return;
+  await fetchCsrfTokenIfNeeded();
 }
 
 export function getCSRFToken(): string | null {
-  return csrfToken;
+  return getCsrfToken();
 }
 
-export function setCSRFToken(token: string): void {
-  csrfToken = token;
-}
+export { setCsrfToken as setCSRFToken };

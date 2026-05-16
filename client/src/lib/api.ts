@@ -5,7 +5,7 @@
  * @param body Optional request body for POST/PUT/PATCH requests
  * @returns The fetch response
  */
-import { applyCSRFToken, fetchCsrfTokenIfNeeded, refreshCsrfToken } from './csrf-token';
+import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 import { getApiBaseUrl } from './asset-path';
 import { supabase, initSupabase } from './supabase';
@@ -62,27 +62,23 @@ export async function apiRequest(
   const base = resolveApiBase();
   const url = base ? `${base}${endpoint}` : endpoint;
 
-  // Apply CSRF token for non-GET requests
-  if (method !== 'GET') {
-    // Ensure we have a fresh token first for all state-changing requests
+  if (method !== 'GET' && isCsrfRequired()) {
     await fetchCsrfTokenIfNeeded();
 
     try {
       const response = await fetch(url, applyCSRFToken(options));
 
-      // If we get a 403 with a specific message about CSRF, try to refresh the token and retry
       if (response.status === 403) {
         try {
           const errorData = await response.json().catch(() => ({}));
-          const isCsrfError = typeof errorData?.error === 'string' && errorData.error.toLowerCase().includes('csrf');
+          const isCsrfError =
+            typeof errorData?.error === 'string' &&
+            errorData.error.toLowerCase().includes('csrf');
           if (isCsrfError) {
-            // Force refresh the token
             await refreshCsrfToken();
-            // Retry the request with a fresh token
             return fetch(url, applyCSRFToken(options));
           }
-        } catch (_e) {
-          // Best effort: still try to refresh and retry once
+        } catch {
           await refreshCsrfToken();
           return fetch(url, applyCSRFToken(options));
         }

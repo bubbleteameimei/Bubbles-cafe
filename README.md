@@ -55,6 +55,21 @@ npm run e2e
 ## Deployment notes
 
 - Frontend is deployed to Vercel.
-  - `vercel.json` includes a rewrite so deep links like `/privacy` and `/legal/terms` don’t 404.
+  - `vercel.json` sets `outputDirectory` to `dist/public` and rewrites all non-file routes to `index.html` so SPA paths like `/reader`, `/index`, and `/stories` work on direct navigation.
+  - `/api/*` is proxied to `https://api.bubblescafe.space` for same-origin bootstrap calls.
 - API is deployed to Cloudflare Workers.
   - `wrangler.toml` defines routes for `api.bubblescafe.space/*`.
+
+## Docker
+
+```bash
+# Production static site (nginx on port 8080)
+docker compose up web --build
+
+# Development (Vite + wrangler)
+docker compose --profile dev up dev --build
+```
+
+## Dev Container
+
+Open the repo in VS Code / Cursor and choose **Reopen in Container**. The dev container runs `npm run dev:full` (Vite on 5173, Worker on 8787).

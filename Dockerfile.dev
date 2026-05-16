@@ -1,0 +1,16 @@
+# Development image: Vite + Cloudflare Worker (wrangler dev)
+FROM node:22-bookworm
+
+WORKDIR /app
+
+RUN npm install -g wrangler@4
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 5173 8787
+
+# Vite (5173) proxies /api to wrangler (8787) per vite.config.ts
+CMD ["npm", "run", "dev:full"]

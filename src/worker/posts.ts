@@ -465,7 +465,9 @@ export function registerPostsRoutes(router: any) {
 
       if (isFirstPageDefaultFeed && cacheKey) {
         const cached = await getJsonFromCache(env, cacheKey);
-        if (cached) {
+        const cachedPosts = (cached as any)?.posts;
+        const hasCachedPosts = Array.isArray(cachedPosts) && cachedPosts.length > 0;
+        if (cached && hasCachedPosts) {
           return json(cached, {
             headers: {
               'Cache-Control': 'max-age=30, stale-while-revalidate=30',
@@ -524,10 +526,34 @@ export function registerPostsRoutes(router: any) {
 
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
-        const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
-        if (isFirstPageDefaultFeed && cacheKey) {
-          await setJsonCache(env, cacheKey, emptyPayload, 30);
+        // Supabase may be empty until WordPress sync RPC is installed; serve live WP posts.
+        if (!category) {
+          try {
+            const wp = await fetchWordpressPostsList(env, {
+              page,
+              limit,
+              search: searchTermRaw || undefined,
+            });
+            if (wp && Array.isArray(wp.posts) && wp.posts.length > 0) {
+              const wpPayload = {
+                posts: wp.posts,
+                hasMore: wp.hasMore,
+                nextCursor: null as string | null,
+              };
+              return json(wpPayload, {
+                headers: {
+                  'Cache-Control': allowCache
+                    ? 'max-age=60, stale-while-revalidate=120'
+                    : 'no-store, max-age=0',
+                },
+              });
+            }
+          } catch {
+            // fall through to empty payload
+          }
         }
+
+        const emptyPayload = { posts: [], hasMore: false, nextCursor: null as string | null };
         return json(emptyPayload, {
           headers: {
             'Cache-Control': allowCache

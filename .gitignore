@@ -259,6 +259,13 @@ curl-results.txt
 *.txt
 *.m4a
 *.json
+!package.json
+!package-lock.json
+!vercel.json
+!theme.json
+!tsconfig.json
+!tsconfig.*.json
+!.devcontainer/devcontainer.json
 *.sql
 *.dump
 *.tar.gz

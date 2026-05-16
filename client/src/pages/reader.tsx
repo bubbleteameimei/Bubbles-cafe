@@ -299,19 +299,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       if (import.meta.env?.DEV) {
         console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
       }
-      const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, "$1");
-      if (import.meta.env?.DEV) {
-        console.log('[Reader] Using CSRF token for deletion');
-      }
-      
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        credentials: 'include'
-      });
+      const { apiRequest } = await import('@/lib/api');
+      const response = await apiRequest('DELETE', `/api/posts/${postId}`);
 
       // Handle 204 No Content without parsing
       if (response.status === 204) {
@@ -1633,24 +1622,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         onClick={async () => {
                           try {
                             setSavingTheme(true);
-                            const csrfToken = document.cookie.replace(
-                              /(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/,
-                              "$1"
-                            );
-                            const res = await fetch(`/api/posts/${currentPost.id}/theme`, {
-                              method: 'PATCH',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-Token': csrfToken
-                              },
-                              credentials: 'include',
-                              body: JSON.stringify({
-                                themeCategory: selectedThemeCat,
-                                themeIcon: selectedThemeIcon,
-                                // snake_case for older compatibility
-                                theme_category: selectedThemeCat,
-                                icon: selectedThemeIcon
-                              })
+                            const { apiRequest } = await import('@/lib/api');
+                            const res = await apiRequest('PATCH', `/api/posts/${currentPost.id}/theme`, {
+                              themeCategory: selectedThemeCat,
+                              themeIcon: selectedThemeIcon,
+                              theme_category: selectedThemeCat,
+                              icon: selectedThemeIcon,
                             });
                             if (!res.ok) {
                               const data = await res.json().catch(() => null);

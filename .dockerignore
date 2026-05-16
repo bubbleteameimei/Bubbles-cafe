@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-server
+.git
+.github
+.cursor
+*.log
+lighthouse-report
+coverage
+.repo-temp
+repo-temp
+Bubbles-cafe
+**/.wrangler
+**/test-results
+**/playwright-report

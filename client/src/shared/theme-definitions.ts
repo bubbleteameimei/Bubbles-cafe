@@ -47,16 +47,8 @@ export async function saveThemeDefinitionOverrides(
 ): Promise<void> {
   // Try server first
   try {
-    const csrf =
-      typeof document !== 'undefined'
-        ? document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*=\s*([^;]*).*$)|^.*$/, '$1')
-        : '';
-    const res = await fetch(getApiPath('/api/themes/definitions'), {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
-      body: JSON.stringify(map),
-    });
+    const { apiRequest } = await import('@/lib/api');
+    const res = await apiRequest('PATCH', '/api/themes/definitions', map);
     if (!res.ok) throw new Error('PATCH /api/themes/definitions failed');
   } catch {
     // ignore server failure, still persist locally

@@ -68,8 +68,10 @@ export default defineConfig(({ mode }) => {
 						options: { cacheName: "assets" }
 					},
 					{
-						// API requests: network-first to avoid stale data
-						urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+						// API requests: network-first; never cache CSRF tokens
+						urlPattern: ({ url }) =>
+							url.pathname.startsWith("/api/") &&
+							!url.pathname.includes("/api/csrf-token"),
 						handler: "NetworkFirst",
 						options: {
 							cacheName: "api",
