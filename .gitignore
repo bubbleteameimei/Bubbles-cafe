@@ -267,6 +267,7 @@ curl-results.txt
 !tsconfig.*.json
 !.devcontainer/devcontainer.json
 *.sql
+!migrations/*.sql
 *.dump
 *.tar.gz
 *.md.backup
