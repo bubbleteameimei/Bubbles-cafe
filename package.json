@@ -10,7 +10,7 @@
     "dev": "npm run dev:full",
     "dev:mock": "concurrently -n MOCK,VITE -c blue,green \\\\\\\"node scripts/mock-server.mjs\\\\\\\" \\\\\\\"vite --host\\\\\\\"",
     "dev:client": "vite --host",
-    "dev:worker": "wrangler dev",
+    "dev:worker": "npx wrangler dev",
     "dev:full": "run-p dev:worker dev:client",
     "build": "vite build && node scripts/generate-icons.js && node scripts/generate-sitemaps.mjs && tsx scripts/optimize-public-images.ts",
     "build:client": "vite build",
