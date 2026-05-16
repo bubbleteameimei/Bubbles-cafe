@@ -76,6 +76,7 @@ import {
   syncThemeDefinitionOverridesFromServer,
 } from '@/shared/theme-definitions';
 import { getBadgeTint } from '@/lib/theme-badges';
+import { motion } from 'framer-motion';
 import ContinueReadingBanner from '@/components/ContinueReadingBanner';
 import { VirtualScrollArea } from '@/components/ui/VirtualScrollArea';
 import { computeTrendingScores } from '@/lib/trending';

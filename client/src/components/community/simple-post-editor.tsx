@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
@@ -395,7 +395,7 @@ export default function SimplePostEditor({ postId, onClose: _onClose }: SimplePo
               />
 
               {/* Using the full theme categories field */}
-              <PostFormThemeField control={form.control} />
+              <PostFormThemeField control={form.control as Control<any>} />
             </TabsContent>
             
             {/* Preview tab */}
