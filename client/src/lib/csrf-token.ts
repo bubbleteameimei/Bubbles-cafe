@@ -52,7 +52,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
       // Only force relative endpoints on preview when no explicit base was resolved
       if (isPreviewHost && !API_BASE) {
         API_BASE = '';
@@ -135,7 +135,7 @@ export async function refreshCsrfToken(): Promise<string | null> {
     let API_BASE = API_BASE_RAW;
     try {
       const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$/.test(host);
+      const isPreviewHost = /\.vercel\.app$|\.vercel\.dev$|\.builderio\.xyz$/.test(host);
       if (isPreviewHost && !API_BASE) {
         API_BASE = '';
       }
