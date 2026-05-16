@@ -11,6 +11,7 @@ import { registerPostsRoutes } from './worker/posts';
 import { registerReactionsRoutes } from './worker/reactions';
 import { registerWordpressRoutes } from './worker/wordpress';
 import { callSupabaseRpc, mapDbUserRowToApiUser } from './worker/shared';
+import { getPublicSupabaseConfig } from './worker/utils';
 
 
 // ============================================================================
@@ -1120,8 +1121,7 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
     const apiBase = getApiBase(env);
     const frontendBase = (env.FRONTEND_URL || 'https://bubblescafe.space').replace(/\/*$/, '');
 
-    const supabaseUrl = env.SUPABASE_URL || '';
-    const supabaseAnonKey = env.SUPABASE_ANON_KEY || '';
+    const supabasePublic = getPublicSupabaseConfig(env);
 
     const googleClientId = env.GOOGLE_CLIENT_ID || null;
     const googleRedirectUri = env.GOOGLE_REDIRECT_URI || `${apiBase}/api/auth/callback`;
@@ -1130,8 +1130,9 @@ router.get('/api/config/public', async (req: Request, env: Env) => {
       apiBase,
       frontendUrl: frontendBase,
       supabase: {
-        url: supabaseUrl || null,
-        anonKey: supabaseAnonKey || null,
+        url: supabasePublic.url,
+        anonKey: supabasePublic.anonKey,
+        clientReady: supabasePublic.clientReady,
       },
       googleOAuth: {
         clientId: googleClientId,

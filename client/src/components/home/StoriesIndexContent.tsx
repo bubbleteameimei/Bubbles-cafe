@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { type posts } from '@shared/schema';
 type Post = typeof posts.$inferSelect;
 import { useLocation } from 'wouter';
@@ -312,7 +312,15 @@ export default function StoriesIndexContent() {
   }, []);
 
   // Paginated query (canonical posts listing; content omitted for speed)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery<{
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isPostsLoading,
+    isError: isPostsError,
+    error: postsError,
+  } = useInfiniteQuery<{
     posts: Post[];
     hasMore: boolean;
     page: number;
@@ -1405,17 +1413,43 @@ export default function StoriesIndexContent() {
     } catch {}
   }, [featuredStory]);
 
-  if (!hasPaginatedPosts) {
+  if (isPostsLoading && !data) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
-        <div className="text-center space-y-4">
+      <motion.div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
+        <p className="text-muted-foreground">Loading stories…</p>
+      </motion.div>
+    );
+  }
+
+  if (isPostsError) {
+    const message =
+      postsError instanceof Error ? postsError.message : 'Could not reach the story API.';
+    return (
+      <motion.div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden px-4">
+        <motion.div className="text-center space-y-4 max-w-md">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
-          <p className="text-muted-foreground">Please try again later</p>
+          <p className="text-muted-foreground text-sm">{message}</p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             Retry
           </Button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  if (!hasPaginatedPosts) {
+    return (
+      <motion.div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden px-4">
+        <motion.div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-semibold text-foreground">No stories yet</h2>
+          <p className="text-muted-foreground text-sm">
+            The catalog is empty. After deploying the Worker, stories should load from WordPress automatically.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Refresh
+          </Button>
+        </motion.div>
+      </motion.div>
     );
   }
 

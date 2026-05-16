@@ -24,16 +24,28 @@ const createAuthStub = () => ({
   },
 });
 
+function normalizeSupabaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '');
+}
+
+function isUsableAnonKey(key: string): boolean {
+  const k = key.trim();
+  return k.startsWith('eyJ') || k.startsWith('sb_publishable_');
+}
+
 // Eager init using VITE_ or NEXT_PUBLIC_ env when present, else lazy via /api/config/public
 function eagerInitFromEnv(): boolean {
   try {
     const envAny: any = (import.meta as any)?.env || {};
-    const url =
+    const urlRaw =
       (envAny.VITE_SUPABASE_URL as string | undefined) ||
       (envAny.NEXT_PUBLIC_SUPABASE_URL as string | undefined);
-    const anonKey =
+    const anonKeyRaw =
       (envAny.VITE_SUPABASE_ANON_KEY as string | undefined) ||
       (envAny.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined);
+
+    const url = urlRaw ? normalizeSupabaseUrl(urlRaw) : '';
+    const anonKey = anonKeyRaw && isUsableAnonKey(anonKeyRaw) ? anonKeyRaw.trim() : '';
 
     if (url && anonKey) {
       if (import.meta.env?.DEV) {
@@ -76,8 +88,12 @@ async function lazyInitFromServer(): Promise<boolean> {
     }
     const data = await res.json().catch(() => ({}));
     const sup = (data as any)?.supabase || {};
-    const url = sup.url as string | undefined;
-    const anonKey = sup.anonKey as string | undefined;
+    const urlRaw = sup.url as string | undefined;
+    const anonKeyRaw = sup.anonKey as string | undefined;
+    const clientReady = sup.clientReady !== false;
+    const url = urlRaw ? normalizeSupabaseUrl(urlRaw) : '';
+    const anonKey =
+      anonKeyRaw && clientReady && isUsableAnonKey(anonKeyRaw) ? anonKeyRaw.trim() : '';
     if (url && anonKey) {
       if (import.meta.env?.DEV) {
         console.log('[Supabase] Lazy init from /api/config/public', {

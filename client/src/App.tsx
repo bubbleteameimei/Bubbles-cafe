@@ -143,6 +143,7 @@ const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
 import { trackPageView } from '@/lib/metrics';
 // Vercel Web Analytics (React)
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 
 // Renders Vercel Analytics only when analytics consent is granted
@@ -687,6 +688,7 @@ function App() {
                         </React.Suspense>
                         {/* Vercel Analytics - production only and only with analytics consent */}
                         <ConsentAwareVercelAnalytics />
+                        {import.meta.env.PROD ? <SpeedInsights /> : null}
                         {/* GA4 (enabled when VITE_GA_MEASUREMENT_ID or window.GA_MEASUREMENT_ID is set) */}
                         <GA4 />
                         {/* Dev-only API diagnostics for CORS/base URL debugging */}

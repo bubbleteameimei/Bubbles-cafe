@@ -1,0 +1,9 @@
+# Optional Render infrastructure — Postgres only.
+# The production API remains on Cloudflare Workers (wrangler deploy).
+# See docs/RENDER.md before using this.
+
+databases:
+  - name: bubbles-cafe-db
+    databaseName: bubbles_cafe
+    user: bubbles_cafe
+    plan: free

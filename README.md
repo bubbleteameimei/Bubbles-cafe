@@ -52,6 +52,13 @@ npm test
 npm run e2e
 ```
 
+## Backend health
+
+- Worker API: `https://api.bubblescafe.space/api/health`
+- Supabase diagnostics: `https://api.bubblescafe.space/api/health/supabase`
+- Setup guide: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
+- Render vs Supabase: [docs/RENDER.md](docs/RENDER.md)
+
 ## Deployment notes
 
 - Frontend is deployed to Vercel.

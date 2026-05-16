@@ -116,6 +116,26 @@ async function fetchWordpressPostsList(
   }
 }
 
+const POSTS_SELECT_WITH_CONTENT =
+  'id,title,content,excerpt,slug,author_id,is_secret,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+const POSTS_SELECT_WITHOUT_CONTENT =
+  'id,title,excerpt,slug,author_id,is_secret,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+
+async function wordpressPostsListPayload(
+  env: Env,
+  opts: { page: number; limit: number; search?: string },
+): Promise<{ posts: any[]; hasMore: boolean; nextCursor: null } | null> {
+  const wp = await fetchWordpressPostsList(env, opts);
+  if (!wp || !Array.isArray(wp.posts) || wp.posts.length === 0) {
+    return null;
+  }
+  return {
+    posts: wp.posts,
+    hasMore: wp.hasMore,
+    nextCursor: null,
+  };
+}
+
 export function mapSupabasePostRowToPost(row: any): any {
   const content = typeof row.content === 'string' ? row.content : '';
   const metadata = parseMetadata((row as any)?.metadata);
@@ -166,10 +186,7 @@ export async function fetchSupabasePosts(env: Env): Promise<any[]> {
 
   const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
   const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
-  postsUrl.searchParams.set(
-    'select',
-    'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at',
-  );
+  postsUrl.searchParams.set('select', POSTS_SELECT_WITH_CONTENT);
   postsUrl.searchParams.set('order', 'created_at.desc');
   postsUrl.searchParams.set('limit', '1000');
 
@@ -478,9 +495,9 @@ export function registerPostsRoutes(router: any) {
 
       const postsUrl = new URL(`${baseUrl}/rest/v1/posts`);
       const selectAll =
-        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        POSTS_SELECT_WITH_CONTENT;
       const selectWithoutContent =
-        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        POSTS_SELECT_WITHOUT_CONTENT;
       postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 
@@ -521,35 +538,37 @@ export function registerPostsRoutes(router: any) {
       const res = await fetch(postsUrl.toString(), { headers });
 
       if (!res.ok) {
+        if (!category) {
+          const wpPayload = await wordpressPostsListPayload(env, {
+            page,
+            limit,
+            search: searchTermRaw || undefined,
+          });
+          if (wpPayload) {
+            return json(wpPayload, {
+              headers: { 'Cache-Control': 'max-age=60, stale-while-revalidate=120' },
+            });
+          }
+        }
         return proxyToBackend(req, env);
       }
 
       const rows = (await res.json().catch(() => [])) as any[];
       if (!Array.isArray(rows) || rows.length === 0) {
-        // Supabase may be empty until WordPress sync RPC is installed; serve live WP posts.
         if (!category) {
-          try {
-            const wp = await fetchWordpressPostsList(env, {
-              page,
-              limit,
-              search: searchTermRaw || undefined,
+          const wpPayload = await wordpressPostsListPayload(env, {
+            page,
+            limit,
+            search: searchTermRaw || undefined,
+          });
+          if (wpPayload) {
+            return json(wpPayload, {
+              headers: {
+                'Cache-Control': allowCache
+                  ? 'max-age=60, stale-while-revalidate=120'
+                  : 'no-store, max-age=0',
+              },
             });
-            if (wp && Array.isArray(wp.posts) && wp.posts.length > 0) {
-              const wpPayload = {
-                posts: wp.posts,
-                hasMore: wp.hasMore,
-                nextCursor: null as string | null,
-              };
-              return json(wpPayload, {
-                headers: {
-                  'Cache-Control': allowCache
-                    ? 'max-age=60, stale-while-revalidate=120'
-                    : 'no-store, max-age=0',
-                },
-              });
-            }
-          } catch {
-            // fall through to empty payload
           }
         }
 
@@ -923,9 +942,9 @@ export function registerPostsRoutes(router: any) {
       const includeContentParam = (search.get('includeContent') || '').toLowerCase();
       const includeContent = includeContentParam !== 'false';
       const selectAll =
-        'id,title,content,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        POSTS_SELECT_WITH_CONTENT;
       const selectWithoutContent =
-        'id,title,excerpt,slug,author_id,is_secret,isAdminPost,mature_content,theme_category,reading_time_minutes,likes_count,dislikes_count,baseline_likes,baseline_dislikes,metadata,created_at';
+        POSTS_SELECT_WITHOUT_CONTENT;
       postsUrl.searchParams.set('select', includeContent ? selectAll : selectWithoutContent);
       postsUrl.searchParams.set('order', 'created_at.desc');
 

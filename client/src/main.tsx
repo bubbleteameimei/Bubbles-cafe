@@ -6,8 +6,6 @@ import "./index.css";
 import { createRoot } from "react-dom/client";
 import React from "react";
 
-// Vercel Speed Insights (React) - production only
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import { isCategoryAllowed } from "@/lib/cookie-manager";
 
 // Patch window.fetch to auto-apply CSRF to non-GET requests
@@ -142,7 +140,6 @@ try {
   rootElement.render(
     <React.StrictMode>
       <App />
-      {import.meta.env.PROD && <SpeedInsights />}
     </React.StrictMode>
   );
 } catch (e) {

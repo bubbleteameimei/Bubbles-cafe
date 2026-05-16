@@ -1,5 +1,28 @@
 // Shared Worker utilities for Bubble's Cafe Cloudflare Worker.
 
+/** Normalize Supabase project URL (no trailing slash). */
+export function normalizeSupabaseUrl(url: string): string {
+  return (url || '').trim().replace(/\/+$/, '');
+}
+
+/** Keys safe to expose to the browser via /api/config/public. */
+export function isPublicSupabaseAnonKey(key: string): boolean {
+  const k = (key || '').trim();
+  return k.startsWith('eyJ') || k.startsWith('sb_publishable_');
+}
+
+export function getPublicSupabaseConfig(env: Pick<Env, 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'>) {
+  const url = env.SUPABASE_URL ? normalizeSupabaseUrl(env.SUPABASE_URL) : '';
+  const rawKey = (env.SUPABASE_ANON_KEY || '').trim();
+  const anonKey = rawKey && isPublicSupabaseAnonKey(rawKey) ? rawKey : null;
+  return {
+    url: url || null,
+    anonKey,
+    configured: Boolean(url && rawKey),
+    clientReady: Boolean(url && anonKey),
+  };
+}
+
 export interface Env {
   // KV namespaces
   IDEMPOTENCY_KV: KVNamespace;
