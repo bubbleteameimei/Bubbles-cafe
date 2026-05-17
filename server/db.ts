@@ -58,12 +58,12 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
 }
 
 // Resolve database URL from environment with sanitization
-// Prefer Supabase connection pooler URL if provided
+// Prefer Neon direct connection (DATABASE_URL takes precedence)
 const DATABASE_URL = sanitizeDatabaseUrl(
-  process.env.SUPABASE_POOLER_URL ||
-  process.env.SUPABASE_CONNECTION_POOLER_URL ||
+  process.env.DATABASE_URL ||
   process.env.DB_POOLER_URL ||
-  process.env.DATABASE_URL
+  process.env.SUPABASE_POOLER_URL ||
+  process.env.SUPABASE_CONNECTION_POOLER_URL
 );
 
 // Create pool with connection retry logic using node-postgres
@@ -96,11 +96,8 @@ if (!DATABASE_URL) {
   });
 } else {
   try {
-    // Enforce Supabase-only hosts (fail fast if a Neon host is detected)
+    // Parse database URL
     const parsedForPrimary = parsePgUrl(DATABASE_URL);
-    if (parsedForPrimary.host.endsWith('neon.tech')) {
-      throw new Error('Invalid DATABASE_URL host (neon.tech). This project is configured to use Supabase only.');
-    }
 
     // Decide SSL usage: treat any sslmode except "disable" as SSL
     const wantsSSL = (url: string): boolean => {

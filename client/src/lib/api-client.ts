@@ -1,69 +1,127 @@
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+import { csrfFetch } from './csrf-signed';
 
-export type ApiError = {
-  status: number;
-  code?: string;
-  message: string;
-  requestId?: string;
-};
-
-const inflightRequests = new Map<string, Promise<any>>();
-
-function buildKey(method: HttpMethod, url: string, body?: unknown) {
-  return `${method}:${url}:${body ? JSON.stringify(body) : ''}`;
+interface ApiClientOptions {
+  getAccessToken?: () => string | null;
+  onTokenRefresh?: (token: string) => Promise<void>;
 }
 
-export async function apiFetch<T>(
-  url: string,
-  options: {
-    method?: HttpMethod;
-    body?: unknown;
-    headers?: Record<string, string>;
-    credentials?: RequestCredentials;
-    signal?: AbortSignal;
-    dedupe?: boolean;
-  } = {}
-): Promise<T> {
-  const method = options.method ?? 'GET';
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
+/**
+ * API client that handles JWT auth and CSRF tokens
+ */
+export class ApiClient {
+  private getAccessToken: () => string | null;
+  private onTokenRefresh?: (token: string) => Promise<void>;
 
-  const key = buildKey(method, url, options.body);
-  if (options.dedupe !== false && inflightRequests.has(key)) {
-    return inflightRequests.get(key) as Promise<T>;
+  constructor(options: ApiClientOptions = {}) {
+    this.getAccessToken = options.getAccessToken || (() => null);
+    this.onTokenRefresh = options.onTokenRefresh;
   }
 
-  const exec = fetch(url, {
-    method,
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-    credentials: options.credentials ?? 'include',
-    signal: options.signal,
-  })
-    .then(async (res) => {
-      const requestId = res.headers.get('X-Request-Id') || undefined;
-      const contentType = res.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
-      const payload = isJson ? await res.json().catch(() => ({})) : await res.text();
+  private async request<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<{ data: T; status: number }> {
+    // Add JWT token if available
+    const token = this.getAccessToken();
+    const headers = new Headers(options.headers);
 
-      if (!res.ok) {
-        const error: ApiError = {
-          status: res.status,
-          code: (payload as any)?.code,
-          message: (payload as any)?.message || res.statusText,
-          requestId,
-        };
-        throw error;
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    headers.set('Content-Type', 'application/json');
+
+    // For state-changing requests, use CSRF protection
+    const method = (options.method || 'GET').toUpperCase();
+    const isSafeMethod = ['GET', 'HEAD', 'OPTIONS'].includes(method);
+
+    const requestOptions: RequestInit = {
+      ...options,
+      headers,
+      credentials: 'include',
+    };
+
+    // Use CSRF-protected fetch for non-safe methods
+    const response = isSafeMethod
+      ? await fetch(url, requestOptions)
+      : await csrfFetch(url, requestOptions);
+
+    // Handle 401 - token expired
+    if (response.status === 401) {
+      // Try to refresh token and retry once
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            refreshToken: localStorage.getItem('auth_tokens'),
+          }),
+        });
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          if (this.onTokenRefresh) {
+            await this.onTokenRefresh(data.accessToken);
+          }
+
+          // Retry original request with new token
+          headers.set('Authorization', `Bearer ${data.accessToken}`);
+          const retryOptions: RequestInit = {
+            ...requestOptions,
+            headers,
+          };
+
+          const retryResponse = isSafeMethod
+            ? await fetch(url, retryOptions)
+            : await csrfFetch(url, retryOptions);
+
+          const responseData = await retryResponse.json();
+          return { data: responseData, status: retryResponse.status };
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error);
       }
-      return payload as T;
-    })
-    .finally(() => {
-      inflightRequests.delete(key);
+    }
+
+    const data = await response.json();
+    return { data, status: response.status };
+  }
+
+  async get<T>(url: string): Promise<T> {
+    const { data, status } = await this.request<T>(url, { method: 'GET' });
+    if (status >= 400) {
+      throw new Error((data as any)?.error || 'Request failed');
+    }
+    return data;
+  }
+
+  async post<T>(url: string, body: any): Promise<T> {
+    const { data, status } = await this.request<T>(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
+    if (status >= 400) {
+      throw new Error((data as any)?.error || 'Request failed');
+    }
+    return data;
+  }
 
-  inflightRequests.set(key, exec);
-  return exec;
+  async patch<T>(url: string, body: any): Promise<T> {
+    const { data, status } = await this.request<T>(url, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    if (status >= 400) {
+      throw new Error((data as any)?.error || 'Request failed');
+    }
+    return data;
+  }
+
+  async delete<T>(url: string): Promise<T> {
+    const { data, status } = await this.request<T>(url, { method: 'DELETE' });
+    if (status >= 400) {
+      throw new Error((data as any)?.error || 'Request failed');
+    }
+    return data;
+  }
 }
-
