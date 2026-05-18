@@ -14,88 +14,55 @@ function normalizeUrl(url: string): string {
 
 /**
  * Get the proper base URL for API calls depending on the environment.
- * Prioritizes explicit environment configuration to avoid relying on rewrites.
+ * Uses Render backend (https://bubbles-cafe.onrender.com) as primary backend.
  */
 export function getApiBaseUrl(): string {
-  // In development, we previously relied on Vite's proxy to a Node/Express backend.
-  // That backend has been removed, so we now prefer an explicit API base URL even in dev.
-  if (import.meta.env.DEV) {
-    const devExplicit =
-      (import.meta.env.VITE_API_URL as string | undefined) ||
-      (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ||
-      (import.meta.env.VITE_BACKEND_URL as string | undefined) ||
-      (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-      (import.meta.env.VITE_DEFAULT_API_URL as string | undefined);
+  // Production Render backend
+  const RENDER_BACKEND = 'https://bubbles-cafe.onrender.com';
 
-    if (devExplicit) {
-      // Check if this is a remote preview (Builder.io, Vercel, etc.) trying to use localhost
-      try {
-        const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
-        const isRemotePreview =
-          /\.builderio\.xyz$/.test(host) ||
-          /\.vercel\.app$/.test(host) ||
-          /\.vercel\.dev$/.test(host) ||
-          /\.repl\.co$/.test(host) ||
-          /\.replit\.dev$/.test(host) ||
-          /\.replit\.app$/.test(host);
-
-        // If on remote preview and trying to use localhost, use canonical backend instead
-        if (isRemotePreview && devExplicit.includes('127.0.0.1')) {
-          return 'https://api.bubblescafe.space';
-        }
-      } catch { /* no-op */ }
-
-      return normalizeUrl(devExplicit);
-    }
-
-    // Fallback for local Worker dev (wrangler dev default)
-    return 'http://127.0.0.1:8787';
-  }
-
-  // Prefer explicit env overrides first (works on preview domains without rewrites)
-  const explicitCandidates = [
+  // Check for explicit environment overrides first
+  const explicitBackend = [
     import.meta.env.VITE_API_URL as string | undefined,
     import.meta.env.VITE_BACKEND_BASE_URL as string | undefined,
     import.meta.env.VITE_BACKEND_URL as string | undefined,
     import.meta.env.VITE_API_BASE_URL as string | undefined,
     import.meta.env.VITE_DEFAULT_API_URL as string | undefined,
-  ].filter(Boolean) as string[];
+  ].find(Boolean);
 
-  if (explicitCandidates.length > 0) {
-    return normalizeUrl(explicitCandidates[0]);
+  if (explicitBackend) {
+    return normalizeUrl(explicitBackend);
   }
 
-  // Derive from current hostname with special-cases
-  try {
-    const { protocol, hostname } = window.location;
+  // In development, check for local Express server or use Render
+  if (import.meta.env.DEV) {
+    try {
+      const host = typeof window !== 'undefined' ? (window.location?.hostname || '') : '';
 
-    // If already on api.* subdomain, use it as-is
-    if (hostname.startsWith('api.')) {
-      return `${protocol}//${hostname}`;
-    }
+      // If running on localhost, try local Express server first
+      if (host.includes('localhost') || host === '127.0.0.1') {
+        return 'http://localhost:3001';
+      }
 
-    // Preview hosts (Vercel/Replit/Builder.io) typically rely on rewrites; prefer a safe default backend domain
-    const isPreviewHost =
-      /\.vercel\.app$/.test(hostname) ||
-      /\.vercel\.dev$/.test(hostname) ||
-      /\.repl\.co$/.test(hostname) ||
-      /\.replit\.dev$/.test(hostname) ||
-      /\.replit\.app$/.test(hostname) ||
-      /\.builderio\.xyz$/.test(hostname);
+      // For remote previews (Builder.io, Vercel, etc.), use Render backend
+      const isRemotePreview =
+        /\.builderio\.xyz$/.test(host) ||
+        /\.vercel\.app$/.test(host) ||
+        /\.vercel\.dev$/.test(host) ||
+        /\.repl\.co$/.test(host) ||
+        /\.replit\.dev$/.test(host) ||
+        /\.replit\.app$/.test(host);
 
-    if (isPreviewHost) {
-      // Fallback to canonical backend domain when no explicit base is set.
-      // This project uses api.bubblescafe.space as the default backend.
-      return 'https://api.bubblescafe.space';
-    }
+      if (isRemotePreview) {
+        return RENDER_BACKEND;
+      }
+    } catch { /* no-op */ }
 
-    // Default split deployment: api.<root-domain>
-    const host = hostname.startsWith('www.') ? hostname.slice(4) : hostname;
-    return `${protocol}//api.${host}`;
-  } catch {
-    // Final fallback to canonical backend
-    return 'https://api.bubblescafe.space';
+    // Default dev: try localhost Express first
+    return 'http://localhost:3001';
   }
+
+  // Production: use Render backend
+  return RENDER_BACKEND;
 }
 
 /**
