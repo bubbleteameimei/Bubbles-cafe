@@ -29,14 +29,10 @@ async function fetchWithApiBase(input: RequestInfo | URL, init?: RequestInit): P
 
   // Apply CSRF token to non-GET requests
   if (method !== 'GET') {
-    try {
-      await ensureCsrfToken();
-      return originalFetch(url, applyCSRFToken(withCreds));
-    } catch (error) {
-      console.warn('Failed to apply CSRF token:', error);
-      // Fall back to request without CSRF (will fail with 403 if required)
-      return originalFetch(url, withCreds);
-    }
+    // Ensure token is available (gracefully handles missing tokens)
+    await ensureCsrfToken();
+    // Apply token if available (no-op if token fetch failed)
+    return originalFetch(url, applyCSRFToken(withCreds));
   }
 
   return originalFetch(url, withCreds);
