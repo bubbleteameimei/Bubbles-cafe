@@ -354,7 +354,7 @@ export default function Navigation() {
       window.removeEventListener("scroll", onScroll as any);
       window.removeEventListener("resize", onScroll as any);
     };
-  }, [isReaderRoute]);
+  }, [isReaderRoute, isCommunityRoute]);
 
   // Prefetch route chunks for top nav to avoid Suspense blanks
   const prefetchRoute = (href: string) => {

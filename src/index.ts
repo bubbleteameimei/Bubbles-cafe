@@ -1,6 +1,7 @@
 import { Router } from 'itty-router';
 
 import { registerAnalyticsRoutes } from './worker/analytics';
+import { registerAuthRoutes } from './worker/auth';
 import { registerBookmarksRoutes } from './worker/bookmarks';
 import { registerCommentsRoutes } from './worker/comments';
 import { registerContactEmailRoutes } from './worker/contact-email';
@@ -19,6 +20,7 @@ import { getPublicSupabaseConfig } from './worker/utils';
 // ============================================================================
 
 const router = Router();
+registerAuthRoutes(router);
 registerReactionsRoutes(router);
 registerAnalyticsRoutes(router);
 registerPostsRoutes(router);

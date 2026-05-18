@@ -124,6 +124,27 @@ export function useAuthGoogle() {
     []
   );
 
+  // Logout
+  const logout = useCallback(async () => {
+    try {
+      if (tokens?.refreshToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+      setTokens(null);
+      localStorage.removeItem(TOKENS_KEY);
+      localStorage.removeItem(USER_KEY);
+      queryClient.clear();
+    }
+  }, [tokens, queryClient]);
+
   // Refresh access token
   const refreshToken = useCallback(async () => {
     if (!tokens?.refreshToken) {
@@ -153,28 +174,7 @@ export function useAuthGoogle() {
       logout();
       throw err;
     }
-  }, [tokens]);
-
-  // Logout
-  const logout = useCallback(async () => {
-    try {
-      if (tokens?.refreshToken) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-        });
-      }
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setUser(null);
-      setTokens(null);
-      localStorage.removeItem(TOKENS_KEY);
-      localStorage.removeItem(USER_KEY);
-      queryClient.clear();
-    }
-  }, [tokens, queryClient]);
+  }, [tokens, logout]);
 
   return {
     user,
