@@ -5,7 +5,7 @@
  * @param body Optional request body for POST/PUT/PATCH requests
  * @returns The fetch response
  */
-import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
+import { ensureCsrfToken, applyCSRFToken, fetchCsrfToken } from './csrf-signed';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 import { getApiBaseUrl } from './asset-path';
 import { supabase, initSupabase } from './supabase';
@@ -62,10 +62,9 @@ export async function apiRequest(
   const base = resolveApiBase();
   const url = base ? `${base}${endpoint}` : endpoint;
 
-  if (method !== 'GET' && isCsrfRequired()) {
-    await fetchCsrfTokenIfNeeded();
-
+  if (method !== 'GET') {
     try {
+      await ensureCsrfToken();
       const response = await fetch(url, applyCSRFToken(options));
 
       if (response.status === 403) {
@@ -75,11 +74,11 @@ export async function apiRequest(
             typeof errorData?.error === 'string' &&
             errorData.error.toLowerCase().includes('csrf');
           if (isCsrfError) {
-            await refreshCsrfToken();
+            await fetchCsrfToken();
             return fetch(url, applyCSRFToken(options));
           }
         } catch {
-          await refreshCsrfToken();
+          await fetchCsrfToken();
           return fetch(url, applyCSRFToken(options));
         }
       }

@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
-import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
+import { ensureCsrfToken, applyCSRFToken, fetchCsrfToken } from './csrf-signed';
 import { supabase, initSupabase } from './supabase';
 
 // Enhanced API error with better type checking and error categorization
@@ -148,8 +148,8 @@ export async function apiRequest<T = unknown>(
     try {
       const method = (requestOptions.method || 'GET').toUpperCase();
       let preparedOptions = requestOptions;
-      if (method !== 'GET' && isCsrfRequired()) {
-        await fetchCsrfTokenIfNeeded();
+      if (method !== 'GET') {
+        await ensureCsrfToken();
         preparedOptions = applyCSRFToken(requestOptions);
       }
       res = await fetch(fullUrl, preparedOptions);
@@ -169,14 +169,10 @@ export async function apiRequest<T = unknown>(
       await throwIfResNotOk(res);
     } catch (err) {
       // Handle CSRF invalidation by refreshing token and retrying once
-      if (
-        err instanceof APIError &&
-        err.isForbiddenError &&
-        isCsrfRequired()
-      ) {
+      if (err instanceof APIError && err.isForbiddenError) {
         const msg = typeof err.data?.error === 'string' ? err.data.error.toLowerCase() : '';
         if (msg.includes('csrf')) {
-          await refreshCsrfToken();
+          await fetchCsrfToken();
           const method = (requestOptions.method || 'GET').toUpperCase();
           const retryOptions =
             method === 'GET' ? requestOptions : applyCSRFToken(requestOptions);
