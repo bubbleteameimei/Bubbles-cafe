@@ -248,6 +248,10 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Cloudflare Wrangler development cache
+.wrangler/
+wrangler.toml.local
+
 # Project specific
 attached_assets/
 curl-results.txt
