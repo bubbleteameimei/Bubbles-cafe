@@ -17,7 +17,6 @@ import {
   getCsrfTokenHandler,
   injectCsrfToken,
 } from './middleware/csrf-signed-tokens';
-import { verifyAuthToken } from './auth-google';
 import { registerPostsRoutes } from './routes/posts';
 import { registerCommentsRoutes } from './routes/comments';
 import { registerUserRoutes } from './routes/users';

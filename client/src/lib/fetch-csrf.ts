@@ -1,9 +1,9 @@
 /**
  * Global fetch wrapper: rewrites /api/* to the configured backend base URL.
- * Always applies signed CSRF tokens to non-GET requests.
+ * CSRF tokens are applied on-demand and automatically refreshed on 403 errors.
  */
 import { getApiBaseUrl } from './asset-path';
-import { ensureCsrfToken, applyCSRFToken } from './csrf-signed';
+import { csrfFetch } from './csrf-signed';
 
 const originalFetch = window.fetch.bind(window);
 
@@ -27,12 +27,9 @@ async function fetchWithApiBase(input: RequestInfo | URL, init?: RequestInit): P
     ? { ...init, credentials: init.credentials || 'include' }
     : { credentials: 'include' };
 
-  // Apply CSRF token to non-GET requests
+  // Use CSRF-protected fetch for non-GET requests (handles token on-demand)
   if (method !== 'GET') {
-    // Ensure token is available (gracefully handles missing tokens)
-    await ensureCsrfToken();
-    // Apply token if available (no-op if token fetch failed)
-    return originalFetch(url, applyCSRFToken(withCreds));
+    return csrfFetch(url, withCreds);
   }
 
   return originalFetch(url, withCreds);

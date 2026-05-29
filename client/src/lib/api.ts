@@ -5,7 +5,7 @@
  * @param body Optional request body for POST/PUT/PATCH requests
  * @returns The fetch response
  */
-import { ensureCsrfToken, applyCSRFToken, fetchCsrfToken } from './csrf-signed';
+import { csrfFetch } from './csrf-signed';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 import { getApiBaseUrl } from './asset-path';
 import { supabase, initSupabase } from './supabase';
@@ -63,31 +63,8 @@ export async function apiRequest(
   const url = base ? `${base}${endpoint}` : endpoint;
 
   if (method !== 'GET') {
-    try {
-      await ensureCsrfToken();
-      const response = await fetch(url, applyCSRFToken(options));
-
-      if (response.status === 403) {
-        try {
-          const errorData = await response.json().catch(() => ({}));
-          const isCsrfError =
-            typeof errorData?.error === 'string' &&
-            errorData.error.toLowerCase().includes('csrf');
-          if (isCsrfError) {
-            await fetchCsrfToken();
-            return fetch(url, applyCSRFToken(options));
-          }
-        } catch {
-          await fetchCsrfToken();
-          return fetch(url, applyCSRFToken(options));
-        }
-      }
-
-      return response;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
+    // Use CSRF-protected fetch (handles token on-demand + auto-retry on 403)
+    return csrfFetch(url, options);
   }
 
   return fetch(url, options);
