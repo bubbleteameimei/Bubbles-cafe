@@ -1,4 +1,0 @@
-# Ignore all Wrangler development cache files
-state/
-*.sqlite-shm
-*.sqlite-wal
