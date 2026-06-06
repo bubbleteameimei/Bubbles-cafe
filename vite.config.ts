@@ -11,7 +11,9 @@ const __dirname = dirname(__filename);
 
 export default defineConfig(({ mode }) => {
 	const plugins = [
-		react(),
+		react({
+			jsxImportSource: 'react',
+		}),
 		themePlugin(),
 		VitePWA({
 			registerType: "autoUpdate",
@@ -103,10 +105,10 @@ export default defineConfig(({ mode }) => {
 		},
 		server: {
 			allowedHosts: true,
-			// Proxy API requests to local Express server on port 3001
+			// Proxy API requests to the local Cloudflare Worker (wrangler dev)
 			proxy: {
 				"/api": {
-					target: "http://localhost:3001",
+					target: "http://127.0.0.1:8787",
 					changeOrigin: true,
 					ws: false,
 				},
