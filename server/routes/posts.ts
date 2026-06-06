@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { posts, users, analytics } from '@shared/schema';
+import { posts, users, analytics, comments } from '@shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { verifyAuthToken } from '../auth-google';
 
@@ -173,6 +173,63 @@ export function registerPostsRoutes() {
     } catch (error) {
       console.error('Error deleting post:', error);
       res.status(500).json({ error: 'Failed to delete post' });
+    }
+  });
+
+  /**
+   * GET /api/posts/:id/comments
+   * Get comments for a specific post
+   */
+  router.get('/:id/comments', async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      if (!postId) {
+        return res.status(400).json({ error: 'postId is required' });
+      }
+
+      const postComments = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.postId, postId))
+        .orderBy(desc(comments.createdAt));
+
+      res.json({ comments: postComments });
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      res.status(500).json({ error: 'Failed to fetch comments' });
+    }
+  });
+
+  /**
+   * POST /api/posts/:id/comments
+   * Create new comment on a post
+   */
+  router.post('/:id/comments', verifyAuthToken, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.userId;
+      const postId = parseInt(req.params.id);
+      const { content, parentId } = req.body;
+
+      if (!postId || !content) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const newComment = await db
+        .insert(comments)
+        .values({
+          postId,
+          content,
+          userId,
+          parentId: parentId || null,
+          is_approved: true,
+          metadata: {},
+        })
+        .returning();
+
+      res.status(201).json(newComment[0]);
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      res.status(500).json({ error: 'Failed to create comment' });
     }
   });
 

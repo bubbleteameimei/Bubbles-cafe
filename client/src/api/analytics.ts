@@ -210,3 +210,74 @@ export async function getEngagementMetrics(): Promise<any> {
   
   return response.json();
 }
+
+/**
+ * Track user engagement metrics (views, time spent, interactions)
+ */
+export async function trackUserEngagement(
+  postId: number,
+  engagementData: {
+    timeSpentSeconds: number;
+    scrollPercentage: number;
+    interactionCount: number;
+    deviceType?: string;
+    isCompleted?: boolean;
+  }
+): Promise<any> {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/engagement/track` : '/api/analytics/engagement/track';
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      postId,
+      ...engagementData,
+      timestamp: new Date().toISOString(),
+    }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to track engagement');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Sync user engagement data with WordPress
+ */
+export async function syncEngagementWithWordPress(
+  postId: number,
+  wordpressPostId: number,
+  engagementStats: {
+    totalViews: number;
+    avgTimeSpent: number;
+    engagementRate: number;
+  }
+): Promise<any> {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/analytics/sync-wordpress` : '/api/analytics/sync-wordpress';
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      postId,
+      wordpressPostId,
+      ...engagementStats,
+    }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to sync engagement with WordPress');
+  }
+  
+  return response.json();
+}

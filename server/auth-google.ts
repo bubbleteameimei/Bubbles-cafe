@@ -11,6 +11,7 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secre
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubbles-cafe.space';
+const ADMIN_EMAIL = process.env.GMAIL_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@example.com';
 
 export interface TokenPayload {
   userId: number;
@@ -119,9 +120,15 @@ export async function createOrUpdateGoogleUser(profile: {
       if (profile.displayName) metadata.displayName = profile.displayName;
       if (profile.photos?.[0]?.value) metadata.photoURL = profile.photos[0].value;
 
+      // Check if email matches admin email and update isAdmin status
+      const isAdminEmail = profile.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
       const updated = await db
         .update(users)
-        .set({ metadata })
+        .set({ 
+          metadata,
+          isAdmin: isAdminEmail || user.isAdmin,
+        })
         .where(eq(users.id, user.id))
         .returning();
 
@@ -129,6 +136,8 @@ export async function createOrUpdateGoogleUser(profile: {
     }
 
     // Create new user
+    const isAdminEmail = profile.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    
     const newUser = await db
       .insert(users)
       .values({
@@ -145,7 +154,7 @@ export async function createOrUpdateGoogleUser(profile: {
           displayName: profile.displayName,
           photoURL: profile.photos?.[0]?.value,
         },
-        isAdmin: false,
+        isAdmin: isAdminEmail,
       })
       .returning();
 

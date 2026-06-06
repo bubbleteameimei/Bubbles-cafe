@@ -409,6 +409,39 @@ export function registerAnalyticsRoutes(router: any) {
       await analyticsKv.put(`interaction-${eventId}`, JSON.stringify(body), {
         expirationTtl: 86400,
       });
+
+      // Attempt to sync engagement to WordPress if this is a reader engagement event
+      if (body.interactionType === 'reader_engaged' || body.interactionType === 'finish_read') {
+        try {
+          const wordpressApi = env.WORDPRESS_API || '';
+          const wordpressSyncKey = env.WORDPRESS_SYNC_KEY || '';
+          
+          if (wordpressApi && wordpressSyncKey && body.details?.link) {
+            // Fire-and-forget WordPress sync
+            fetch(`${wordpressApi}/engagement/track`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Sync-Key': wordpressSyncKey,
+              },
+              body: JSON.stringify({
+                link: body.details.link,
+                postId: body.details.postId,
+                interactionType: body.interactionType,
+                progress: body.details.progress,
+                timeMs: body.details.timeMs,
+                timestamp: body.timestamp || new Date().toISOString(),
+              }),
+            }).catch((err) => {
+              console.error('[Analytics] WordPress sync failed:', err);
+              // Silently fail - don't let WordPress sync block the response
+            });
+          }
+        } catch {
+          // Ignore WordPress sync errors
+        }
+      }
+
       return json({ success: true, eventId });
     } catch (error) {
       return json({ success: false, error: String(error) });
