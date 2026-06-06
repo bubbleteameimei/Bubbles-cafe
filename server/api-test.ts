@@ -3,7 +3,7 @@ import { storage } from './storage';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { validateCsrfToken } from './middleware/csrf-protection';
+import { validateCsrfToken } from './middleware/csrf-signed-tokens';
 
 const router = express.Router();
 

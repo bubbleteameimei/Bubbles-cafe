@@ -1,9 +1,9 @@
 /**
  * Global fetch wrapper: rewrites /api/* to the configured backend base URL.
- * CSRF headers are only added when VITE_ENABLE_CSRF=true (legacy Express mock-server).
+ * CSRF tokens are applied on-demand and automatically refreshed on 403 errors.
  */
 import { getApiBaseUrl } from './asset-path';
-import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired } from './csrf-token';
+import { csrfFetch } from './csrf-signed';
 
 const originalFetch = window.fetch.bind(window);
 
@@ -27,13 +27,9 @@ async function fetchWithApiBase(input: RequestInfo | URL, init?: RequestInit): P
     ? { ...init, credentials: init.credentials || 'include' }
     : { credentials: 'include' };
 
-  if (method !== 'GET' && isCsrfRequired()) {
-    try {
-      await fetchCsrfTokenIfNeeded();
-    } catch {
-      /* optional */
-    }
-    return originalFetch(url, applyCSRFToken(withCreds));
+  // Use CSRF-protected fetch for non-GET requests (handles token on-demand)
+  if (method !== 'GET') {
+    return csrfFetch(url, withCreds);
   }
 
   return originalFetch(url, withCreds);

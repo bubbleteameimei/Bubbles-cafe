@@ -71,8 +71,8 @@ try {
 // Initialize CSRF protection lazily without blocking render
 (async () => {
   try {
-    const { initCSRFProtection } = await import("@/lib/csrf-token");
-    await initCSRFProtection();
+    const { initializeCsrf } = await import("@/lib/csrf-signed");
+    await initializeCsrf();
   } catch {}
 })();
 

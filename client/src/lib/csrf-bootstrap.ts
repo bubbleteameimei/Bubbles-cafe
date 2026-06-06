@@ -1,12 +1,18 @@
-import { fetchCsrfTokenIfNeeded, getCsrfToken, isCsrfRequired, setCsrfToken } from './csrf-token';
+/**
+ * CSRF bootstrap - deprecated, use csrf-signed.ts instead
+ * This file maintained for backward compatibility only.
+ */
+import { fetchCsrfToken, getCsrfToken, initializeCsrf } from './csrf-signed';
 
 export async function initializeCSRF(): Promise<void> {
-  if (!isCsrfRequired()) return;
-  await fetchCsrfTokenIfNeeded();
+  return initializeCsrf();
 }
 
 export function getCSRFToken(): string | null {
   return getCsrfToken();
 }
 
-export { setCsrfToken as setCSRFToken };
+// Legacy session CSRF (no longer used)
+export function isCsrfRequired(): boolean {
+  return false; // Always use stateless signed tokens now
+}

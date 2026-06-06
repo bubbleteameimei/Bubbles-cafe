@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
-import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
+import { csrfFetch } from './csrf-signed';
 import { supabase, initSupabase } from './supabase';
 
 // Enhanced API error with better type checking and error categorization
@@ -147,12 +147,14 @@ export async function apiRequest<T = unknown>(
     let res: Response;
     try {
       const method = (requestOptions.method || 'GET').toUpperCase();
-      let preparedOptions = requestOptions;
-      if (method !== 'GET' && isCsrfRequired()) {
-        await fetchCsrfTokenIfNeeded();
-        preparedOptions = applyCSRFToken(requestOptions);
+
+      // Use CSRF-protected fetch for non-GET (handles token on-demand)
+      if (method !== 'GET') {
+        res = await csrfFetch(fullUrl, requestOptions);
+      } else {
+        res = await fetch(fullUrl, requestOptions);
       }
-      res = await fetch(fullUrl, preparedOptions);
+
       clearTimeout(timeoutId);
     } catch (networkError) {
       clearTimeout(timeoutId);
@@ -168,26 +170,7 @@ export async function apiRequest<T = unknown>(
     try {
       await throwIfResNotOk(res);
     } catch (err) {
-      // Handle CSRF invalidation by refreshing token and retrying once
-      if (
-        err instanceof APIError &&
-        err.isForbiddenError &&
-        isCsrfRequired()
-      ) {
-        const msg = typeof err.data?.error === 'string' ? err.data.error.toLowerCase() : '';
-        if (msg.includes('csrf')) {
-          await refreshCsrfToken();
-          const method = (requestOptions.method || 'GET').toUpperCase();
-          const retryOptions =
-            method === 'GET' ? requestOptions : applyCSRFToken(requestOptions);
-          res = await fetch(fullUrl, retryOptions);
-          await throwIfResNotOk(res);
-        } else {
-          throw err;
-        }
-      } else {
-        throw err;
-      }
+      throw err;
     }
 
     // Parse response based on content type
