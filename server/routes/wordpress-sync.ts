@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { posts, users } from '@shared/schema';
+import { posts, users, analytics } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 interface WordPressPost {
@@ -149,6 +149,69 @@ export function registerWordPressSyncRoutes() {
   });
 
   /**
+   * POST /api/wordpress/sync-engagement
+   * Sync engagement metrics back to WordPress (updates post metadata with views, read time, etc)
+   */
+  router.post('/sync-engagement', async (req: Request, res: Response) => {
+    try {
+      const allPosts = await db.select().from(posts);
+      const wpPosts = allPosts.filter(p => (p.metadata as any)?.source === 'wordpress_api');
+
+      let synced = 0;
+      const syncedData = [];
+
+      for (const post of wpPosts) {
+        const postAnalytics = await db
+          .select()
+          .from(analytics)
+          .where(eq(analytics.postId, post.id))
+          .limit(1);
+
+        if (postAnalytics.length) {
+          const analytic = postAnalytics[0];
+          const engagementData = {
+            totalViews: analytic.pageViews || 0,
+            uniqueVisitors: analytic.uniqueVisitors || 0,
+            averageReadTime: analytic.averageReadTime || 0,
+            bounceRate: analytic.bounceRate || 0,
+            lastSyncedAt: new Date().toISOString(),
+          };
+
+          // Update post metadata with engagement info
+          const updatedMetadata = {
+            ...(post.metadata as any),
+            engagement: engagementData,
+            lastEngagementSync: new Date().toISOString(),
+          };
+
+          await db
+            .update(posts)
+            .set({ metadata: updatedMetadata })
+            .where(eq(posts.id, post.id));
+
+          syncedData.push({
+            postId: post.id,
+            slug: post.slug,
+            title: post.title,
+            engagement: engagementData,
+          });
+
+          synced++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Synced engagement metrics for ${synced} posts`,
+        synced,
+        data: syncedData,
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to sync engagement metrics' });
+    }
+  });
+
+  /**
    * GET /api/wordpress/posts
    * Get WordPress-synced posts
    */
@@ -156,13 +219,12 @@ export function registerWordPressSyncRoutes() {
     try {
       const allPosts = await db.select().from(posts);
       const wpPosts = allPosts.filter(p => (p.metadata as any)?.source === 'wordpress_api');
-      
+
       res.json({
         posts: wpPosts,
         count: wpPosts.length,
       });
     } catch (error) {
-      console.error('Error fetching WordPress posts:', error);
       res.status(500).json({ error: 'Failed to fetch WordPress posts' });
     }
   });
