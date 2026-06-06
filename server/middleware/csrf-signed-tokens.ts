@@ -101,6 +101,8 @@ export function validateCsrfToken(options: { ignorePaths?: string[]; ignoreMetho
     '/api/auth/google-callback',
     '/api/health',
     '/api/csrf-token',
+    '/api/analytics',
+    '/api/wordpress',
     ...(options.ignorePaths || []),
   ]);
 
@@ -112,8 +114,9 @@ export function validateCsrfToken(options: { ignorePaths?: string[]; ignoreMetho
       return next();
     }
 
-    // Skip CSRF check for whitelisted paths
-    if (ignorePaths.has(req.path)) {
+    // Skip CSRF check for whitelisted paths (including base routes)
+    const isIgnoredPath = ignorePaths.has(req.path) || Array.from(ignorePaths).some(p => req.path.startsWith(p));
+    if (isIgnoredPath) {
       return next();
     }
 

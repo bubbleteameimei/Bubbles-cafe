@@ -64,7 +64,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Inject CSRF token
+// Inject CSRF token into response locals for templates
 app.use(injectCsrfToken);
 
 // ============================================================================
@@ -155,23 +155,23 @@ app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => 
 // API ROUTES (Protected with CSRF + JWT)
 // ============================================================================
 
-// Apply CSRF validation to all state-changing requests
-app.use(validateCsrfToken());
-
-// Posts routes
-app.use('/api/posts', registerPostsRoutes());
-
-// Comments routes
-app.use('/api/comments', registerCommentsRoutes());
-
-// Users routes
-app.use('/api/users', registerUserRoutes());
-
-// Analytics routes
+// Analytics routes (skip CSRF - metrics collection)
 app.use('/api/analytics', registerAnalyticsRoutes());
 
-// WordPress sync routes
+// WordPress sync routes (skip CSRF - admin only)
 app.use('/api/wordpress', registerWordPressSyncRoutes());
+
+// Apply CSRF validation to all state-changing requests (except those above)
+app.use(validateCsrfToken());
+
+// Posts routes (CSRF protected)
+app.use('/api/posts', registerPostsRoutes());
+
+// Comments routes (CSRF protected)
+app.use('/api/comments', registerCommentsRoutes());
+
+// Users routes (CSRF protected)
+app.use('/api/users', registerUserRoutes());
 
 // ============================================================================
 // ERROR HANDLING
