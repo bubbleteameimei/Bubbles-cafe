@@ -121,7 +121,7 @@ export function applyCSRFToken(options: RequestInit = {}): RequestInit {
  * Strategy: Send without token first. If 403 CSRF error, fetch token and retry.
  */
 export async function csrfFetch(
-  url: string,
+  url: RequestInfo,
   options: RequestInit = {}
 ): Promise<Response> {
   // Try to apply cached token if available

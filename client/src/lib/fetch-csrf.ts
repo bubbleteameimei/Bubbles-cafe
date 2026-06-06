@@ -7,16 +7,21 @@ import { csrfFetch } from './csrf-signed';
 
 const originalFetch = window.fetch.bind(window);
 
-function resolveUrl(input: RequestInfo | URL): RequestInfo | URL {
+function resolveUrl(input: RequestInfo | URL): RequestInfo {
   try {
-    const s = typeof input === 'string' ? input : String(input);
+    const s = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
     if (s.startsWith('/api/')) {
       const base = getApiBaseUrl();
       if (base) return `${base}${s}`;
     }
-    return input;
+
+    if (typeof input === 'string' || input instanceof Request) {
+      return input;
+    }
+
+    return input.toString();
   } catch {
-    return input;
+    return typeof input === 'string' ? input : input instanceof Request ? input : String(input);
   }
 }
 
