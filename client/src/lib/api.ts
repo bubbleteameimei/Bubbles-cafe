@@ -90,6 +90,17 @@ export async function apiJson<T = any>(
     if (!response.ok) {
       const messageFromServer = (data && (data.error || data.message)) ? String(data.error || data.message) : undefined;
       const status = response.status;
+      
+      // Enhanced logging for debugging
+      if (import.meta.env.DEV || endpoint.includes('/comments')) {
+        console.error(`[API] ${method} ${endpoint} failed:`, {
+          status,
+          responseText: text.substring(0, 500),
+          data: data ? JSON.stringify(data).substring(0, 500) : 'no data',
+          messageFromServer,
+        });
+      }
+      
       const friendly = options?.fallbackMessage ||
         (status === 401 || status === 403 ? 'Please sign in to continue.' :
          status === 404 ? 'The requested resource was not found.' :
@@ -105,6 +116,9 @@ export async function apiJson<T = any>(
     return data as T;
   } catch (err) {
     // Network or parsing failure
+    if (import.meta.env.DEV || endpoint.includes('/comments')) {
+      console.error(`[API] ${method} ${endpoint} threw:`, err);
+    }
     const appError = formatError(err, ErrorCategory.NETWORK, ErrorSeverity.ERROR);
     if (options?.showToast) notifyError(appError);
     throw appError;
