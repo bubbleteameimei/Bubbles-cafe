@@ -261,7 +261,7 @@ export async function syncEngagementWithWordPress(
 ): Promise<any> {
   const API_BASE = getApiBaseUrl();
   const url = API_BASE ? `${API_BASE}/api/analytics/sync-wordpress` : '/api/analytics/sync-wordpress';
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -274,10 +274,32 @@ export async function syncEngagementWithWordPress(
       ...engagementStats,
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to sync engagement with WordPress');
   }
-  
+
+  return response.json();
+}
+
+/**
+ * Trigger server-side sync of all engagement metrics to WordPress
+ */
+export async function triggerWordPressEngagementSync(): Promise<any> {
+  const API_BASE = getApiBaseUrl();
+  const url = API_BASE ? `${API_BASE}/api/wordpress/sync-engagement` : '/api/wordpress/sync-engagement';
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to sync engagement with WordPress');
+  }
+
   return response.json();
 }

@@ -253,7 +253,6 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       }
     },
     onError: (error: Error) => {
-      console.error('Comment posting error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to post comment. Please try again.",
@@ -321,8 +320,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Starting mutation:", { name, content, postId });
-    
+
     if (!name.trim() || !content.trim()) {
       toast({
         title: "Error",
@@ -331,17 +329,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       });
       return;
     }
-    
-    try {
-      mutation.mutate();
-    } catch (error) {
-      console.error("Mutation failed:", error);
-      toast({
-        title: "Error",
-        description: "Failed to post your comment. Please try again later.",
-        variant: "destructive"
-      });
-    }
+
+    mutation.mutate();
   };
 
   // Get only root comments
