@@ -1,7 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || 'change-this-secret';
+const CSRF_SECRET = (() => {
+  const secret = process.env.CSRF_SECRET || '';
+  if (!secret || secret.length < 32) {
+    const msg = `CSRF_SECRET must be set and >= 32 characters. Got: ${secret.length} chars`;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(msg);
+    }
+    console.warn(`WARNING: ${msg}. Using development fallback.`);
+    return 'dev-csrf-secret-change-in-production-32-char-min';
+  }
+  return secret;
+})();
 const TOKEN_VALIDITY_MINUTES = 30;
 const TOKEN_HEADER = 'X-CSRF-Token';
 
