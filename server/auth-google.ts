@@ -6,8 +6,32 @@ import { users, sessions, resetTokens } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-this';
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET || '';
+  if (!secret || secret.length < 32) {
+    const msg = `FATAL: JWT_SECRET must be set and >= 32 characters. Got: ${secret.length} chars`;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(msg);
+    }
+    console.warn(`WARNING: ${msg}. Using development fallback.`);
+    return 'dev-jwt-secret-change-in-production-32-chars-min-key';
+  }
+  return secret;
+})();
+
+const JWT_REFRESH_SECRET = (() => {
+  const secret = process.env.JWT_REFRESH_SECRET || '';
+  if (!secret || secret.length < 32) {
+    const msg = `FATAL: JWT_REFRESH_SECRET must be set and >= 32 characters. Got: ${secret.length} chars`;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(msg);
+    }
+    console.warn(`WARNING: ${msg}. Using development fallback.`);
+    return 'dev-jwt-refresh-secret-change-in-production-key';
+  }
+  return secret;
+})();
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubbles-cafe.space';

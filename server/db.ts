@@ -58,12 +58,10 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
 }
 
 // Resolve database URL from environment with sanitization
-// Prefer Neon direct connection (DATABASE_URL takes precedence)
+// Use Neon PostgreSQL via DATABASE_URL (primary), with fallback to alternative pooler URLs
 const DATABASE_URL = sanitizeDatabaseUrl(
   process.env.DATABASE_URL ||
-  process.env.DB_POOLER_URL ||
-  process.env.SUPABASE_POOLER_URL ||
-  process.env.SUPABASE_CONNECTION_POOLER_URL
+  process.env.DB_POOLER_URL
 );
 
 // Create pool with connection retry logic using node-postgres
@@ -116,7 +114,10 @@ if (!DATABASE_URL) {
     };
 
     const useSSL = wantsSSL(DATABASE_URL);
-    const maxClients = Number(process.env.DB_POOL_MAX || 5);
+    // Render: limit pool to avoid exhaustion; development can use higher values
+    const isRender = process.env.RENDER === 'true' || process.env.RENDER_INSTANCE_ID;
+    const defaultMaxClients = isRender ? 2 : 5;
+    const maxClients = Number(process.env.DB_POOL_MAX || defaultMaxClients);
     const idleMs = Number(process.env.DB_POOL_IDLE_MS || 5000);
     const connTimeoutMs = Number(process.env.DB_POOL_CONN_TIMEOUT_MS || 10000);
 

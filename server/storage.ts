@@ -117,12 +117,10 @@ try {
     params.delete('channel_binding');
     return base + '?' + params.toString();
   };
-  // Prefer Supabase pooler URL if provided
+  // Use Neon PostgreSQL via DATABASE_URL (primary), with fallback to alternative pooler URLs
   const preferredUrl = sanitizeUrl(
-    process.env.SUPABASE_POOLER_URL ||
-    process.env.SUPABASE_CONNECTION_POOLER_URL ||
-    process.env.DB_POOLER_URL ||
-    process.env.DATABASE_URL
+    process.env.DATABASE_URL ||
+    process.env.DB_POOLER_URL
   );
   const sanitizedUrl = preferredUrl;
 
