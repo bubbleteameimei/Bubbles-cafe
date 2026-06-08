@@ -88,6 +88,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.19",
     "@types/cron": "^2.0.1",
     "@types/node-fetch": "^2.6.12",
     "@types/nodemailer": "^6.4.17",
@@ -107,6 +108,7 @@
     "compression": "^1.7.5",
     "concurrently": "^9.1.2",
     "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.6",
     "cron": "^4.1.0",
     "cross-env": "^7.0.3",
     "date-fns": "^3.6.0",
@@ -125,6 +127,7 @@
     "html2canvas": "^1.4.1",
     "immer": "^10.1.1",
     "input-otp": "^1.2.4",
+    "itty-router": "^5.0.22",
     "jose": "^5.9.6",
     "jwt-decode": "^4.0.0",
     "leo-profanity": "^1.7.0",
@@ -169,8 +172,7 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.23.8",
-    "zod-validation-error": "^3.4.0",
-    "itty-router": "^5.0.22"
+    "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",

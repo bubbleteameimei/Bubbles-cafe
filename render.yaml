@@ -11,11 +11,25 @@ services:
       - key: PORT
         value: 3000
       - key: FRONTEND_URL
-        value: https://bubbles-cafe.space
+        value: https://bubblescafe.space
+      - key: BACKEND_BASE_URL
+        value: https://api.bubblescafe.space
+      - key: ENABLE_WORDPRESS_SCHEDULER
+        value: "true"
+      - key: DISABLE_LOCAL_AUTH
+        value: "false"
+      - key: WORDPRESS_API
+        value: https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100
+      - key: PAYSTACK_LINK
+        value: https://paystack.shop/pay/z7fmj9rge1
+      - key: GOOGLE_LOGIN_URI
+        value: https://api.bubblescafe.space/api/auth/login/google
+      - key: GOOGLE_REDIRECT_URI
+        value: https://api.bubblescafe.space/api/auth/callback
+      - key: GMAIL_ADMIN_EMAIL
+        value: vantalison@gmail.com
       - key: DATABASE_URL
-        fromDatabase:
-          name: bubbles-cafe-db
-          property: connectionString
+        sync: false
       - key: CSRF_SECRET
         sync: false
       - key: SESSION_SECRET
@@ -28,22 +42,13 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_POOLER_URL
+        sync: false
       - key: GMAIL_APP_PASSWORD
         sync: false
-      - key: GMAIL
+      - key: PAYSTACK_PUBLIC_KEY
         sync: false
-      - key: WORDPRESS_API
-        value: https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts
-      - key: CLOUDFLARE_API_TOKEN
+      - key: PAYSTACK_SECRET_KEY
         sync: false
-
-  - type: postgres
-    name: bubbles-cafe-db
-    plan: free
-    ipAllowList: []
-
-databases:
-  - name: bubbles-cafe-db
-    databaseName: bubbles_cafe
-    user: postgres
-    plan: free

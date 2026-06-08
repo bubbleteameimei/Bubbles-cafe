@@ -63,3 +63,17 @@ args = "npm run start"
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+FRONTEND_URL = "https://bubblescafe.space"
+BACKEND_BASE_URL = "https://api.bubblescafe.space"
+ENABLE_WORDPRESS_SCHEDULER = "true"
+DISABLE_LOCAL_AUTH = "false"
+NODE_ENV = "production"
+PAYSTACK_LINK = "https://paystack.shop/pay/z7fmj9rge1"
+GOOGLE_LOGIN_URI = "https://api.bubblescafe.space/api/auth/login/google"
+GOOGLE_REDIRECT_URI = "https://api.bubblescafe.space/api/auth/callback"
+GMAIL_ADMIN_EMAIL = "vantalison@gmail.com"
+WORDPRESS_API = "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100"

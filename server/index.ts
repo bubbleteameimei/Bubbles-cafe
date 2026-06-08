@@ -27,7 +27,7 @@ import crypto from 'crypto';
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubbles-cafe.space';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 
 // ============================================================================
 // MIDDLEWARE
@@ -45,6 +45,8 @@ const corsOptions = {
       'http://localhost:5173',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:5173',
+      'https://bubblescafe.space',
+      'https://www.bubblescafe.space',
       'https://bubbles-cafe.space',
       'https://www.bubbles-cafe.space',
       'https://bubblescafe.vercel.app',
