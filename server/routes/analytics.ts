@@ -242,3 +242,4 @@ export function registerAnalyticsRoutes() {
   });
 
   return router;
+}

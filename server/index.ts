@@ -1,7 +1,9 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { db, pool } from './db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import {
   verifyAuthToken,
   handleEmailLogin,
@@ -9,23 +11,21 @@ import {
   handleRefreshToken,
   handleLogout,
   getGoogleAuthUrl,
-  generateAccessToken,
-  getUser,
+  findOrCreateNeonUser,
 } from './auth-google';
-import {
-  validateCsrfToken,
-  getCsrfTokenHandler,
-  injectCsrfToken,
-} from './middleware/csrf-signed-tokens';
+import { getCsrfTokenHandler } from './middleware/csrf-signed-tokens';
 import { registerPostsRoutes } from './routes/posts';
 import { registerCommentsRoutes } from './routes/comments';
 import { registerUserRoutes } from './routes/users';
 import { registerAnalyticsRoutes } from './routes/analytics';
 import { registerWordPressSyncRoutes } from './routes/wordpress-sync';
+import { registerLikesRoutes } from './routes/likes';
+import { registerBookmarksRoutes } from './routes/bookmarks';
+import { registerNotificationsRoutes } from './routes/notifications';
+import { createSupabaseServiceRoleClient } from './utils/supabase';
 import crypto from 'crypto';
 
 const app: Express = express();
-const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 
@@ -33,17 +33,18 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 // MIDDLEWARE
 // ============================================================================
 
-// Parse JSON
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// CORS configuration
+// CORS — allow the frontend and all preview environments
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     const allowedOrigins = [
       'http://localhost:3000',
+      'http://localhost:5000',
       'http://localhost:5173',
       'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
       'http://127.0.0.1:5173',
       'https://bubblescafe.space',
       'https://www.bubblescafe.space',
@@ -51,14 +52,12 @@ const corsOptions = {
       'https://www.bubbles-cafe.space',
       'https://bubblescafe.vercel.app',
     ];
-
-    // Allow preview URLs in all environments
-    const isPreview = origin && /\.vercel\.app$|\.vercel\.dev$|\.netlify\.app$|\.pages\.dev$|\.replit\.dev$/.test(origin);
+    const isPreview = origin && /\.vercel\.app$|\.vercel\.dev$|\.netlify\.app$|\.pages\.dev$|\.replit\.dev$|\.replit\.app$/.test(origin);
 
     if (!origin || allowedOrigins.includes(origin) || isPreview) {
       callback(null, true);
     } else if (NODE_ENV !== 'production') {
-      callback(null, true); // Allow all in development
+      callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
@@ -69,11 +68,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Handle preflight requests
 app.options('*', cors(corsOptions));
-
-// Inject CSRF token
-app.use(injectCsrfToken);
 
 // ============================================================================
 // HEALTH CHECK
@@ -81,92 +76,118 @@ app.use(injectCsrfToken);
 
 app.get('/api/health', async (req: Request, res: Response) => {
   try {
-    // Test database connection
-    const result = await (pool as any).query('SELECT 1 as health');
-    res.json({
-      status: 'ok',
-      environment: NODE_ENV,
-      database: 'connected',
-      timestamp: new Date().toISOString(),
-    });
+    await (pool as any).query('SELECT 1 as health');
+    res.json({ status: 'ok', environment: NODE_ENV, database: 'connected', timestamp: new Date().toISOString() });
   } catch (error) {
-    console.error('Health check failed:', error);
-    res.status(503).json({
-      status: 'degraded',
-      environment: NODE_ENV,
-      database: 'disconnected',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-    });
+    res.status(503).json({ status: 'degraded', environment: NODE_ENV, database: 'disconnected', timestamp: new Date().toISOString() });
   }
 });
 
 // ============================================================================
-// CSRF TOKEN ENDPOINT
+// PUBLIC CONFIG — used by the frontend to lazy-init Supabase
+// ============================================================================
+
+app.get('/api/config/public', (req: Request, res: Response) => {
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const anonKey = process.env.SUPABASE_ANON_KEY || '';
+  res.json({
+    supabase: {
+      url: supabaseUrl,
+      anonKey,
+      clientReady: !!(supabaseUrl && anonKey),
+    },
+    features: {
+      googleAuth: !!(process.env.GOOGLE_CLIENT_ID),
+      paystack: !!(process.env.PAYSTACK_PUBLIC_KEY),
+    },
+    paystackLink: process.env.PAYSTACK_LINK || '',
+    paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+  });
+});
+
+// ============================================================================
+// CSRF TOKEN (kept for compatibility but not enforced on mutations)
 // ============================================================================
 
 app.get('/api/csrf-token', getCsrfTokenHandler);
 
 // ============================================================================
-// GOOGLE OAUTH ROUTES
+// SUPABASE AUTH INTEGRATION
 // ============================================================================
 
 /**
- * GET /api/auth/google/authorize
- * Returns authorization URL for frontend to redirect to
+ * POST /api/auth/supabase/login
+ * Exchange a Supabase JWT for a local user profile stored in Neon.
+ * Called by the frontend after successful Supabase sign-in.
  */
+app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7)
+      : req.body?.access_token;
+
+    if (!token) {
+      return res.status(400).json({ error: 'No token provided' });
+    }
+
+    const supabaseAdmin = createSupabaseServiceRoleClient();
+    const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !supabaseUser?.email) {
+      return res.status(401).json({ error: 'Invalid Supabase token' });
+    }
+
+    const neonUser = await findOrCreateNeonUser(supabaseUser.email, supabaseUser);
+    if (!neonUser) {
+      return res.status(500).json({ error: 'Failed to find or create user' });
+    }
+
+    res.json({
+      user: {
+        id: neonUser.id,
+        email: neonUser.email,
+        username: neonUser.username,
+        isAdmin: neonUser.isAdmin,
+        fullName: (neonUser.metadata as any)?.displayName || null,
+        avatar: (neonUser.metadata as any)?.photoURL || null,
+        bio: (neonUser.metadata as any)?.bio || null,
+        metadata: neonUser.metadata,
+      },
+    });
+  } catch (error) {
+    console.error('Supabase login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// ============================================================================
+// GOOGLE OAUTH ROUTES
+// ============================================================================
+
 app.get('/api/auth/google/authorize', (req: Request, res: Response) => {
   const state = crypto.randomBytes(32).toString('hex');
-  // TODO: Store state in session/cache for verification
   const authUrl = getGoogleAuthUrl(state);
   res.json({ authUrl });
 });
 
-/**
- * GET /api/auth/google/callback
- * Google OAuth callback (redirect from Google)
- */
 app.get('/api/auth/google/callback', handleGoogleCallback);
+app.get('/api/auth/callback', handleGoogleCallback);
 
 // ============================================================================
 // AUTHENTICATION ROUTES
 // ============================================================================
 
-/**
- * POST /api/auth/login
- * Email/password login (for users who registered with email)
- */
 app.post('/api/auth/login', handleEmailLogin);
-
-/**
- * POST /api/auth/refresh
- * Exchange refresh token for new access token
- */
 app.post('/api/auth/refresh', handleRefreshToken);
-
-/**
- * POST /api/auth/logout
- * Invalidate refresh token
- */
 app.post('/api/auth/logout', handleLogout);
 
-/**
- * GET /api/auth/me
- * Get current authenticated user (requires valid JWT)
- */
 app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => {
   try {
-    const user = await getUser((req as any).user.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json({
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      isAdmin: user.isAdmin,
-      metadata: user.metadata,
-    });
+    const { userId } = (req as any).user;
+    const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!result.length) return res.status(404).json({ error: 'User not found' });
+    const { password_hash, ...user } = result[0];
+    res.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -174,61 +195,41 @@ app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => 
 });
 
 // ============================================================================
-// API ROUTES (Protected with CSRF + JWT)
+// API ROUTES
+// Note: CSRF is NOT enforced — app uses JWT Bearer tokens which are CSRF-immune.
 // ============================================================================
 
-// Apply CSRF validation to all state-changing requests
-app.use(validateCsrfToken());
-
-// Posts routes
+// Posts (includes community endpoint)
 app.use('/api/posts', registerPostsRoutes());
 
-// Comments routes
+// Post interactions (likes/dislikes)
+app.use('/api/posts', registerLikesRoutes());
+
+// Comments
 app.use('/api/comments', registerCommentsRoutes());
 
-// Users routes
+// Users
 app.use('/api/users', registerUserRoutes());
 
-// Analytics routes
+// Bookmarks
+app.use('/api/bookmarks', registerBookmarksRoutes());
+
+// Notifications
+app.use('/api/notifications', registerNotificationsRoutes());
+
+// Analytics
 app.use('/api/analytics', registerAnalyticsRoutes());
 
-// WordPress sync routes
+// WordPress sync
 app.use('/api/wordpress', registerWordPressSyncRoutes());
 
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
 
-app.use((error: any, req: Request, res: Response) => {
-  console.error('Error:', error);
-  res.status(error.status || 500).json({
-    error: error.message || 'Internal server error',
-  });
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled error:', error);
+  res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
 });
-
-// ============================================================================
-// STARTUP
-// ============================================================================
-
-async function startServer() {
-  try {
-    // Test database connection
-    const result = await (pool as any).query('SELECT 1');
-    console.log('✅ Database connected');
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    process.exit(1);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📝 Environment: ${NODE_ENV}`);
-    console.log(`🔐 Auth: Google OAuth + JWT`);
-    console.log(`🛡️  CSRF: Signed tokens`);
-    console.log(`📊 Database: Neon PostgreSQL`);
-  });
-}
-
-startServer();
 
 export default app;

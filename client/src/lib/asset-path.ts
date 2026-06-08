@@ -48,8 +48,8 @@ export function getApiBaseUrl(): string {
       return normalizeUrl(devExplicit);
     }
 
-    // Fallback for local Worker dev (wrangler dev default)
-    return 'http://127.0.0.1:8787';
+    // Fallback for local Express dev (port 5000)
+    return 'http://localhost:5000';
   }
 
   // Prefer explicit env overrides first (works on preview domains without rewrites)

@@ -12,6 +12,10 @@ build = ["sh", "-c", "npm install && npm run build"]
 run = ["sh", "-c", "npm start"]
 
 [[ports]]
+localPort = 3000
+externalPort = 3002
+
+[[ports]]
 localPort = 3002
 externalPort = 80
 
@@ -81,3 +85,8 @@ GOOGLE_LOGIN_URI = "https://api.bubblescafe.space/api/auth/login/google"
 GOOGLE_REDIRECT_URI = "https://api.bubblescafe.space/api/auth/callback"
 GMAIL_ADMIN_EMAIL = "vantalison@gmail.com"
 WORDPRESS_API = "https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=100"
+JWT_SECRET = "a8838f04393eeac49ef64c76f9f8519705ceeea9f74885e92c4ffc8bc5b30ac5a43d38999cc34742d31c95f4c8a15424213d16c48f968a59e96974478fd2e8aa"
+JWT_REFRESH_SECRET = "ed7f32f96557d1cf79f2305d998dd2ebc71718d9b95922ea4ce7b6e2fdc49102744b85e7914b3b8e89fc3606d7001854abbacf969fa1d1bdacefd6e2e82e0a7e"
+
+[userenv.development]
+VITE_API_URL = "http://localhost:5000"
