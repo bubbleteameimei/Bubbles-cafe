@@ -1,4 +1,3 @@
-
 name = "bubbles-cafe"
 main = "src/index.ts"
 compatibility_date = "2025-11-20"
@@ -51,10 +50,12 @@ new_sqlite_classes = ["LocksObject", "RateLimitObject", "IdempotencyObject"]
 # Run every 30 minutes to keep WordPress sync reasonably fresh without overloading the API
 crons = ["*/30 * * * *"]
 
-# Custom domain routing
-[[routes]]
-pattern = "api.bubblescafe.space/*"
-zone_name = "bubblescafe.space"
+# Custom domain routing - DISABLED
+# The API is now served from Render Express backend at api.bubblescafe.space
+# This Worker configuration remains for reference only
+# [[routes]]
+# pattern = "api.bubblescafe.space/*"
+# zone_name = "bubblescafe.space"
 
 # Observability
 [observability]
@@ -71,4 +72,3 @@ invocation_logs = true
 enabled = false
 persist = true
 head_sampling_rate = 1
-
