@@ -43,13 +43,15 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
       'https://bubbles-cafe.space',
       'https://www.bubbles-cafe.space',
       'https://bubblescafe.vercel.app',
     ];
 
     // Allow preview URLs in all environments
-    const isPreview = origin && /\.vercel\.app$|\.vercel\.dev$|\.netlify\.app$|\.pages\.dev$/.test(origin);
+    const isPreview = origin && /\.vercel\.app$|\.vercel\.dev$|\.netlify\.app$|\.pages\.dev$|\.replit\.dev$/.test(origin);
 
     if (!origin || allowedOrigins.includes(origin) || isPreview) {
       callback(null, true);
@@ -60,9 +62,13 @@ const corsOptions = {
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS', 'PUT'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
 };
 
 app.use(cors(corsOptions));
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Inject CSRF token
 app.use(injectCsrfToken);
@@ -71,12 +77,26 @@ app.use(injectCsrfToken);
 // HEALTH CHECK
 // ============================================================================
 
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
+app.get('/api/health', async (req: Request, res: Response) => {
+  try {
+    // Test database connection
+    const result = await (pool as any).query('SELECT 1 as health');
+    res.json({
+      status: 'ok',
+      environment: NODE_ENV,
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'degraded',
+      environment: NODE_ENV,
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // ============================================================================

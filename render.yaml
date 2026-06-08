@@ -1,9 +1,49 @@
-# Optional Render infrastructure — Postgres only.
-# The production API remains on Cloudflare Workers (wrangler deploy).
-# See docs/RENDER.md before using this.
+services:
+  - type: web
+    name: bubbles-cafe-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build:client
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: FRONTEND_URL
+        value: https://bubbles-cafe.space
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bubbles-cafe-db
+          property: connectionString
+      - key: CSRF_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: GMAIL
+        sync: false
+      - key: WORDPRESS_API
+        value: https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+
+  - type: postgres
+    name: bubbles-cafe-db
+    plan: free
+    ipAllowList: []
 
 databases:
   - name: bubbles-cafe-db
     databaseName: bubbles_cafe
-    user: bubbles_cafe
+    user: postgres
     plan: free

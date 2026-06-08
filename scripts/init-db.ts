@@ -53,10 +53,12 @@ async function initializeDatabase() {
     console.log('✅ Site settings configured');
 
     // Update author stats
-    ifnst postCount = await db.select().from(posts).where(sql`author_id = ${adminUserId}`);
-    await db.update(authorStats)
-      .set({ totalPosts: postCount.length })
-      .where(sql`author_id = ${adminUserId}`);
+    if (adminUserId) {
+      const postCount = await db.select().from(posts).where(sql`author_id = ${adminUserId}`);
+      await db.update(authorStats)
+        .set({ totalPosts: postCount.length })
+        .where(sql`author_id = ${adminUserId}`);
+    }
 
     console.log('🎉 Database initialization completed successfully!');
     console.log('📊 No sample posts created - WordPress API will sync authentic content');
