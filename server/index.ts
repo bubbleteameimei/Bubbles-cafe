@@ -74,6 +74,11 @@ app.options('*', cors(corsOptions));
 // HEALTH CHECK
 // ============================================================================
 
+// Root handler — keeps Render / proxy health checks happy (some default to GET /)
+app.get('/', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', service: 'bubbles-cafe-api' });
+});
+
 app.get('/api/health', async (req: Request, res: Response) => {
   try {
     await (pool as any).query('SELECT 1 as health');

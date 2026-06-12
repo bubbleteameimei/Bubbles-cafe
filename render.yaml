@@ -3,13 +3,12 @@ services:
     name: bubbles-cafe-api
     env: node
     plan: free
-    buildCommand: npm install && npm run build:client
+    buildCommand: npm install && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: FRONTEND_URL
         value: https://bubblescafe.space
       - key: BACKEND_BASE_URL
