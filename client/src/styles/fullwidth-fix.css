@@ -10,23 +10,19 @@ html, body, #root {
   overflow-y: auto !important;
 }
 
+/* Top-level layout shells only — do NOT use broad [class*="..."] wildcards
+   as they override internal component styles (dialogs, dropdowns, cards)
+   and cause content layout shifts when those components render. */
 body > div#root,
 #root > div,
 #root > div > div,
-main, 
-.container,
-[class*="container"],
-[class*="layout"],
-[class*="wrapper"],
-[class*="page"],
+main,
 .page-transition-container,
 .page-content {
   width: 100% !important;
-  min-width: 100% !important;
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  /* Do not zero horizontal padding globally; allow site gutters to apply */
   overflow-x: hidden !important;
   box-sizing: border-box !important;
 }

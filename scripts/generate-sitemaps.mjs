@@ -18,7 +18,14 @@ const SITE_URL = process.env.SITE_URL || 'https://bubblescafe.space';
 // 2) Derive https://api.<site-host> from SITE_URL
 // 3) Fallback to the known custom domain
 function computeBackendBaseUrl() {
-  if (process.env.BACKEND_BASE_URL) return process.env.BACKEND_BASE_URL;
+  if (process.env.BACKEND_BASE_URL) {
+    const raw = process.env.BACKEND_BASE_URL.trim();
+    // Ensure the URL always has a protocol prefix
+    if (raw && !raw.startsWith('http://') && !raw.startsWith('https://')) {
+      return `https://${raw}`;
+    }
+    return raw;
+  }
   try {
     const u = new URL(SITE_URL);
     const host = u.host;
