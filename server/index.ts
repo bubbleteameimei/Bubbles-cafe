@@ -2,8 +2,8 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { db, pool } from './db';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, posts as postsTable, comments } from '@shared/schema';
+import { eq, count, desc, sql as drizzleSql } from 'drizzle-orm';
 import {
   verifyAuthToken,
   handleEmailLogin,
@@ -227,6 +227,154 @@ app.use('/api/analytics', registerAnalyticsRoutes());
 
 // WordPress sync
 app.use('/api/wordpress', registerWordPressSyncRoutes());
+
+// ============================================================================
+// ADMIN API ENDPOINTS
+// ============================================================================
+
+// Middleware: require admin
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  verifyAuthToken(req, res, () => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    // Allow if isAdmin flag is set on the token payload
+    if (!user.isAdmin) {
+      // Fall back to DB check for fresh data
+      db.select().from(users).where(eq(users.id, user.userId)).limit(1)
+        .then(([u]) => {
+          if (!u?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+          next();
+        })
+        .catch(() => res.status(500).json({ error: 'Auth check failed' }));
+      return;
+    }
+    next();
+  });
+}
+
+/** GET /api/admin/info — counts + recent content */
+app.get('/api/admin/info', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const [[{ total: totalUsers }], [{ total: totalPosts }], [{ total: totalComments }], [{ total: totalLikes }]] =
+      await Promise.all([
+        db.select({ total: count() }).from(users),
+        db.select({ total: count() }).from(postsTable),
+        db.select({ total: count() }).from(comments),
+        db.select({ total: drizzleSql<number>`COALESCE(SUM(likes_count),0)` }).from(postsTable),
+      ]);
+
+    const [recentPosts, recentComments, adminUsers] = await Promise.all([
+      db.select({ id: postsTable.id, title: postsTable.title, slug: postsTable.slug, createdAt: postsTable.createdAt, metadata: postsTable.metadata })
+        .from(postsTable).orderBy(desc(postsTable.createdAt)).limit(10),
+      db.select({ id: comments.id, content: comments.content, userId: comments.userId, createdAt: comments.createdAt })
+        .from(comments).orderBy(desc(comments.createdAt)).limit(10),
+      db.select({ id: users.id, username: users.username, email: users.email })
+        .from(users).where(eq(users.isAdmin, true)),
+    ]);
+
+    res.json({ totalUsers: Number(totalUsers), totalPosts: Number(totalPosts), totalComments: Number(totalComments), totalLikes: Number(totalLikes), recentPosts, recentComments, adminUsers });
+  } catch (err) {
+    console.error('Admin info error:', err);
+    res.status(500).json({ error: 'Failed to fetch admin info' });
+  }
+});
+
+/** GET /api/admin/weekly-stats — last 7 days per-day activity for charts */
+app.get('/api/admin/weekly-stats', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const result = await (pool as any).query(`
+      SELECT
+        to_char(gs.day, 'Dy') AS name,
+        gs.day::date AS date,
+        COALESCE(p.posts, 0)    AS posts,
+        COALESCE(c.comments, 0) AS comments,
+        COALESCE(l.likes, 0)    AS likes
+      FROM generate_series(
+        date_trunc('day', now() - interval '6 days'),
+        date_trunc('day', now()),
+        '1 day'::interval
+      ) gs(day)
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*)::int AS posts
+        FROM posts WHERE created_at >= now() - interval '7 days' GROUP BY 1
+      ) p ON p.day = gs.day
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*)::int AS comments
+        FROM comments WHERE created_at >= now() - interval '7 days' GROUP BY 1
+      ) c ON c.day = gs.day
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COALESCE(SUM(likes_count),0)::int AS likes
+        FROM posts WHERE created_at >= now() - interval '7 days' GROUP BY 1
+      ) l ON l.day = gs.day
+      ORDER BY gs.day
+    `);
+    res.json({ weeklyStats: result.rows });
+  } catch (err) {
+    console.error('Weekly stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch weekly stats' });
+  }
+});
+
+/** GET /api/admin/analytics — popular content + device breakdown */
+app.get('/api/admin/analytics', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const popularPosts = await db
+      .select({ id: postsTable.id, title: postsTable.title, slug: postsTable.slug, views: postsTable.likesCount, category: postsTable.themeCategory })
+      .from(postsTable)
+      .orderBy(desc(postsTable.likesCount))
+      .limit(10);
+
+    const popularContent = popularPosts.map(p => ({
+      title: p.title,
+      slug: p.slug,
+      views: p.views ?? 0,
+      category: p.category || 'Story',
+    }));
+
+    // Aggregate device stats from analytics table
+    const deviceResult = await (pool as any).query(`
+      SELECT
+        COALESCE(SUM((device_stats->>'desktop')::numeric), 0)::int AS desktop,
+        COALESCE(SUM((device_stats->>'mobile')::numeric), 0)::int  AS mobile,
+        COALESCE(SUM((device_stats->>'tablet')::numeric), 0)::int  AS tablet
+      FROM analytics
+    `);
+    const dv = deviceResult.rows[0];
+    const dvTotal = (dv.desktop + dv.mobile + dv.tablet) || 1;
+    const deviceBreakdown = {
+      desktop: Math.round((dv.desktop / dvTotal) * 100),
+      mobile:  Math.round((dv.mobile  / dvTotal) * 100),
+      tablet:  Math.round((dv.tablet  / dvTotal) * 100),
+    };
+
+    res.json({ popularContent, deviceBreakdown });
+  } catch (err) {
+    console.error('Admin analytics error:', err);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+/** GET /api/admin/activity — recent system activity */
+app.get('/api/admin/activity', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const [latestPosts, latestComments] = await Promise.all([
+      db.select({ id: postsTable.id, title: postsTable.title, slug: postsTable.slug, createdAt: postsTable.createdAt })
+        .from(postsTable).orderBy(desc(postsTable.createdAt)).limit(5),
+      db.select({ id: comments.id, content: comments.content, userId: comments.userId, postId: comments.postId, createdAt: comments.createdAt })
+        .from(comments).orderBy(desc(comments.createdAt)).limit(5),
+    ]);
+
+    const activities = [
+      ...latestPosts.map(p => ({ type: 'post', id: p.id, title: p.title, slug: p.slug, createdAt: p.createdAt })),
+      ...latestComments.map(c => ({ type: 'comment', id: c.id, content: c.content?.substring(0, 80), userId: c.userId, postId: c.postId, createdAt: c.createdAt })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json(activities);
+  } catch (err) {
+    console.error('Admin activity error:', err);
+    res.status(500).json({ error: 'Failed to fetch activity' });
+  }
+});
 
 // ============================================================================
 // ERROR HANDLING

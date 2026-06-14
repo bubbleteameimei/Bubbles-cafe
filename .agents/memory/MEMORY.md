@@ -4,3 +4,4 @@
 - [Bubbles Cafe npm/Render](bubbles-cafe-npm-render.md) — package-lock.json gets Replit-local registry URLs; must have `registry=https://registry.npmjs.org/` in .npmrc and replace any `package-firewall.replit.local` URLs in lock file before pushing to Render.
 - [Bubbles Cafe GitHub push](bubbles-cafe-github-push.md) — sandbox blocks `git push` via lock file catch-22; use GitHub REST API (blobs→tree→commit→patch ref) with GITHUB_PAT secret instead. Shell tab users can run `bash scripts/push-to-github.sh`.
 - [Bubbles Cafe layout shifts](bubbles-cafe-layout.md) — fullwidth-fix.css broad `[class*=...]` wildcards override internal shadcn component styles; only target top-level shells specifically. Sitemap `BACKEND_BASE_URL` env var may lack `https://` prefix — add guard in `computeBackendBaseUrl()`.
+- [Render deploy timeout pattern](render-deploy-pattern.md) — bind port IMMEDIATELY before DB checks; SIGTERM must force-exit ≤8s.

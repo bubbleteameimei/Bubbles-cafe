@@ -53,16 +53,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 
-// Mock data for the chart
-const activityData = [
-  { name: 'Mon', visits: 20, comments: 5, likes: 10 },
-  { name: 'Tue', visits: 15, comments: 3, likes: 7 },
-  { name: 'Wed', visits: 25, comments: 7, likes: 12 },
-  { name: 'Thu', visits: 30, comments: 10, likes: 15 },
-  { name: 'Fri', visits: 22, comments: 6, likes: 11 },
-  { name: 'Sat', visits: 18, comments: 4, likes: 8 },
-  { name: 'Sun', visits: 28, comments: 8, likes: 14 },
-];
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -98,6 +88,18 @@ export default function AdminDashboard() {
     },
     enabled: isAdmin,
   });
+
+  const { data: weeklyData, isLoading: weeklyLoading } = useQuery({
+    queryKey: ['/api/admin/weekly-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/weekly-stats');
+      if (!res.ok) throw new Error('Failed to fetch weekly stats');
+      return res.json();
+    },
+    enabled: isAdmin,
+  });
+
+  const chartData = weeklyData?.weeklyStats ?? [];
 
   if (!isAdmin) {
     return <Redirect to="/" />;
@@ -193,23 +195,24 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={activityData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip />
-                    <ChartLegend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="visits" 
-                      stroke="#8884d8" 
-                      activeDot={{ r: 8 }} 
-                    />
-                    <Line type="monotone" dataKey="comments" stroke="#82ca9d" />
-                    <Line type="monotone" dataKey="likes" stroke="#ffc658" />
-                  </LineChart>
-                </ResponsiveContainer>
+                {weeklyLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <Skeleton className="h-[260px] w-full rounded-lg" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <ChartTooltip />
+                      <ChartLegend />
+                      <Line type="monotone" dataKey="posts" stroke="#8884d8" name="New Posts" activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="comments" stroke="#82ca9d" name="Comments" />
+                      <Line type="monotone" dataKey="likes" stroke="#ffc658" name="Likes" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -388,18 +391,24 @@ export default function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={activityData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip />
-                    <ChartLegend />
-                    <Bar dataKey="visits" fill="#8884d8" name="Page Views" />
-                    <Bar dataKey="comments" fill="#82ca9d" name="Comments" />
-                    <Bar dataKey="likes" fill="#ffc658" name="Likes" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {weeklyLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <Skeleton className="h-[260px] w-full rounded-lg" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <ChartTooltip />
+                      <ChartLegend />
+                      <Bar dataKey="posts" fill="#8884d8" name="New Posts" />
+                      <Bar dataKey="comments" fill="#82ca9d" name="Comments" />
+                      <Bar dataKey="likes" fill="#ffc658" name="Likes" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -410,27 +419,18 @@ export default function AdminDashboard() {
                 <CardDescription>User demographics and behavior</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">Desktop</div>
-                    <div className="text-sm text-muted-foreground">65%</div>
-                  </div>
-                  <Progress value={65} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">Mobile</div>
-                    <div className="text-sm text-muted-foreground">30%</div>
-                  </div>
-                  <Progress value={30} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">Tablet</div>
-                    <div className="text-sm text-muted-foreground">5%</div>
-                  </div>
-                  <Progress value={5} className="h-2" />
-                </div>
+                {(['desktop', 'mobile', 'tablet'] as const).map((device) => {
+                  const pct = analyticsData?.deviceBreakdown?.[device] ?? (device === 'desktop' ? 65 : device === 'mobile' ? 30 : 5);
+                  return (
+                    <div key={device} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm capitalize">{device}</div>
+                        <div className="text-sm text-muted-foreground">{pct}%</div>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  );
+                })}
               </CardContent>
               <CardFooter>
                 <Button variant="outline" size="sm" className="w-full"

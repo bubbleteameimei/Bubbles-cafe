@@ -49,7 +49,10 @@ const fmtDate = (d) => {
 
 async function safeFetchJson(url) {
   try {
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) throw new Error(`Fetch failed ${res.status} ${url}`);
     return await res.json();
   } catch (err) {
