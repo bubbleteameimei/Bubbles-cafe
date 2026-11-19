@@ -8,7 +8,8 @@
     "noEmit": false,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noImplicitReturns": false
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist", "client"]

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { posts, users, analytics } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { requireAdmin } from '../auth-google';
 
 interface WordPressPost {
   id: number;
@@ -30,7 +31,7 @@ export function registerWordPressSyncRoutes() {
    * POST /api/wordpress/sync
    * Trigger WordPress sync (admin only)
    */
-  router.post('/sync', async (req: Request, res: Response) => {
+  router.post('/sync', requireAdmin, async (req: Request, res: Response) => {
     try {
       const WORDPRESS_API = process.env.WORDPRESS_API || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
       
@@ -152,10 +153,10 @@ export function registerWordPressSyncRoutes() {
    * POST /api/wordpress/sync-engagement
    * Sync engagement metrics back to WordPress (updates post metadata with views, read time, etc)
    */
-  router.post('/sync-engagement', async (req: Request, res: Response) => {
+  router.post('/sync-engagement', requireAdmin, async (req: Request, res: Response) => {
     try {
       const allPosts = await db.select().from(posts);
-      const wpPosts = allPosts.filter(p => (p.metadata as any)?.source === 'wordpress_api');
+      const wpPosts = allPosts.filter((p: any) => (p.metadata as any)?.source === 'wordpress_api');
 
       let synced = 0;
       const syncedData = [];
@@ -218,7 +219,7 @@ export function registerWordPressSyncRoutes() {
   router.get('/posts', async (req: Request, res: Response) => {
     try {
       const allPosts = await db.select().from(posts);
-      const wpPosts = allPosts.filter(p => (p.metadata as any)?.source === 'wordpress_api');
+      const wpPosts = allPosts.filter((p: any) => (p.metadata as any)?.source === 'wordpress_api');
 
       res.json({
         posts: wpPosts,

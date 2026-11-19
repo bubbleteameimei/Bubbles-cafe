@@ -9,6 +9,7 @@ import { Plus, Rss, PenSquare, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { THEME_CATEGORIES } from "@shared/theme-categories";
+import { apiRequest } from "@/lib/queryClient";
 
 // Import subcomponents for each tab
 import { default as WordPressSyncPage } from "./WordPressSyncPage";
@@ -43,13 +44,8 @@ export default function ContentManagementPage() {
 
     try {
       setSyncInProgress(true);
-      const response = await fetch("/api/wordpress/sync", {
-        method: "POST",
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to trigger sync: ${response.statusText}`);
-      }
+      // apiRequest attaches the auth token; the endpoint is admin-only.
+      await apiRequest("/api/wordpress/sync", { method: "POST" });
       
       toast({
         title: "Sync Started",

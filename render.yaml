@@ -3,8 +3,13 @@ services:
     name: bubbles-cafe-api
     env: node
     plan: free
-    buildCommand: npm install && npm run build
+    # API only: no frontend build here (Vercel builds the client).
+    # --include=dev is required because NODE_ENV=production would make npm skip
+    # devDependencies, and the start command needs tsx.
+    buildCommand: npm ci --include=dev
     startCommand: npm start
+    # "/" responds without touching the DB, so slow DB starts don't cause restart loops.
+    healthCheckPath: /
     envVars:
       - key: PORT
         value: "10000"

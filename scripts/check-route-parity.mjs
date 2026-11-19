@@ -3,224 +3,119 @@ import path from "node:path";
 import process from "node:process";
 
 /**
- * Simple route parity check:
- * - Scans client source for hard-coded API URLs (e.g. "/api/user/privacy-settings").
- * - Scans Worker (src/index.ts) for router.* definitions.
- * - Fails if any client-used static "/api/..." path has no corresponding Worker route.
+ * Route parity check: client  ->  Express API (server/, deployed on Render).
  *
- * This is intentionally conservative:
- * - Only checks static string paths, not template strings or dynamically built URLs.
- * - Designed to catch obvious mismatches where a new client API endpoint
- *   has no Worker implementation.
+ * - Scans client/src for static "/api/..." URLs passed to getApiPath / apiRequest / fetch.
+ * - Scans server/index.ts for app.<method>("/api/...") and app.use("/api/x", registerXRoutes()),
+ *   then scans each server/routes/*.ts file for router.<method>("/...") and joins the prefix.
+ * - Matches with Express-style ":param" segments.
+ * - Fails if a client-used static path has no matching Express route.
+ *
+ * Set ROUTE_PARITY_WARN_ONLY=1 to report without failing.
  */
 
-function collectFiles(dir, exts) {
-  const results = [];
-  if (!fs.existsSync(dir)) return results;
+const ROOT = process.cwd();
 
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...collectFiles(fullPath, exts));
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (exts.has(ext)) {
-        results.push(fullPath);
+function collectFiles(dir, exts) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...collectFiles(p, exts));
+    else if (exts.has(path.extname(e.name).toLowerCase())) out.push(p);
+  }
+  return out;
+}
+
+function normalize(route) {
+  let p = route.split(/[?#]/)[0].trim();
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  return p;
+}
+
+function collectClientRoutes() {
+  const patterns = [
+    /getApiPath\(\s*["'`](\/api\/[^"'`]+)["'`]\s*\)/g,
+    /apiRequest(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
+    /fetch\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
+  ];
+  const routes = new Map(); // normalized -> Set(files)
+  for (const file of collectFiles(path.join(ROOT, "client", "src"), new Set([".ts", ".tsx"]))) {
+    if (/\.test\.tsx?$/.test(file)) continue;
+    const src = fs.readFileSync(file, "utf8");
+    for (const re of patterns) {
+      for (const m of src.matchAll(re)) {
+        if (m[1].includes("${")) continue;
+        const n = normalize(m[1]);
+        if (!routes.has(n)) routes.set(n, new Set());
+        routes.get(n).add(path.relative(ROOT, file));
       }
     }
   }
-  return results;
-}
-
-function extractClientRoutesFromSource(source) {
-  const routes = new Set();
-
-  // getApiPath("/api/...")
-  {
-    const re = /getApiPath\(\s*["'`](\/api\/[^"'`]+)["'`]\s*\)/g;
-    let match;
-    while ((match = re.exec(source)) !== null) {
-      routes.add(match[1]);
-    }
-  }
-
-  // apiRequest("/api/...") and apiRequest<...>("/api/...")
-  {
-    const re = /apiRequest(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g;
-    let match;
-    while ((match = re.exec(source)) !== null) {
-      routes.add(match[1]);
-    }
-  }
-
-  // fetch("/api/...") – only direct literal URLs
-  {
-    const re = /fetch\(\s*["'`](\/api\/[^"'`]+)["'`]/g;
-    let match;
-    while ((match = re.exec(source)) !== null) {
-      routes.add(match[1]);
-    }
-  }
-
   return routes;
 }
 
-function collectClientRoutes(rootDir) {
-  const clientSrcDir = path.join(rootDir, "client", "src");
-  const exts = new Set([".ts", ".tsx"]);
-  const files = collectFiles(clientSrcDir, exts);
+function collectServerRoutes() {
+  const indexPath = path.join(ROOT, "server", "index.ts");
+  const indexSrc = fs.readFileSync(indexPath, "utf8");
   const routes = new Set();
 
-  for (const file of files) {
-    let src;
-    try {
-      src = fs.readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
-    const fileRoutes = extractClientRoutesFromSource(src);
-    for (const r of fileRoutes) {
-      routes.add(r);
-    }
+  for (const m of indexSrc.matchAll(/app\.(?:get|post|patch|put|delete|all)\(\s*["'`](\/api\/[^"'`]+)["'`]/g)) {
+    routes.add(normalize(m[1]));
   }
 
+  // Map registerXRoutes -> module file via import statements
+  const importMap = new Map();
+  for (const m of indexSrc.matchAll(/import\s*\{\s*(register\w+)\s*\}\s*from\s*["'](\.\/routes\/[^"']+)["']/g)) {
+    importMap.set(m[1], m[2]);
+  }
+
+  for (const m of indexSrc.matchAll(/app\.use\(\s*["'`](\/api[^"'`]*)["'`]\s*,\s*(register\w+)\(\)/g)) {
+    const prefix = m[1];
+    const rel = importMap.get(m[2]);
+    if (!rel) continue;
+    const file = path.join(ROOT, "server", rel.replace(/^\.\//, "") + (rel.endsWith(".ts") ? "" : ".ts"));
+    if (!fs.existsSync(file)) continue;
+    const src = fs.readFileSync(file, "utf8");
+    for (const r of src.matchAll(/router\.(?:get|post|patch|put|delete|all)\(\s*["'`](\/[^"'`]*)["'`]/g)) {
+      routes.add(normalize(prefix + (r[1] === "/" ? "" : r[1])));
+    }
+  }
   return routes;
 }
 
-function collectWorkerRoutes(rootDir) {
-  const routes = new Set();
-  const exts = new Set([".ts"]);
-
-  const files = [];
-
-  const indexFile = path.join(rootDir, "src", "index.ts");
-  if (fs.existsSync(indexFile)) {
-    files.push(indexFile);
-  }
-
-  const workerDir = path.join(rootDir, "src", "worker");
-  if (fs.existsSync(workerDir)) {
-    files.push(...collectFiles(workerDir, exts));
-  }
-
-  if (files.length === 0) {
-    return routes;
-  }
-
-  const re = /router\.(get|post|patch|delete|all)\(\s*["'`](\/[^"'`]+)["'`]/g;
-
-  for (const file of files) {
-    let src;
-    try {
-      src = fs.readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
-
-    let match;
-    while ((match = re.exec(src)) !== null) {
-      routes.add(match[2]);
-    }
-  }
-
-  return routes;
-}
-
-function normalizeRoutePath(route) {
-  if (typeof route !== "string") return "";
-
-  let pathOnly = route;
-
-  const qIndex = pathOnly.indexOf("?");
-  const hashIndex = pathOnly.indexOf("#");
-  const cutIndex =
-    qIndex === -1
-      ? hashIndex
-      : hashIndex === -1
-      ? qIndex
-      : Math.min(qIndex, hashIndex);
-
-  if (cutIndex !== -1) {
-    pathOnly = pathOnly.slice(0, cutIndex);
-  }
-
-  pathOnly = pathOnly.trim();
-  if (!pathOnly) return "";
-
-  if (pathOnly.length > 1 && pathOnly.endsWith("/")) {
-    pathOnly = pathOnly.slice(0, -1);
-  }
-
-  return pathOnly;
+function toRegex(route) {
+  const parts = route.split("/").map((seg) =>
+    seg.startsWith(":") ? "[^/]+" : seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  return new RegExp("^" + parts.join("/") + "$");
 }
 
 function main() {
-  const rootDir = process.cwd();
-
-  const clientRoutes = collectClientRoutes(rootDir);
-  if (clientRoutes.size === 0) {
-    console.log("[route-parity] No client /api routes found; skipping check.");
+  const client = collectClientRoutes();
+  if (client.size === 0) {
+    console.log("[route-parity] No client /api routes found; skipping.");
     return;
   }
-
-  const workerRoutes = collectWorkerRoutes(rootDir);
-  if (workerRoutes.size === 0) {
-    console.error(
-      "[route-parity] No Worker routes found in src/index.ts; cannot validate parity."
-    );
+  const server = [...collectServerRoutes()];
+  if (server.length === 0) {
+    console.error("[route-parity] No Express routes found in server/; cannot validate.");
     process.exit(1);
   }
-
-  const normalizedWorkerRoutes = new Set();
-  for (const route of workerRoutes) {
-    const normalized = normalizeRoutePath(route);
-    if (normalized) normalizedWorkerRoutes.add(normalized);
-  }
-
-  const normalizedClientRoutes = new Map();
-
-  for (const route of clientRoutes) {
-    // Only check obvious static routes; skip if they look parameterised or dynamic
-    if (route.includes("${")) continue;
-
-    const normalized = normalizeRoutePath(route);
-    if (!normalized) continue;
-
-    let originals = normalizedClientRoutes.get(normalized);
-    if (!originals) {
-      originals = new Set();
-      normalizedClientRoutes.set(normalized, originals);
-    }
-    originals.add(route);
-  }
+  const matchers = server.map(toRegex);
 
   const missing = [];
-
-  for (const [normalized, originals] of normalizedClientRoutes.entries()) {
-    if (!normalizedWorkerRoutes.has(normalized)) {
-      for (const r of originals) {
-        missing.push(r);
-      }
-    }
+  for (const [route, files] of client) {
+    if (!matchers.some((re) => re.test(route))) missing.push([route, files]);
   }
 
-  if (missing.length > 0) {
-    console.error(
-      "[route-parity] The following client-used API routes have no matching Worker route in src/index.ts (query strings ignored):"
-    );
-    for (const r of missing) {
-      console.error(`  - ${r}`);
-    }
-    console.error(
-      "[route-parity] Please add matching router.get/router.post/router.patch/router.delete handlers in the Worker."
-    );
+  if (missing.length) {
+    console.error(`[route-parity] ${missing.length} client API route(s) have no Express handler:`);
+    for (const [r, files] of missing.sort()) console.error(`  - ${r}   (${[...files].join(", ")})`);
+    if (process.env.ROUTE_PARITY_WARN_ONLY === "1") return;
     process.exit(1);
   }
-
-  console.log(
-    `[route-parity] OK: all static client /api routes (${clientRoutes.size}) have matching Worker routes (${workerRoutes.size}).`
-  );
+  console.log(`[route-parity] OK: ${client.size} client routes all match ${server.length} Express routes.`);
 }
 
 main();

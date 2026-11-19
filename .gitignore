@@ -296,3 +296,8 @@ accessibility*.html
 accessibility*.md
 *.cjs.env
 .env*
+
+# Local Wrangler/Miniflare state
+.wrangler/
+# curl cookie jars
+cookies.txt

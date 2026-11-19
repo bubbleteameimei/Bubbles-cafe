@@ -12,6 +12,7 @@ import {
   handleLogout,
   getGoogleAuthUrl,
   findOrCreateNeonUser,
+  requireAdmin,
 } from './auth-google';
 import { getCsrfTokenHandler } from './middleware/csrf-signed-tokens';
 import { registerPostsRoutes } from './routes/posts';
@@ -232,26 +233,6 @@ app.use('/api/wordpress', registerWordPressSyncRoutes());
 // ADMIN API ENDPOINTS
 // ============================================================================
 
-// Middleware: require admin
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  verifyAuthToken(req, res, () => {
-    const user = (req as any).user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    // Allow if isAdmin flag is set on the token payload
-    if (!user.isAdmin) {
-      // Fall back to DB check for fresh data
-      db.select().from(users).where(eq(users.id, user.userId)).limit(1)
-        .then(([u]) => {
-          if (!u?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
-          next();
-        })
-        .catch(() => res.status(500).json({ error: 'Auth check failed' }));
-      return;
-    }
-    next();
-  });
-}
-
 /** GET /api/admin/info — counts + recent content */
 app.get('/api/admin/info', requireAdmin, async (_req: Request, res: Response) => {
   try {
@@ -324,7 +305,7 @@ app.get('/api/admin/analytics', requireAdmin, async (_req: Request, res: Respons
       .orderBy(desc(postsTable.likesCount))
       .limit(10);
 
-    const popularContent = popularPosts.map(p => ({
+    const popularContent = popularPosts.map((p: any) => ({
       title: p.title,
       slug: p.slug,
       views: p.views ?? 0,
@@ -365,8 +346,8 @@ app.get('/api/admin/activity', requireAdmin, async (_req: Request, res: Response
     ]);
 
     const activities = [
-      ...latestPosts.map(p => ({ type: 'post', id: p.id, title: p.title, slug: p.slug, createdAt: p.createdAt })),
-      ...latestComments.map(c => ({ type: 'comment', id: c.id, content: c.content?.substring(0, 80), userId: c.userId, postId: c.postId, createdAt: c.createdAt })),
+      ...latestPosts.map((p: any) => ({ type: 'post', id: p.id, title: p.title, slug: p.slug, createdAt: p.createdAt })),
+      ...latestComments.map((c: any) => ({ type: 'comment', id: c.id, content: c.content?.substring(0, 80), userId: c.userId, postId: c.postId, createdAt: c.createdAt })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     res.json(activities);
