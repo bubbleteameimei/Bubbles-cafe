@@ -429,3 +429,15 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return undefined;
   });
 }
+
+/**
+ * Resolve the signed-in user if a valid bearer token is present, without
+ * rejecting the request. For endpoints that work anonymously but attach the
+ * user when known (feedback, auth status).
+ */
+export async function getOptionalUser(req: Request): Promise<TokenPayload | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  return verifyAccessToken(token) || (await verifySupabaseToken(token).catch(() => null));
+}

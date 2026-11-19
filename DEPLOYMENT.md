@@ -48,6 +48,11 @@ them in the dashboard): `SESSION_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
 `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `GMAIL_APP_PASSWORD`, `PAYSTACK_PUBLIC_KEY`, `PAYSTACK_SECRET_KEY`.
 
+Contact-form notification emails go to `GMAIL_ADMIN_EMAIL`, sent through
+Gmail using `GMAIL_ADMIN_EMAIL` + `GMAIL_APP_PASSWORD` (a Google app
+password). `GMAIL_USER` / `GMAIL_PASS` also work. If email isn't configured,
+messages are still saved to the `contact_messages` table.
+
 ### Free-plan cold starts
 
 Render's free plan sleeps after ~15 minutes idle and takes 30–60 s to wake.
@@ -82,12 +87,15 @@ route. It currently reports in warn-only mode (see below).
 
 ## Known gaps
 
-These frontend calls have no Express handler yet (they existed only on the
+Some frontend calls still have no Express handler (they existed only on the
 Worker), so those features return 404 in production. Run
-`npm run check:routes` for the current list. Highlights: contact form,
-feedback, newsletter signup, search suggestions, trending stories, forgot
-password, privacy/notification settings, admin site settings, moderation,
-WordPress sync dashboard.
+`npm run check:routes` for the current list. Remaining as of this writing:
+forgot password, `/api/auth/profile`, and admin-only screens (site settings,
+admin notifications, moderation, WordPress sync dashboard, email test, theme
+admin, feedback review list).
+
+Note: the parity check matches paths, not HTTP methods. For example
+`POST /api/feedback` exists but the admin list (`GET /api/feedback`) does not.
 
 ---
 

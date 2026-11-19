@@ -972,7 +972,6 @@ export const themeCategories = pgTable("theme_categories", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 }, (table) => ({
-  keyUnique: unique().on(table.key),
   activeIdx: index("theme_category_active_idx").on(table.isActive),
   sortIdx: index("theme_category_sort_idx").on(table.sortOrder)
 }));

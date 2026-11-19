@@ -23,10 +23,14 @@ import { registerWordPressSyncRoutes } from './routes/wordpress-sync';
 import { registerLikesRoutes } from './routes/likes';
 import { registerBookmarksRoutes } from './routes/bookmarks';
 import { registerNotificationsRoutes } from './routes/notifications';
+import { registerPublicRoutes } from './routes/public';
+import { registerUserSettingsRoutes } from './routes/user-settings';
 import { createSupabaseServiceRoleClient } from './utils/supabase';
 import crypto from 'crypto';
 
 const app: Express = express();
+// Render terminates TLS at a proxy; trust it so req.ip (used by rate limiting) is the client IP.
+app.set('trust proxy', 1);
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 
@@ -228,6 +232,12 @@ app.use('/api/analytics', registerAnalyticsRoutes());
 
 // WordPress sync
 app.use('/api/wordpress', registerWordPressSyncRoutes());
+
+// Signed-in user settings + own feedback (ported from the Worker)
+app.use('/api/user', registerUserSettingsRoutes());
+
+// Reader-facing endpoints: trending, search, contact, newsletter, feedback, themes (ported from the Worker)
+app.use('/api', registerPublicRoutes());
 
 // ============================================================================
 // ADMIN API ENDPOINTS

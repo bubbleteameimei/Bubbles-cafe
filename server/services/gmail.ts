@@ -12,8 +12,18 @@ import logger from '../utils/logger';
  * 
  * @returns Boolean indicating if credentials are set
  */
+// Accept both naming schemes: GMAIL_USER/GMAIL_PASS (original) and
+// GMAIL_ADMIN_EMAIL/GMAIL_APP_PASSWORD (what render.yaml configures).
+export function getGmailUser(): string | undefined {
+  return process.env.GMAIL_USER || process.env.GMAIL_ADMIN_EMAIL || undefined;
+}
+
+function getGmailPass(): string | undefined {
+  return process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD || undefined;
+}
+
 function hasGmailCredentials(): boolean {
-  return !!(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+  return !!(getGmailUser() && getGmailPass());
 }
 
 /**
@@ -30,8 +40,8 @@ export function createGmailTransporter() {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS
+      user: getGmailUser(),
+      pass: getGmailPass()
     }
   });
 }
