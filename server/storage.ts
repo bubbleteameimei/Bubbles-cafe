@@ -117,7 +117,7 @@ try {
     params.delete('channel_binding');
     return base + '?' + params.toString();
   };
-  // Use Neon PostgreSQL via DATABASE_URL (primary), with fallback to alternative pooler URLs
+  // Supabase Postgres via DATABASE_URL (Session pooler URL in production)
   const preferredUrl = sanitizeUrl(
     process.env.DATABASE_URL ||
     process.env.DB_POOLER_URL

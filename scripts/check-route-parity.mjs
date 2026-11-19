@@ -33,11 +33,30 @@ function normalize(route) {
   return p;
 }
 
+/**
+ * Turn a template-literal path into a concrete sample path:
+ *   `/api/feedback/${id}/status` -> /api/feedback/X/status
+ *   `/api/feedback${params}`     -> /api/feedback   (query-string interpolation)
+ *   `/api/posts/${id}/${flag ? 'a' : 'b'}` -> /api/posts/X/X
+ */
+function templateToPath(raw) {
+  if (!raw.includes("${")) return raw;
+  // An unterminated "${..." means the regex stopped at a nested backtick; drop it.
+  const closed = raw.replace(/\$\{[^}]*$/, "");
+  const replaced = closed.replace(/\$\{[^}]*\}/g, "\u0000");
+  return replaced
+    .split("/")
+    .map((seg) => (seg === "\u0000" ? "X" : seg.replace(/\u0000.*$/, "")))
+    .join("/");
+}
+
 function collectClientRoutes() {
   const patterns = [
     /getApiPath\(\s*["'`](\/api\/[^"'`]+)["'`]\s*\)/g,
     /apiRequest(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
-    /fetch\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
+    /(?:fetch|getJson)(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
+    // apiJson('POST', '/api/...') and apiRequest('PATCH', '/api/...') (method-first helpers)
+    /(?:apiJson|apiRequest)(?:<[^>]*>)?\(\s*["'`][A-Z]+["'`]\s*,\s*["'`](\/api\/[^"'`]+)["'`]/g,
   ];
   const routes = new Map(); // normalized -> Set(files)
   for (const file of collectFiles(path.join(ROOT, "client", "src"), new Set([".ts", ".tsx"]))) {
@@ -45,8 +64,8 @@ function collectClientRoutes() {
     const src = fs.readFileSync(file, "utf8");
     for (const re of patterns) {
       for (const m of src.matchAll(re)) {
-        if (m[1].includes("${")) continue;
-        const n = normalize(m[1]);
+        const n = normalize(templateToPath(m[1]));
+        if (!n) continue;
         if (!routes.has(n)) routes.set(n, new Set());
         routes.get(n).add(path.relative(ROOT, file));
       }
@@ -66,8 +85,10 @@ function collectServerRoutes() {
 
   // Map registerXRoutes -> module file via import statements
   const importMap = new Map();
-  for (const m of indexSrc.matchAll(/import\s*\{\s*(register\w+)\s*\}\s*from\s*["'](\.\/routes\/[^"']+)["']/g)) {
-    importMap.set(m[1], m[2]);
+  for (const m of indexSrc.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'](\.\/routes\/[^"']+)["']/g)) {
+    for (const name of m[1].split(",").map((n) => n.trim()).filter((n) => n.startsWith("register"))) {
+      importMap.set(name, m[2]);
+    }
   }
 
   for (const m of indexSrc.matchAll(/app\.use\(\s*["'`](\/api[^"'`]*)["'`]\s*,\s*(register\w+)\(\)/g)) {
@@ -85,9 +106,12 @@ function collectServerRoutes() {
 }
 
 function toRegex(route) {
-  const parts = route.split("/").map((seg) =>
-    seg.startsWith(":") ? "[^/]+" : seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  );
+  const parts = route.split("/").map((seg) => {
+    if (!seg.startsWith(":")) return seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const constrained = seg.match(/^:\w+\((.+)\)$/); // e.g. :action(publish|unpublish)
+    // "X" is the placeholder for a client-side ${...} segment, which could be any allowed value.
+    return constrained ? `(?:${constrained[1]}|X)` : "[^/]+";
+  });
   return new RegExp("^" + parts.join("/") + "$");
 }
 

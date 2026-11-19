@@ -8,6 +8,7 @@
 import 'dotenv/config';
 import { pool } from '../server/db';
 import app from '../server/index';
+import { startWordPressScheduler } from '../server/services/wordpress-sync';
 
 const PORT = process.env.PORT || 10000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -19,11 +20,15 @@ console.log(`📝 Environment: ${NODE_ENV}`);
 // DB checks happen after the server is already listening.
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Server running on http://0.0.0.0:${PORT}`);
-  console.log(`🔐 Auth: Google OAuth + JWT`);
-  console.log(`📊 Database: Neon PostgreSQL`);
+  console.log(`🔐 Auth: Supabase Auth (+ API-issued JWTs)`);
+  console.log(`📊 Database: Supabase Postgres`);
   console.log(`🌐 CORS: Configured for ${NODE_ENV === 'production' ? 'production' : 'development'}`);
   console.log('\n📡 API endpoints ready at /api/*\n');
 });
+
+// Periodic WordPress → DB sync (replaces the old Cloudflare Worker cron).
+// Checks the admin on/off toggle each run; ENABLE_WORDPRESS_SCHEDULER=false disables by default.
+startWordPressScheduler();
 
 // Verify DB connection in the background (non-blocking)
 (async () => {

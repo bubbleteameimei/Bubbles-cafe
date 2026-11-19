@@ -93,9 +93,9 @@ export async function getUser(emailOrId: string | number): Promise<AuthUser | nu
 }
 
 /**
- * Find an existing Neon user by email, or create one from a Supabase user profile.
+ * Find the app user (users table) by email, or create one from a Supabase Auth user.
  */
-export async function findOrCreateNeonUser(email: string, supabaseUser?: any): Promise<AuthUser | null> {
+export async function findOrCreateAppUser(email: string, supabaseUser?: any): Promise<AuthUser | null> {
   try {
     const normalizedEmail = email.toLowerCase().trim();
     let user = await getUser(normalizedEmail);
@@ -127,7 +127,7 @@ export async function findOrCreateNeonUser(email: string, supabaseUser?: any): P
 
     return newUser[0] || null;
   } catch (error) {
-    console.error('Error finding/creating Neon user:', error);
+    console.error('Error finding/creating app user:', error);
     return null;
   }
 }
@@ -151,13 +151,13 @@ async function verifySupabaseToken(token: string): Promise<TokenPayload | null> 
     const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !supabaseUser?.email) return null;
 
-    const neonUser = await findOrCreateNeonUser(supabaseUser.email, supabaseUser);
-    if (!neonUser) return null;
+    const appUser = await findOrCreateAppUser(supabaseUser.email, supabaseUser);
+    if (!appUser) return null;
 
     const payload: TokenPayload = {
-      userId: neonUser.id,
-      email: neonUser.email,
-      isAdmin: neonUser.isAdmin,
+      userId: appUser.id,
+      email: appUser.email,
+      isAdmin: appUser.isAdmin,
     };
 
     // Cache for 5 minutes

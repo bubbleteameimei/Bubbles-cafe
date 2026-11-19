@@ -21,11 +21,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run lint
-      # Lists frontend API calls with no Express handler (features still only on the
-      # retired Worker). Warn-only until those endpoints are ported; see DEPLOYMENT.md.
+      # Fails if the frontend calls an /api route the Express API doesn't implement.
       - run: npm run check:routes
-        env:
-          ROUTE_PARITY_WARN_ONLY: '1'
       # Express API typecheck (root tsconfig only covers client/ and shared/)
       - run: npx tsc -p tsconfig.server.json --noEmit
       - run: npm run build

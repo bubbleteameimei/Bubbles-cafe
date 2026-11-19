@@ -25,8 +25,16 @@ export function registerUserRoutes() {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const { password_hash, ...userWithoutPassword } = user[0];
-      res.json(userWithoutPassword);
+      // Public endpoint: only expose public profile fields (no email or provider metadata).
+      const meta = (user[0].metadata ?? {}) as Record<string, any>;
+      res.json({
+        id: user[0].id,
+        username: user[0].username,
+        displayName: meta.displayName || meta.fullName || null,
+        bio: meta.bio || null,
+        avatar: meta.photoURL || meta.avatar || null,
+        createdAt: user[0].createdAt,
+      });
     } catch (error) {
       console.error('Error fetching user:', error);
       res.status(500).json({ error: 'Failed to fetch user' });
@@ -62,7 +70,10 @@ export function registerUserRoutes() {
         .update(users)
         .set({
           username: username ?? user[0].username,
-          metadata: metadata ?? user[0].metadata,
+          // Merge so provider data (photoURL, socialId, ...) isn't wiped by partial updates.
+          metadata: metadata && typeof metadata === 'object'
+            ? { ...((user[0].metadata ?? {}) as Record<string, unknown>), ...metadata }
+            : user[0].metadata,
         })
         .where(eq(users.id, targetId))
         .returning();

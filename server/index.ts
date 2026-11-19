@@ -11,7 +11,7 @@ import {
   handleRefreshToken,
   handleLogout,
   getGoogleAuthUrl,
-  findOrCreateNeonUser,
+  findOrCreateAppUser,
   requireAdmin,
 } from './auth-google';
 import { getCsrfTokenHandler } from './middleware/csrf-signed-tokens';
@@ -25,6 +25,9 @@ import { registerBookmarksRoutes } from './routes/bookmarks';
 import { registerNotificationsRoutes } from './routes/notifications';
 import { registerPublicRoutes } from './routes/public';
 import { registerUserSettingsRoutes } from './routes/user-settings';
+import { registerProfileRoutes } from './routes/profile';
+import { registerAdminRoutes, registerAdminExtraRoutes } from './routes/admin';
+import { registerReaderRoutes } from './routes/reader';
 import { createSupabaseServiceRoleClient } from './utils/supabase';
 import crypto from 'crypto';
 
@@ -127,7 +130,7 @@ app.get('/api/csrf-token', getCsrfTokenHandler);
 
 /**
  * POST /api/auth/supabase/login
- * Exchange a Supabase JWT for a local user profile stored in Neon.
+ * Exchange a Supabase JWT for the app user profile (users table, matched by email).
  * Called by the frontend after successful Supabase sign-in.
  */
 app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
@@ -147,21 +150,21 @@ app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid Supabase token' });
     }
 
-    const neonUser = await findOrCreateNeonUser(supabaseUser.email, supabaseUser);
-    if (!neonUser) {
+    const appUser = await findOrCreateAppUser(supabaseUser.email, supabaseUser);
+    if (!appUser) {
       return res.status(500).json({ error: 'Failed to find or create user' });
     }
 
     res.json({
       user: {
-        id: neonUser.id,
-        email: neonUser.email,
-        username: neonUser.username,
-        isAdmin: neonUser.isAdmin,
-        fullName: (neonUser.metadata as any)?.displayName || null,
-        avatar: (neonUser.metadata as any)?.photoURL || null,
-        bio: (neonUser.metadata as any)?.bio || null,
-        metadata: neonUser.metadata,
+        id: appUser.id,
+        email: appUser.email,
+        username: appUser.username,
+        isAdmin: appUser.isAdmin,
+        fullName: (appUser.metadata as any)?.displayName || null,
+        avatar: (appUser.metadata as any)?.photoURL || null,
+        bio: (appUser.metadata as any)?.bio || null,
+        metadata: appUser.metadata,
       },
     });
   } catch (error) {
@@ -190,6 +193,7 @@ app.get('/api/auth/callback', handleGoogleCallback);
 app.post('/api/auth/login', handleEmailLogin);
 app.post('/api/auth/refresh', handleRefreshToken);
 app.post('/api/auth/logout', handleLogout);
+app.use('/api/auth', registerProfileRoutes());
 
 app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => {
   try {
@@ -216,7 +220,8 @@ app.use('/api/posts', registerPostsRoutes());
 app.use('/api/posts', registerLikesRoutes());
 
 // Comments
-app.use('/api/comments', registerCommentsRoutes());
+// /api/posts/:id/comments and /api/comments/* (see routes/comments.ts)
+app.use('/api', registerCommentsRoutes());
 
 // Users
 app.use('/api/users', registerUserRoutes());
@@ -235,6 +240,13 @@ app.use('/api/wordpress', registerWordPressSyncRoutes());
 
 // Signed-in user settings + own feedback (ported from the Worker)
 app.use('/api/user', registerUserSettingsRoutes());
+
+// Reader: story by slug, search, recommendations, reading progress, reports
+app.use('/api', registerReaderRoutes());
+
+// Admin panel (ported from the Worker)
+app.use('/api/admin', registerAdminRoutes());
+app.use('/api', registerAdminExtraRoutes());
 
 // Reader-facing endpoints: trending, search, contact, newsletter, feedback, themes (ported from the Worker)
 app.use('/api', registerPublicRoutes());

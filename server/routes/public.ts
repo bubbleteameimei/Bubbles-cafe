@@ -319,7 +319,7 @@ export function registerPublicRoutes() {
     });
   });
 
-  router.post('/newsletter-direct/subscribe', formLimiter(), async (req: Request, res: Response) => {
+  const subscribeNewsletter = async (req: Request, res: Response) => {
     const parsed = newsletterSchema.safeParse(req.body ?? {});
     if (!parsed.success) return sendValidationError(res, parsed.error);
     const { email } = parsed.data;
@@ -337,7 +337,10 @@ export function registerPublicRoutes() {
       console.error('Error subscribing to newsletter:', error);
       return res.status(500).json({ success: false, message: 'Failed to subscribe' });
     }
-  });
+  };
+  const newsletterLimiter = formLimiter();
+  router.post('/newsletter-direct/subscribe', newsletterLimiter, subscribeNewsletter);
+  router.post('/newsletter/subscribe', newsletterLimiter, subscribeNewsletter);
 
   const handleFeedback = async (req: Request, res: Response) => {
     const parsed = feedbackSchema.safeParse(req.body ?? {});
