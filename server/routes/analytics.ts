@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { analytics, siteAnalytics } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { requireAdmin } from '../auth-google';
 
 export function registerAnalyticsRoutes() {
   const router = Router();
@@ -188,7 +189,7 @@ export function registerAnalyticsRoutes() {
    * POST /api/analytics/sync-wordpress
    * Sync engagement metrics with WordPress
    */
-  router.post('/sync-wordpress', async (req: Request, res: Response) => {
+  router.post('/sync-wordpress', requireAdmin, async (req: Request, res: Response) => {
     try {
       const { postId, wordpressPostId, totalViews, avgTimeSpent, engagementRate } = req.body;
 

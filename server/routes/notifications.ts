@@ -34,7 +34,7 @@ export function registerNotificationsRoutes() {
         .from(userNotifications)
         .where(eq(userNotifications.userId, userId));
 
-      const unreadCount = allNotifs.filter(n => !n.isRead).length;
+      const unreadCount = allNotifs.filter((n: any) => !n.isRead).length;
 
       res.json({ notifications, unreadCount });
     } catch (error) {

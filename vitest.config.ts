@@ -77,7 +77,7 @@ export default defineConfig({
     globals: true,
     // Temporarily disable setup files to eliminate any potential jsdom triggers
     // setupFiles: './client/src/test-setup.ts',
-    include: ['client/src/**/*.test.{ts,tsx}'],
+    include: ['client/src/**/*.test.{ts,tsx}', 'server/routes/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/backups/**', '**/Bubbles-cafe/**', '**/bubbles-cafe/**', '**/workspace/**', '**/*.bak.*', '**/*.old', '**/*.backup.*'],
     pool: 'threads',
     poolOptions: {

@@ -4,6 +4,9 @@ import { posts, users, analytics, comments } from '@shared/schema';
 import { eq, desc, and, asc, sql } from 'drizzle-orm';
 import { verifyAuthToken } from '../auth-google';
 
+// Admin "unpublish"/"hide" set metadata.status; keep those out of public listings.
+const isPubliclyVisible = sql`coalesce(${posts.metadata}->>'status', 'publish') not in ('draft', 'hidden', 'pending')`;
+
 export function registerPostsRoutes() {
   const router = Router();
 
@@ -14,11 +17,12 @@ export function registerPostsRoutes() {
   router.get('/', async (req: Request, res: Response) => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 500);
-      const offset = parseInt(req.query.offset as string) || 0;
+      const page = Math.max(parseInt(req.query.page as string) || 0, 0);
+      const offset = page > 0 ? (page - 1) * limit : parseInt(req.query.offset as string) || 0;
       const sort = (req.query.sort as string) || 'date';
       const order = (req.query.order as string) || 'desc';
 
-      let query = db.select().from(posts).where(eq(posts.isSecret, false));
+      let query = db.select().from(posts).where(and(eq(posts.isSecret, false), isPubliclyVisible));
 
       if (sort === 'likes') {
         query = query.orderBy(order === 'asc' ? asc(posts.likesCount) : desc(posts.likesCount)) as any;
@@ -26,8 +30,11 @@ export function registerPostsRoutes() {
         query = query.orderBy(order === 'asc' ? asc(posts.createdAt) : desc(posts.createdAt)) as any;
       }
 
-      const allPosts = await (query as any).limit(limit).offset(offset);
-      res.json({ posts: allPosts, total: allPosts.length });
+      // Fetch one extra row to know whether another page exists.
+      const rows = await (query as any).limit(limit + 1).offset(offset);
+      const hasMore = rows.length > limit;
+      const allPosts = hasMore ? rows.slice(0, limit) : rows;
+      res.json({ posts: allPosts, total: allPosts.length, page: page || 1, hasMore });
     } catch (error) {
       console.error('Error fetching posts:', error);
       res.status(500).json({ error: 'Failed to fetch posts' });
@@ -49,7 +56,8 @@ export function registerPostsRoutes() {
 
       let baseWhere: any = and(
         eq(posts.isSecret, false),
-        eq(posts.isAdminPost, false)
+        eq(posts.isAdminPost, false),
+        isPubliclyVisible
       );
 
       if (category && category !== 'all') {
@@ -70,7 +78,7 @@ export function registerPostsRoutes() {
       const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(posts)
-        .where(and(eq(posts.isSecret, false), eq(posts.isAdminPost, false)));
+        .where(and(eq(posts.isSecret, false), eq(posts.isAdminPost, false), isPubliclyVisible));
 
       const totalPosts = Number(countResult[0]?.count || 0);
 
@@ -98,7 +106,7 @@ export function registerPostsRoutes() {
       const post = await db
         .select()
         .from(posts)
-        .where(isNumeric ? eq(posts.id, parseInt(idOrSlug)) : eq(posts.slug, idOrSlug))
+        .where(and(isNumeric ? eq(posts.id, parseInt(idOrSlug)) : eq(posts.slug, idOrSlug), isPubliclyVisible))
         .limit(1);
 
       if (!post.length) return res.status(404).json({ error: 'Post not found' });
@@ -221,58 +229,7 @@ export function registerPostsRoutes() {
     }
   });
 
-  /**
-   * GET /api/posts/:id/comments
-   * Get comments for a specific post
-   */
-  router.get('/:id/comments', async (req: Request, res: Response) => {
-    try {
-      const postId = parseInt(req.params.id);
-      if (!postId) return res.status(400).json({ error: 'postId is required' });
-
-      const postComments = await db
-        .select()
-        .from(comments)
-        .where(eq(comments.postId, postId))
-        .orderBy(desc(comments.createdAt));
-
-      res.json({ comments: postComments });
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      res.status(500).json({ error: 'Failed to fetch comments' });
-    }
-  });
-
-  /**
-   * POST /api/posts/:id/comments
-   * Create a comment on a post (requires auth)
-   */
-  router.post('/:id/comments', verifyAuthToken, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user.userId;
-      const postId = parseInt(req.params.id);
-      const { content, parentId } = req.body;
-
-      if (!content?.trim()) return res.status(400).json({ error: 'content is required' });
-
-      const newComment = await db
-        .insert(comments)
-        .values({
-          postId,
-          content: content.trim(),
-          userId,
-          parentId: parentId || null,
-          is_approved: true,
-          metadata: {},
-        })
-        .returning();
-
-      res.status(201).json(newComment[0]);
-    } catch (error) {
-      console.error('Error creating comment:', error);
-      res.status(500).json({ error: 'Failed to create comment' });
-    }
-  });
+  // Comment endpoints for posts live in routes/comments.ts (mounted at /api).
 
   return router;
 }

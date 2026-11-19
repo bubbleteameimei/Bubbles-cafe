@@ -11,7 +11,8 @@ import {
   handleRefreshToken,
   handleLogout,
   getGoogleAuthUrl,
-  findOrCreateNeonUser,
+  findOrCreateAppUser,
+  requireAdmin,
 } from './auth-google';
 import { getCsrfTokenHandler } from './middleware/csrf-signed-tokens';
 import { registerPostsRoutes } from './routes/posts';
@@ -22,10 +23,17 @@ import { registerWordPressSyncRoutes } from './routes/wordpress-sync';
 import { registerLikesRoutes } from './routes/likes';
 import { registerBookmarksRoutes } from './routes/bookmarks';
 import { registerNotificationsRoutes } from './routes/notifications';
+import { registerPublicRoutes } from './routes/public';
+import { registerUserSettingsRoutes } from './routes/user-settings';
+import { registerProfileRoutes } from './routes/profile';
+import { registerAdminRoutes, registerAdminExtraRoutes } from './routes/admin';
+import { registerReaderRoutes } from './routes/reader';
 import { createSupabaseServiceRoleClient } from './utils/supabase';
 import crypto from 'crypto';
 
 const app: Express = express();
+// Render terminates TLS at a proxy; trust it so req.ip (used by rate limiting) is the client IP.
+app.set('trust proxy', 1);
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 
@@ -122,7 +130,7 @@ app.get('/api/csrf-token', getCsrfTokenHandler);
 
 /**
  * POST /api/auth/supabase/login
- * Exchange a Supabase JWT for a local user profile stored in Neon.
+ * Exchange a Supabase JWT for the app user profile (users table, matched by email).
  * Called by the frontend after successful Supabase sign-in.
  */
 app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
@@ -142,21 +150,21 @@ app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid Supabase token' });
     }
 
-    const neonUser = await findOrCreateNeonUser(supabaseUser.email, supabaseUser);
-    if (!neonUser) {
+    const appUser = await findOrCreateAppUser(supabaseUser.email, supabaseUser);
+    if (!appUser) {
       return res.status(500).json({ error: 'Failed to find or create user' });
     }
 
     res.json({
       user: {
-        id: neonUser.id,
-        email: neonUser.email,
-        username: neonUser.username,
-        isAdmin: neonUser.isAdmin,
-        fullName: (neonUser.metadata as any)?.displayName || null,
-        avatar: (neonUser.metadata as any)?.photoURL || null,
-        bio: (neonUser.metadata as any)?.bio || null,
-        metadata: neonUser.metadata,
+        id: appUser.id,
+        email: appUser.email,
+        username: appUser.username,
+        isAdmin: appUser.isAdmin,
+        fullName: (appUser.metadata as any)?.displayName || null,
+        avatar: (appUser.metadata as any)?.photoURL || null,
+        bio: (appUser.metadata as any)?.bio || null,
+        metadata: appUser.metadata,
       },
     });
   } catch (error) {
@@ -185,6 +193,7 @@ app.get('/api/auth/callback', handleGoogleCallback);
 app.post('/api/auth/login', handleEmailLogin);
 app.post('/api/auth/refresh', handleRefreshToken);
 app.post('/api/auth/logout', handleLogout);
+app.use('/api/auth', registerProfileRoutes());
 
 app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => {
   try {
@@ -211,7 +220,8 @@ app.use('/api/posts', registerPostsRoutes());
 app.use('/api/posts', registerLikesRoutes());
 
 // Comments
-app.use('/api/comments', registerCommentsRoutes());
+// /api/posts/:id/comments and /api/comments/* (see routes/comments.ts)
+app.use('/api', registerCommentsRoutes());
 
 // Users
 app.use('/api/users', registerUserRoutes());
@@ -228,29 +238,22 @@ app.use('/api/analytics', registerAnalyticsRoutes());
 // WordPress sync
 app.use('/api/wordpress', registerWordPressSyncRoutes());
 
+// Signed-in user settings + own feedback (ported from the Worker)
+app.use('/api/user', registerUserSettingsRoutes());
+
+// Reader: story by slug, search, recommendations, reading progress, reports
+app.use('/api', registerReaderRoutes());
+
+// Admin panel (ported from the Worker)
+app.use('/api/admin', registerAdminRoutes());
+app.use('/api', registerAdminExtraRoutes());
+
+// Reader-facing endpoints: trending, search, contact, newsletter, feedback, themes (ported from the Worker)
+app.use('/api', registerPublicRoutes());
+
 // ============================================================================
 // ADMIN API ENDPOINTS
 // ============================================================================
-
-// Middleware: require admin
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  verifyAuthToken(req, res, () => {
-    const user = (req as any).user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    // Allow if isAdmin flag is set on the token payload
-    if (!user.isAdmin) {
-      // Fall back to DB check for fresh data
-      db.select().from(users).where(eq(users.id, user.userId)).limit(1)
-        .then(([u]) => {
-          if (!u?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
-          next();
-        })
-        .catch(() => res.status(500).json({ error: 'Auth check failed' }));
-      return;
-    }
-    next();
-  });
-}
 
 /** GET /api/admin/info — counts + recent content */
 app.get('/api/admin/info', requireAdmin, async (_req: Request, res: Response) => {
@@ -324,7 +327,7 @@ app.get('/api/admin/analytics', requireAdmin, async (_req: Request, res: Respons
       .orderBy(desc(postsTable.likesCount))
       .limit(10);
 
-    const popularContent = popularPosts.map(p => ({
+    const popularContent = popularPosts.map((p: any) => ({
       title: p.title,
       slug: p.slug,
       views: p.views ?? 0,
@@ -365,8 +368,8 @@ app.get('/api/admin/activity', requireAdmin, async (_req: Request, res: Response
     ]);
 
     const activities = [
-      ...latestPosts.map(p => ({ type: 'post', id: p.id, title: p.title, slug: p.slug, createdAt: p.createdAt })),
-      ...latestComments.map(c => ({ type: 'comment', id: c.id, content: c.content?.substring(0, 80), userId: c.userId, postId: c.postId, createdAt: c.createdAt })),
+      ...latestPosts.map((p: any) => ({ type: 'post', id: p.id, title: p.title, slug: p.slug, createdAt: p.createdAt })),
+      ...latestComments.map((c: any) => ({ type: 'comment', id: c.id, content: c.content?.substring(0, 80), userId: c.userId, postId: c.postId, createdAt: c.createdAt })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     res.json(activities);

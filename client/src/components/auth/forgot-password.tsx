@@ -15,6 +15,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase, initSupabase } from '@/lib/supabase';
 
 // Email validation schema
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -50,69 +51,28 @@ export function ForgotPasswordDialog() {
     setIsLoading(true);
     
     try {
-      // Make API call to request password reset
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
+      // Supabase Auth sends the reset email; the link lands on /reset-password,
+      // which completes the change with supabase.auth.updateUser().
+      await initSupabase();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+
+      // Always show the same message (don't reveal whether an account exists),
+      // except for rate limiting, which the user needs to know about.
+      if (error && /rate limit|too many/i.test(error.message)) {
+        throw new Error('Too many reset requests. Please wait a few minutes and try again.');
       }
-      
-      console.log("[ForgotPassword] Password reset requested for:", email);
-      
-      // Set email sent state regardless of outcome (for security)
+      if (error) {
+        console.warn('[ForgotPassword] resetPasswordForEmail error:', error.message);
+      }
+
       setEmailSent(true);
-      
-      // Check if email was actually sent 
-      if (data.emailSent === false) {
-        // Email service failed, but we still have token for testing in dev mode
-        console.log("[ForgotPassword] Email service failed but continuing with token-based flow");
-        toast({
-          title: "Email Delivery Issue",
-          description: "There was an issue delivering the email, but we'll provide you a direct link",
-          variant: "default",
-        });
-      } else {
-        // Regular success message when email was sent successfully
-        toast({
-          title: "Reset Email Sent",
-          description: "Check your inbox for instructions to reset your password",
-        });
-      }
-      
-      // In development, show token and direct link
-      if (data.token) {
-        console.log("[ForgotPassword] Reset token for testing:", data.token);
-        
-        // Navigate to reset password page with token
-        const resetUrl = `/reset-password?token=${data.token}`;
-        
-        // Show info message with link after a short delay
-        setTimeout(() => {
-          toast({
-            title: "Reset Link Available",
-            description: "Click the button below to reset your password",
-            action: (
-              <Button 
-                variant="outline" 
-                onClick={() => window.open(resetUrl, '_blank', 'noopener,noreferrer')}
-                className="mt-2"
-              >
-                Open Reset Page
-              </Button>
-            ),
-            duration: 10000,
-          });
-        }, 1000);
-      }
-      
+      toast({
+        title: "Reset Email Sent",
+        description: "If an account exists for that email, you'll get a link to reset your password.",
+      });
+
       // Close the dialog after a delay
       setTimeout(() => {
         setIsOpen(false);

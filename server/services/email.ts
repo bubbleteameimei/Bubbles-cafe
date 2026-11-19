@@ -5,7 +5,7 @@
  */
 
 import logger from '../utils/logger';
-import { createGmailTransporter } from './gmail';
+import { createGmailTransporter, getGmailUser } from './gmail';
 import * as sendgrid from './sendgrid';
 import * as mailersend from './mailersend';
 import { EmailMessage, EmailResult } from './email-types';
@@ -23,7 +23,7 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
   try {
     const transporter = createGmailTransporter();
     const result = await transporter.sendMail({
-      from: message.from || process.env.GMAIL_USER || 'noreply@bubblescafe.com',
+      from: message.from || getGmailUser() || 'noreply@bubblescafe.com',
       to: message.to,
       subject: message.subject,
       text: message.text,

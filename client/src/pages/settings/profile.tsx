@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase, initSupabase } from '@/lib/supabase';
 import { apiJson } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -177,10 +178,16 @@ export default function ProfileSettingsPage() {
       const newPwd = data.newPassword?.trim();
       const currentPwd = data.currentPassword?.trim();
       if (newPwd && currentPwd) {
-        await apiJson<any>('POST', '/api/auth/change-password', {
-          currentPassword: currentPwd,
-          newPassword: newPwd,
-        });
+        // Passwords are managed by Supabase Auth. Re-verify the current password
+        // first so a hijacked session can't silently change it.
+        await initSupabase();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const email = sessionData?.session?.user?.email;
+        if (!email) throw new Error('Please sign in again to change your password.');
+        const { error: verifyError } = await supabase.auth.signInWithPassword({ email, password: currentPwd });
+        if (verifyError) throw new Error('Your current password is incorrect.');
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPwd });
+        if (updateError) throw new Error(updateError.message || 'Failed to change password.');
       }
 
       // Refresh auth state to reflect changes

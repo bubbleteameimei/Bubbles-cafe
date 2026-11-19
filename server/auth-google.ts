@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { db, pool } from './db';
@@ -7,24 +7,23 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { createSupabaseServiceRoleClient } from './utils/supabase';
 
-// JWT secrets — warn but don't crash if missing (Supabase auth is primary)
-const JWT_SECRET = (() => {
-  const secret = process.env.JWT_SECRET || '';
-  if (!secret || secret.length < 32) {
-    console.warn('WARNING: JWT_SECRET is weak or missing. Using development fallback.');
-    return 'dev-jwt-secret-change-in-production-32-chars-min-key';
-  }
-  return secret;
-})();
+// JWT secrets — required in production. In development a fallback is used so
+// the server can boot locally, but a known fallback in production would let
+// anyone forge admin tokens.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const JWT_REFRESH_SECRET = (() => {
-  const secret = process.env.JWT_REFRESH_SECRET || '';
-  if (!secret || secret.length < 32) {
-    console.warn('WARNING: JWT_REFRESH_SECRET is weak or missing. Using development fallback.');
-    return 'dev-jwt-refresh-secret-change-in-production-key';
+function requireSecret(name: string, devFallback: string): string {
+  const secret = process.env[name] || '';
+  if (secret.length >= 32) return secret;
+  if (IS_PRODUCTION) {
+    throw new Error(`${name} must be set to a random string of at least 32 characters in production (got ${secret.length}).`);
   }
-  return secret;
-})();
+  console.warn(`WARNING: ${name} is weak or missing. Using development fallback (never do this in production).`);
+  return devFallback;
+}
+
+const JWT_SECRET = requireSecret('JWT_SECRET', 'dev-jwt-secret-change-in-production-32-chars-min-key');
+const JWT_REFRESH_SECRET = requireSecret('JWT_REFRESH_SECRET', 'dev-jwt-refresh-secret-change-in-production-key');
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
@@ -47,6 +46,7 @@ export interface AuthUser {
   isAdmin: boolean;
   metadata?: any;
   createdAt: Date;
+  password_hash?: string;
 }
 
 export function generateAccessToken(user: AuthUser): string {
@@ -93,9 +93,9 @@ export async function getUser(emailOrId: string | number): Promise<AuthUser | nu
 }
 
 /**
- * Find an existing Neon user by email, or create one from a Supabase user profile.
+ * Find the app user (users table) by email, or create one from a Supabase Auth user.
  */
-export async function findOrCreateNeonUser(email: string, supabaseUser?: any): Promise<AuthUser | null> {
+export async function findOrCreateAppUser(email: string, supabaseUser?: any): Promise<AuthUser | null> {
   try {
     const normalizedEmail = email.toLowerCase().trim();
     let user = await getUser(normalizedEmail);
@@ -127,7 +127,7 @@ export async function findOrCreateNeonUser(email: string, supabaseUser?: any): P
 
     return newUser[0] || null;
   } catch (error) {
-    console.error('Error finding/creating Neon user:', error);
+    console.error('Error finding/creating app user:', error);
     return null;
   }
 }
@@ -151,13 +151,13 @@ async function verifySupabaseToken(token: string): Promise<TokenPayload | null> 
     const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !supabaseUser?.email) return null;
 
-    const neonUser = await findOrCreateNeonUser(supabaseUser.email, supabaseUser);
-    if (!neonUser) return null;
+    const appUser = await findOrCreateAppUser(supabaseUser.email, supabaseUser);
+    if (!appUser) return null;
 
     const payload: TokenPayload = {
-      userId: neonUser.id,
-      email: neonUser.email,
-      isAdmin: neonUser.isAdmin,
+      userId: appUser.id,
+      email: appUser.email,
+      isAdmin: appUser.isAdmin,
     };
 
     // Cache for 5 minutes
@@ -315,7 +315,7 @@ export async function handleEmailLogin(req: Request, res: Response) {
     const user = await getUser(email);
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
-    if (user.password_hash.startsWith('supabase_auth_')) {
+    if (!user.password_hash || user.password_hash.startsWith('supabase_auth_')) {
       return res.status(401).json({ error: 'This account uses Supabase sign-in. Please use the sign-in form.' });
     }
 
@@ -407,4 +407,37 @@ export async function handleLogout(req: Request, res: Response) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
   }
+}
+
+
+/**
+ * Middleware: require an authenticated admin.
+ * Trusts the signed isAdmin claim; otherwise re-checks the database so a user
+ * promoted after their token was issued still gets in.
+ */
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  verifyAuthToken(req, res, () => {
+    const user = (req as any).user as TokenPayload | undefined;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    if (user.isAdmin) return next();
+    db.select().from(users).where(eq(users.id, user.userId)).limit(1)
+      .then(([u]: Array<{ isAdmin: boolean | null }>) => {
+        if (!u?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+        return next();
+      })
+      .catch(() => res.status(500).json({ error: 'Auth check failed' }));
+    return undefined;
+  });
+}
+
+/**
+ * Resolve the signed-in user if a valid bearer token is present, without
+ * rejecting the request. For endpoints that work anonymously but attach the
+ * user when known (feedback, auth status).
+ */
+export async function getOptionalUser(req: Request): Promise<TokenPayload | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  return verifyAccessToken(token) || (await verifySupabaseToken(token).catch(() => null));
 }

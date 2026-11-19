@@ -50,15 +50,14 @@ function sanitizeDatabaseUrl(url?: string): string | undefined {
   const [base, query = ''] = s.split('?');
   const params = new URLSearchParams(query);
   params.set('sslmode', params.get('sslmode') || 'require');
-  // Note: Neon uses channel_binding=require; it's safe with node-postgres
-  // Don't remove it as it's part of the Neon connection string
   s = base + '?' + params.toString();
 
   return s;
 }
 
 // Resolve database URL from environment with sanitization
-// Use Neon PostgreSQL via DATABASE_URL (primary), with fallback to alternative pooler URLs
+// Supabase Postgres via DATABASE_URL. On Render use the Session pooler URL
+// (aws-*-<region>.pooler.supabase.com:5432) — the direct db.<ref>.supabase.co host is IPv6-only.
 const DATABASE_URL = sanitizeDatabaseUrl(
   process.env.DATABASE_URL ||
   process.env.DB_POOLER_URL

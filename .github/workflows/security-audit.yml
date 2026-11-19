@@ -42,17 +42,6 @@ jobs:
       - name: Attempt automatic fixes
         run: npm audit fix || true
 
-      - name: Commit changes if any
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add package.json package-lock.json
-            git commit -m "chore: security audit: targeted bumps and lockfile fixes"
-          else
-            echo "No changes to commit"
-          fi
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         continue-on-error: true
@@ -60,5 +49,9 @@ jobs:
           title: "chore: security audit: targeted bumps and lockfile fixes"
           body: "Automated security maintenance: overrides for known advisories and dev tool bumps. Please review any changes."
           branch: "chore/security-audit-bumps"
+          # Only these files belong in the PR; anything else npm touched is ignored.
+          add-paths: |
+            package.json
+            package-lock.json
           commit-message: "chore: security audit: targeted bumps and lockfile fixes"
           labels: security, dependencies

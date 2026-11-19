@@ -121,11 +121,20 @@ async function lazyInitFromServer(): Promise<boolean> {
  * Initialize Supabase client if not already initialized.
  * Returns true if client is ready.
  */
+let lazyInitPromise: Promise<boolean> | null = null;
+
 export async function initSupabase(): Promise<boolean> {
   if (initialized && client) return true;
   if (eagerInitFromEnv()) return true;
-  const ok = await lazyInitFromServer();
-  return ok;
+  // Share one in-flight /api/config/public request between concurrent callers;
+  // clear it on failure so a later call can retry (e.g. API was cold-starting).
+  if (!lazyInitPromise) {
+    lazyInitPromise = lazyInitFromServer().then((ok) => {
+      if (!ok) lazyInitPromise = null;
+      return ok;
+    });
+  }
+  return lazyInitPromise;
 }
 
 // Export a facade that defers to client when available, otherwise stub
