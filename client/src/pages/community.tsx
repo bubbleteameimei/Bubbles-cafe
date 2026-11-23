@@ -206,14 +206,15 @@ export default function CommunityPage() {
               />
             </form>
             
-            <div className="flex gap-3">
+            {/* flex-wrap: on phones the selects + view buttons didn't fit and ran off-screen */}
+            <div className="flex flex-wrap items-center gap-3">
               {/* Using the simplified CategoryFilters component for search */}
               <CategoryFilters 
                 value={category} 
                 onChange={setCategory} 
               />
               
-              <div className="w-full md:w-[180px]">
+              <div className="flex-1 min-w-[150px] md:flex-none md:w-[180px]">
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger>
                     <div className="flex items-center">

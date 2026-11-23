@@ -54,7 +54,7 @@ function collectClientRoutes() {
   const patterns = [
     /getApiPath\(\s*["'`](\/api\/[^"'`]+)["'`]\s*\)/g,
     /apiRequest(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
-    /(?:fetch|getJson)(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
+    /(?:fetch|getJson|fetchWithFallback)(?:<[^>]*>)?\(\s*["'`](\/api\/[^"'`]+)["'`]/g,
     // apiJson('POST', '/api/...') and apiRequest('PATCH', '/api/...') (method-first helpers)
     /(?:apiJson|apiRequest)(?:<[^>]*>)?\(\s*["'`][A-Z]+["'`]\s*,\s*["'`](\/api\/[^"'`]+)["'`]/g,
   ];

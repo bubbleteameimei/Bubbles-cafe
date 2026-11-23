@@ -223,11 +223,12 @@ body:has([data-reader-page]) {
       -webkit-touch-callout: none !important;
       -webkit-user-select: none !important;
       user-select: none !important;
-      pointer-events: auto !important;
       min-height: 44px !important;
       min-width: 44px !important;
-      position: relative !important;
-      z-index: 1 !important;
+      /* Deliberately NOT forcing position / z-index / pointer-events here: doing so on
+         every button broke absolutely-positioned and floating buttons on phones (password
+         eye icon, dialog close buttons, in-input icons, back-to-top) and made buttons inside
+         click-through overlays capture taps. */
     }
 
     /* Sidebar menu buttons should remain compact even on touch devices */

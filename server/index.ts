@@ -28,6 +28,7 @@ import { registerUserSettingsRoutes } from './routes/user-settings';
 import { registerProfileRoutes } from './routes/profile';
 import { registerAdminRoutes, registerAdminExtraRoutes } from './routes/admin';
 import { registerReaderRoutes } from './routes/reader';
+import { registerReactionsRoutes } from './routes/reactions';
 import { createSupabaseServiceRoleClient } from './utils/supabase';
 import crypto from 'crypto';
 
@@ -222,6 +223,8 @@ app.get('/api/auth/me', verifyAuthToken, async (req: Request, res: Response) => 
 // ============================================================================
 
 // Posts (includes community endpoint)
+// Reactions first: /api/posts/reactions-batch must not hit GET /api/posts/:id
+app.use('/api/posts', registerReactionsRoutes());
 app.use('/api/posts', registerPostsRoutes());
 
 // Post interactions (likes/dislikes)

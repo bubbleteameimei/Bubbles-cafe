@@ -22,7 +22,9 @@ const AppNavbar: React.FC = () => {
       className="navbar-root fixed top-0 left-0 right-0 z-[100] w-full"
       style={{ width: "100%", margin: 0, padding: 0 }}
     >
-      <div className="bg-transparent">
+      {/* Opaque-ish backdrop: the bar is fixed, so with a transparent background page
+          content (hero title, story text) showed through behind the menu links. */}
+      <div className="bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 border-b border-border/60">
         <Navigation />
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { Loader2, BookOpen, SlidersHorizontal, ChevronDown, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ interface SearchResult {
 
 export default function SearchResultsPage() {
   const [location] = useLocation();
+  // wouter's location is the path only; the query string comes from useSearch().
+  const search = useSearch();
   const { toast } = useToast();
 
   // Query and results
@@ -360,13 +362,12 @@ export default function SearchResultsPage() {
 
   // Extract search query from URL
   useEffect(() => {
-    const params = new URLSearchParams(location.split("?")[1]);
-    const query = params.get("q");
+    const query = new URLSearchParams(search).get("q");
     if (query) {
       setSearchQuery(query);
       performSearch(query);
     }
-  }, [location, performSearch]);
+  }, [search, performSearch]);
 
   // Re-run search when filters change
   useEffect(() => {

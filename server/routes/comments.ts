@@ -16,6 +16,7 @@
  * "anon:<id>" so they can edit/delete them later (same scheme the Worker used).
  */
 import crypto from 'crypto';
+import { getAnonId, issueAnonId } from '../utils/anon-id';
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
@@ -23,58 +24,6 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { commentVotes, comments, posts, reportedContent } from '@shared/schema';
 import { getOptionalUser, requireAdmin, type TokenPayload } from '../auth-google';
-
-const COOKIE_NAME = 'anon_comment_id';
-const COOKIE_MAX_AGE_S = 365 * 24 * 60 * 60;
-
-function cookieSecret(): string {
-  return (
-    process.env.COMMENT_COOKIE_SECRET ||
-    process.env.CSRF_SECRET ||
-    process.env.JWT_SECRET ||
-    'dev-only-comment-cookie-secret'
-  );
-}
-
-function sign(id: string): string {
-  const mac = crypto.createHmac('sha256', cookieSecret()).update(id).digest('base64url');
-  return `${id}.${mac}`;
-}
-
-function verify(value: string | undefined): string | null {
-  if (!value) return null;
-  const dot = value.lastIndexOf('.');
-  if (dot <= 0) return null;
-  const id = value.slice(0, dot);
-  const expected = sign(id);
-  const a = Buffer.from(value);
-  const b = Buffer.from(expected);
-  return a.length === b.length && crypto.timingSafeEqual(a, b) ? id : null;
-}
-
-function readCookie(req: Request, name: string): string | undefined {
-  const header = req.headers.cookie;
-  if (!header) return undefined;
-  for (const part of header.split(';')) {
-    const [k, ...v] = part.trim().split('=');
-    if (k === name) return decodeURIComponent(v.join('='));
-  }
-  return undefined;
-}
-
-function setAnonCookie(res: Response, id: string) {
-  const prod = process.env.NODE_ENV === 'production';
-  // SameSite=None so Vercel preview domains (cross-site) also work; requires Secure.
-  const attrs = [
-    `${COOKIE_NAME}=${encodeURIComponent(sign(id))}`,
-    'Path=/',
-    `Max-Age=${COOKIE_MAX_AGE_S}`,
-    'HttpOnly',
-    prod ? 'SameSite=None' : 'SameSite=Lax',
-    prod ? 'Secure' : '',
-  ].filter(Boolean);
-  res.append('Set-Cookie', attrs.join('; '));
-}
 
 interface Caller {
   user: TokenPayload | null;
@@ -85,7 +34,7 @@ interface Caller {
 
 async function identify(req: Request): Promise<Caller> {
   const user = await getOptionalUser(req).catch(() => null);
-  const anonId = verify(readCookie(req, COOKIE_NAME));
+  const anonId = getAnonId(req);
   return { user, anonId, key: user ? String(user.userId) : anonId ? `anon:${anonId}` : null };
 }
 
@@ -218,8 +167,7 @@ export function registerCommentsRoutes() {
       const caller = await identify(req);
       let anonId = caller.anonId;
       if (!caller.user && !anonId) {
-        anonId = crypto.randomUUID();
-        setAnonCookie(res, anonId);
+        anonId = issueAnonId(res);
       }
       const ownerKey = caller.user ? String(caller.user.userId) : `anon:${anonId}`;
 
@@ -348,9 +296,7 @@ export function registerCommentsRoutes() {
       const caller = await identify(req);
       let voterKey = caller.key;
       if (!voterKey) {
-        const anonId = crypto.randomUUID();
-        setAnonCookie(res, anonId);
-        voterKey = `anon:${anonId}`;
+        voterKey = `anon:${issueAnonId(res)}`;
       }
 
       const [row] = await db.select({ id: comments.id }).from(comments).where(eq(comments.id, id)).limit(1);
