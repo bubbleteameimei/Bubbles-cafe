@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { getApiPath } from './asset-path';
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
-import { supabase, initSupabase } from './supabase';
+import { supabase, initSupabase, mayHaveSupabaseSession } from './supabase';
 
 // Enhanced API error with better type checking and error categorization
 export class APIError extends Error {
@@ -44,6 +44,7 @@ export class APIError extends Error {
 // Attach Supabase access token as Authorization header when available
 async function attachAuthHeader(options: RequestInit): Promise<RequestInit> {
   try {
+    if (!mayHaveSupabaseSession()) return options;
     const ready = await initSupabase();
     if (!ready) return options;
 

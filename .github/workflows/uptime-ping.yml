@@ -29,6 +29,10 @@ jobs:
             "https://bubblescafe.space/curated"
           )
 
+          # Wake the API first: a sleeping Render free instance needs 30-60s to boot,
+          # so give this request long enough to finish instead of timing out at 8s.
+          curl -fsS -m 90 -A "uptime-ping/gh-actions" "https://api.bubblescafe.space/health" >/dev/null || true
+
           # Try to fetch the latest story slug from the API
           latest_slug="$(curl -fsSL -m 8 -H "Cache-Control: no-cache" "https://api.bubblescafe.space/api/posts?limit=1" | jq -r '.posts[0].slug // empty')"
           if [ -n "$latest_slug" ]; then

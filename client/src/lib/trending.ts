@@ -42,34 +42,7 @@ export async function computeTrendingScores(
   reactionTotals: ReactionTotalsLite,
   windowDays: number = 14
 ): Promise<Record<number, number>> {
-  try {
-    if (typeof window === "undefined" || typeof Worker === "undefined") {
-      // SSR or no Worker support
-      return inlineComputeTrendingScores(posts, reactionTotals, windowDays);
-    }
-    const worker = new Worker(new URL("../workers/trending.worker.ts", import.meta.url), {
-      type: "module",
-    });
-    return await new Promise<Record<number, number>>((resolve) => {
-      const timer = setTimeout(() => {
-        try { worker.terminate(); } catch {}
-        resolve(inlineComputeTrendingScores(posts, reactionTotals, windowDays));
-      }, 1500); // safety timeout
-
-      worker.onmessage = (e: MessageEvent) => {
-        clearTimeout(timer);
-        try { worker.terminate(); } catch {}
-        const scores = (e.data && e.data.scores) || {};
-        resolve(scores);
-      };
-      worker.onerror = () => {
-        clearTimeout(timer);
-        try { worker.terminate(); } catch {}
-        resolve(inlineComputeTrendingScores(posts, reactionTotals, windowDays));
-      };
-      worker.postMessage({ posts, reactionTotals, windowDays });
-    });
-  } catch {
-    return inlineComputeTrendingScores(posts, reactionTotals, windowDays);
-  }
+  // Scoring a few dozen stories takes microseconds; spawning a fresh Web Worker for it
+  // (as this used to, on every reaction update) cost far more than the work itself.
+  return inlineComputeTrendingScores(posts, reactionTotals, windowDays);
 }

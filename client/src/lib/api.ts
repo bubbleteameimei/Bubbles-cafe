@@ -8,7 +8,7 @@
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired, refreshCsrfToken } from './csrf-token';
 import { formatError, notifyError, ErrorCategory, ErrorSeverity } from './error-handler';
 import { getApiBaseUrl } from './asset-path';
-import { supabase, initSupabase } from './supabase';
+import { supabase, initSupabase, mayHaveSupabaseSession } from './supabase';
 
 // Compute the API base dynamically with preview-awareness and env override
 function resolveApiBase(): string {
@@ -18,6 +18,7 @@ function resolveApiBase(): string {
 // Attach Supabase access token as Authorization header when available
 async function attachAuthHeader(options: RequestInit): Promise<RequestInit> {
   try {
+    if (!mayHaveSupabaseSession()) return options;
     const ready = await initSupabase();
     if (!ready) return options;
 

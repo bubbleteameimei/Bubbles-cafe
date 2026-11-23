@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase, initSupabase } from '@/lib/supabase';
+import { supabase, initSupabase, mayHaveSupabaseSession } from '@/lib/supabase';
 
 interface User {
   id: number;
@@ -78,6 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
+      // Signed-out visitors have no stored session: skip loading supabase-js entirely.
+      if (!mayHaveSupabaseSession()) {
+        setUser(null);
+        return;
+      }
       const ready = await initSupabase();
       if (!ready) {
         console.warn('[Auth] Supabase not configured; skipping auth check');

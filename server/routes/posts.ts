@@ -7,6 +7,8 @@ import { verifyAuthToken } from '../auth-google';
 // Admin "unpublish"/"hide" set metadata.status; keep those out of public listings.
 const isPubliclyVisible = sql`coalesce(${posts.metadata}->>'status', 'publish') not in ('draft', 'hidden', 'pending')`;
 
+const PUBLIC_LIST_CACHE = 'public, max-age=30, stale-while-revalidate=300';
+
 export function registerPostsRoutes() {
   const router = Router();
 
@@ -34,6 +36,9 @@ export function registerPostsRoutes() {
       const rows = await (query as any).limit(limit + 1).offset(offset);
       const hasMore = rows.length > limit;
       const allPosts = hasMore ? rows.slice(0, limit) : rows;
+      // Public catalogue: let browsers reuse it briefly instead of refetching on every
+      // navigation. New stories still show up within a minute.
+      res.set('Cache-Control', PUBLIC_LIST_CACHE);
       res.json({ posts: allPosts, total: allPosts.length, page: page || 1, hasMore });
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -110,6 +115,7 @@ export function registerPostsRoutes() {
         .limit(1);
 
       if (!post.length) return res.status(404).json({ error: 'Post not found' });
+      res.set('Cache-Control', PUBLIC_LIST_CACHE);
       res.json(post[0]);
     } catch (error) {
       console.error('Error fetching post:', error);

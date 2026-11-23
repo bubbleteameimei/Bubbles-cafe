@@ -6,7 +6,7 @@
  * CSRF headers are only added when VITE_ENABLE_CSRF=true (legacy Express mock-server).
  */
 import { getApiBaseUrl } from './asset-path';
-import { supabase, initSupabase } from './supabase';
+import { supabase, initSupabase, mayHaveSupabaseSession } from './supabase';
 import { applyCSRFToken, fetchCsrfTokenIfNeeded, isCsrfRequired } from './csrf-token';
 
 const originalFetch = window.fetch.bind(window);
@@ -43,7 +43,7 @@ async function withAuthHeader(init: RequestInit): Promise<RequestInit> {
   const headers = new Headers(init.headers);
   if (headers.has('Authorization')) return init;
   try {
-    if (!(await initSupabase())) return init;
+    if (!mayHaveSupabaseSession() || !(await initSupabase())) return init;
     const { data } = await supabase.auth.getSession();
     const token = data?.session?.access_token;
     if (!token) return init;
