@@ -27,7 +27,7 @@ interface CategoryFiltersProps {
 
 export function CategoryFilters({ value, onChange, className = "" }: CategoryFiltersProps) {
   return (
-    <div className={`w-full md:w-[180px] ${className}`}>
+    <div className={`flex-1 min-w-[150px] md:flex-none md:w-[180px] ${className}`}>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
           <div className="flex items-center">

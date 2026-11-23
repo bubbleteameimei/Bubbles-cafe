@@ -36,8 +36,10 @@ const useReaderUIToggle = () => {
         setShowTooltip(false);
       } else {
         // Auto-hide tooltip after 5 seconds even if not clicked (reduced from 10s)
+        // Count an auto-hide as "seen" too; otherwise the hint reappeared on every story.
         const tooltipTimer = setTimeout(() => {
           setShowTooltip(false);
+          try { localStorage.setItem('reader_tooltip_seen', 'true'); } catch {}
         }, 5000);
         
         return () => clearTimeout(tooltipTimer);

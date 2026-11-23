@@ -393,8 +393,15 @@ export default function StoriesIndexContent() {
     return [] as Post[];
   }, [hasPaginatedPosts, data]);
 
-  const sortedPosts = [...allPosts].sort(
-    (a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  // Memoized: ~10 effects/memos depend on sortedPosts. Rebuilding it on every render
+  // re-ran them all each render, and the search-suggestion effect's setState([]) then
+  // triggered another render -> infinite update loop that froze the Stories page.
+  const sortedPosts = useMemo(
+    () =>
+      [...allPosts].sort(
+        (a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [allPosts],
   );
 
   // Keep a ref of latest sortedPosts for worker mapping
@@ -445,7 +452,7 @@ export default function StoriesIndexContent() {
     const w = searchWorkerRef.current;
     if (!w || q.length < 3) {
       setClosestTitleMatchW(null);
-      setSearchSuggestionsW([]);
+      setSearchSuggestionsW((prev) => (prev.length === 0 ? prev : []));
       return;
     }
     try {
@@ -458,7 +465,7 @@ export default function StoriesIndexContent() {
       });
     } catch {
       setClosestTitleMatchW(null);
-      setSearchSuggestionsW([]);
+      setSearchSuggestionsW((prev) => (prev.length === 0 ? prev : []));
     }
   }, [deferredSearch, sortedPosts]);
 
@@ -987,8 +994,21 @@ export default function StoriesIndexContent() {
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as import('@/api/reactions').ReactionTotals;
       if (!detail || typeof detail.postId !== 'number') return;
-      setReactionTotals((prev) => ({ ...prev, [detail.postId]: detail }));
       fetched.add(detail.postId);
+      setReactionTotals((prev) => {
+        const cur = prev[detail.postId];
+        // Same counts -> keep the existing object so cards don't re-render and re-sync.
+        if (
+          cur &&
+          cur.likesCount === detail.likesCount &&
+          cur.dislikesCount === detail.dislikesCount &&
+          cur.baselineLikes === detail.baselineLikes &&
+          cur.baselineDislikes === detail.baselineDislikes
+        ) {
+          return prev;
+        }
+        return { ...prev, [detail.postId]: detail };
+      });
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
 

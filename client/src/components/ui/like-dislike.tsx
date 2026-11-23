@@ -170,6 +170,20 @@ export function LikeDislike({
   const reactionRef = useRef<ReactionState>(initialReaction);
   const statsRef = useRef<Stats | null>(stats);
 
+  // Keep the latest onUpdate in a ref: parents often pass an inline function, and
+  // depending on it directly re-ran the effects (and refetched) on every render.
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  // Effects below key off the totals' values, not the object identity, so a parent
+  // handing down an equal-but-new object doesn't retrigger them.
+  const initialSig = initialTotals
+    ? [initialTotals.likesCount, initialTotals.dislikesCount, initialTotals.baselineLikes, initialTotals.baselineDislikes].join('|')
+    : '';
+  const hasInitialTotals = !!initialTotals;
+
   useEffect(() => {
     reactionRef.current = reaction;
   }, [reaction]);
@@ -179,12 +193,14 @@ export function LikeDislike({
   }, [stats]);
 
   // Keep stats in sync if initialTotals prop changes (e.g. list prefetch / SSE).
+  // Don't re-broadcast 'reaction:updated' here: the totals came from the parent, and
+  // echoing them back made parent and child update each other in an endless loop.
   useEffect(() => {
     if (!initialTotals) return;
     const next = normalizeTotals(postId, initialTotals, true);
     setStats(next);
     setIsLoadingTotals(false);
-    onUpdate?.(next.totals.likes, next.totals.dislikes);
+    onUpdateRef.current?.(next.totals.likes, next.totals.dislikes);
     writeLocalReaction(storageKey, reactionRef.current, {
       postId: next.postId,
       baselineLikes: next.baselineLikes,
@@ -193,23 +209,8 @@ export function LikeDislike({
       dislikesCount: next.dislikesCount,
       totals: next.totals,
     });
-    try {
-      window.dispatchEvent(
-        new CustomEvent('reaction:updated', {
-          detail: {
-            postId: next.postId,
-            baselineLikes: next.baselineLikes,
-            baselineDislikes: next.baselineDislikes,
-            likesCount: next.likesCount,
-            dislikesCount: next.dislikesCount,
-            totals: { ...next.totals },
-          } satisfies ReactionTotals,
-        }),
-      );
-    } catch {
-      // ignore event errors
-    }
-  }, [initialTotals, onUpdate, postId, storageKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSig, postId, storageKey]);
 
   // Initial load from server when we don't have initialTotals.
   useEffect(() => {
@@ -228,7 +229,7 @@ export function LikeDislike({
         const next = normalizeTotals(postId, data, true);
         setStats(next);
         setIsLoadingTotals(false);
-        onUpdate?.(next.totals.likes, next.totals.dislikes);
+        onUpdateRef.current?.(next.totals.likes, next.totals.dislikes);
         writeLocalReaction(storageKey, reactionRef.current, {
           postId: next.postId,
           baselineLikes: next.baselineLikes,
@@ -281,7 +282,8 @@ export function LikeDislike({
     return () => {
       cancelled = true;
     };
-  }, [postId, storageKey, onUpdate, initialTotals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId, storageKey, hasInitialTotals]);
 
   // Cleanup timers on unmount
   useEffect(() => {

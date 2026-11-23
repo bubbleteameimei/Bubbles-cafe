@@ -27,62 +27,8 @@ export function CookieConsent() {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const acceptBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Lock body scroll and handle focus only when banner is visible
-  useEffect(() => {
-    if (!showConsentBanner) return;
-    const prevOverflow = document.body.style.overflow;
-    const prevPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-    const id = requestAnimationFrame(() => {
-      try {
-        acceptBtnRef.current?.focus();
-      } catch {}
-    });
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.paddingRight = prevPaddingRight;
-      cancelAnimationFrame(id);
-    };
-  }, [showConsentBanner]);
-
-  // Basic focus trap within the overlay (active only when banner visible)
-  useEffect(() => {
-    if (!showConsentBanner) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-      const root = overlayRef.current;
-      if (!root) return;
-      const focusables = Array.from(
-        root.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
-        )
-      ).filter(el => !el.hasAttribute("disabled") && el.tabIndex !== -1);
-
-      if (focusables.length === 0) return;
-
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-
-      if (e.shiftKey) {
-        if (active === first || !root.contains(active)) {
-          last.focus();
-          e.preventDefault();
-        }
-      } else {
-        if (active === last) {
-          first.focus();
-          e.preventDefault();
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [showConsentBanner]);
+  // Non-blocking banner: no scroll lock, no focus trap, no focus stealing.
+  // Visitors can read the site first and answer whenever they like.
 
   // Accept all cookies
   const handleAccept = () => {
@@ -125,24 +71,24 @@ export function CookieConsent() {
 const overlay = (
     <motion.div
       ref={overlayRef}
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 16 }}
       transition={{
         duration: 0.25,
         ease: [0.4, 0, 0.2, 1]
       }}
-      className="fixed inset-0 z-[1300] bg-background/80 backdrop-blur-sm pointer-events-auto flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
+      className="fixed inset-x-0 bottom-0 z-[1300] pointer-events-none flex justify-center p-3 sm:p-4"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+      role="region"
       aria-labelledby="cookie-consent-title"
       aria-describedby="cookie-consent-description"
     >
       {!isPreferencesModalOpen && (
-        <div className="max-w-[340px] w-full mx-auto bg-background rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
-          <div className="flex justify-center relative">
+        <div className="pointer-events-auto max-w-[440px] w-full mx-auto bg-background/95 backdrop-blur-md rounded-xl shadow-2xl border border-border/60 p-3.5 sm:p-5 space-y-2.5 sm:space-y-3">
+          <div className="hidden sm:flex justify-center relative">
             <svg
-              className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"
+              className="w-[36px] h-[36px] transition-all duration-300 hover:rotate-12 hover:scale-110"
               viewBox="0 0 122.88 122.25"
               aria-hidden="true"
             >
@@ -161,8 +107,8 @@ const overlay = (
           </div>
 
           <div className="text-center space-y-2">
-            <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
-            <p id="cookie-consent-description" className="text-sm text-muted-foreground">
+            <h2 id="cookie-consent-title" className="text-base font-bold text-foreground">We use cookies</h2>
+            <p id="cookie-consent-description" className="text-xs sm:text-sm text-muted-foreground">
               This website uses cookies to personalize content, analyze traffic, and enhance your experience. Read our{" "}
               <Link
                 href="/privacy"
@@ -180,7 +126,7 @@ const overlay = (
                 Terms of Service
               </Link>.
             </p>
-            <div className="flex flex-col items-center gap-1">
+            <div className="hidden sm:flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground/50">
                 Accept: won't show for 6 months • Decline: won't show for 3 months
               </p>
@@ -194,7 +140,7 @@ const overlay = (
               ref={acceptBtnRef}
               onClick={handleAccept}
               className={cn(
-                "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
+                "px-5 py-1.5 sm:px-6 sm:py-2 rounded-full bg-primary text-primary-foreground font-medium",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 "transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               )}
@@ -205,7 +151,7 @@ const overlay = (
             <button
               onClick={handleDecline}
               className={cn(
-                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
+                "px-5 py-1.5 sm:px-6 sm:py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               )}
             >

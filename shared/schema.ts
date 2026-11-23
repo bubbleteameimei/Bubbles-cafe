@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, jsonb, decimal, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, index, unique, json, jsonb, decimal, doublePrecision, foreignKey, primaryKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -185,6 +185,18 @@ export const commentVotes = pgTable("comment_votes", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   userVoteUnique: unique().on(table.commentId, table.userId)
+}));
+
+// Story reactions: one row per (post, visitor). user_key is "user:<id>" or
+// "anon:<cookie id>". posts.likes_count / dislikes_count are recomputed from it.
+export const postReactions = pgTable("post_reactions", {
+  postId: bigint("post_id", { mode: "number" }).references(() => posts.id, { onDelete: "cascade" }).notNull(),
+  userKey: text("user_key").notNull(),
+  state: text("state").notNull(), // 'like' | 'dislike'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  pk: primaryKey({ columns: [table.postId, table.userKey] })
 }));
 
 // Reading Progress
