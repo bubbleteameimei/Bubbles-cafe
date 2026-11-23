@@ -87,6 +87,14 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'bubbles-cafe-api' });
 });
 
+// Liveness for platform health checks (Render's setting may point at any of these).
+// Never touches the DB, so a slow DB can't stop a deploy from going live.
+for (const path of ['/health', '/healthz', '/api/healthz']) {
+  app.get(path, (_req: Request, res: Response) => {
+    res.json({ status: 'ok', service: 'bubbles-cafe-api' });
+  });
+}
+
 app.get('/api/health', async (req: Request, res: Response) => {
   try {
     await (pool as any).query('SELECT 1 as health');
