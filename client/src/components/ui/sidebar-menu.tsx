@@ -537,7 +537,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
         {/* Interactive Experiences */}
-        <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroup className="mt-5 p-2 pt-1">
           <SidebarGroupLabel className="h-6 px-4 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
             INTERACTIVE EXPERIENCES
           </SidebarGroupLabel>

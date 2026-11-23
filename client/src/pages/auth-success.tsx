@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { supabase } from '@/lib/supabase';
+import { supabase, initSupabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
 
 /**
@@ -14,6 +14,7 @@ const AuthSuccessPage = () => {
   useEffect(() => {
     const finalize = async () => {
       try {
+        await initSupabase();
         const { data } = await supabase.auth.getSession();
         const access_token = data.session?.access_token;
         if (!access_token) {

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, initSupabase } from '@/lib/supabase';
 
 // Password validation schema
 const resetPasswordSchema = z.object({
@@ -36,6 +36,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const verify = async () => {
       try {
+        await initSupabase();
         const { data } = await supabase.auth.getSession();
         const hasSession = !!data.session?.access_token;
         setHasRecoverySession(hasSession);

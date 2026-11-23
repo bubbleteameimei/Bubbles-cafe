@@ -1,6 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient as SupabaseClientType } from '@supabase/supabase-js';
 
-type SupabaseClient = ReturnType<typeof createClient> | null;
+// supabase-js (~200 kB) is loaded on demand: most visitors only read stories and never
+// need it, so it is kept out of the main bundle.
+const loadCreateClient = () => import('@supabase/supabase-js').then((m) => m.createClient);
+
+type SupabaseClient = SupabaseClientType | null;
 
 let client: SupabaseClient = null;
 let initialized = false;
@@ -34,7 +38,7 @@ function isUsableAnonKey(key: string): boolean {
 }
 
 // Eager init using VITE_ or NEXT_PUBLIC_ env when present, else lazy via /api/config/public
-function eagerInitFromEnv(): boolean {
+async function eagerInitFromEnv(): Promise<boolean> {
   try {
     const envAny: any = (import.meta as any)?.env || {};
     const urlRaw =
@@ -58,7 +62,8 @@ function eagerInitFromEnv(): boolean {
           },
         });
       }
-      client = createClient(url, anonKey);
+      const createClient = await loadCreateClient();
+      if (!client) client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
@@ -101,7 +106,8 @@ async function lazyInitFromServer(): Promise<boolean> {
           hasAnonKey: !!anonKey,
         });
       }
-      client = createClient(url, anonKey);
+      const createClient = await loadCreateClient();
+      if (!client) client = createClient(url, anonKey);
       initialized = true;
       return true;
     }
@@ -125,7 +131,7 @@ let lazyInitPromise: Promise<boolean> | null = null;
 
 export async function initSupabase(): Promise<boolean> {
   if (initialized && client) return true;
-  if (eagerInitFromEnv()) return true;
+  if (await eagerInitFromEnv()) return true;
   // Share one in-flight /api/config/public request between concurrent callers;
   // clear it on failure so a later call can retry (e.g. API was cold-starting).
   if (!lazyInitPromise) {
@@ -148,3 +154,22 @@ export const supabase: any = new Proxy({ auth: createAuthStub() } as any, {
     return typeof value === 'function' ? value.bind(target) : value;
   },
 });
+
+/**
+ * True when this browser may hold a Supabase session: a stored auth token, or an
+ * OAuth / magic-link / recovery redirect in the URL. When false the visitor is
+ * signed out and supabase-js need not be loaded at all.
+ */
+export function mayHaveSupabaseSession(): boolean {
+  try {
+    const { hash, search } = window.location;
+    if (/access_token=|refresh_token=|[?&]code=|type=recovery/.test(hash + search)) return true;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || '';
+      if (/^sb-.+-auth-token/.test(key)) return true;
+    }
+    return false;
+  } catch {
+    return true; // storage unavailable: fall back to the full check
+  }
+}

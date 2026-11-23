@@ -50,7 +50,9 @@
   position: relative;
 }
 
-.group {
+/* Scoped: a bare .group selector collided with Tailwind's `group` class and added
+   20px under menu items, cards and buttons across the whole site. */
+.login-form .group {
   margin-bottom: 20px;
 }
 
@@ -121,7 +123,7 @@
   opacity: 0.9;
 }
 
-.hr {
+.login-form .hr {
   height: 2px;
   background: rgba(255, 255, 255, 0.1);
   margin: 20px 0;

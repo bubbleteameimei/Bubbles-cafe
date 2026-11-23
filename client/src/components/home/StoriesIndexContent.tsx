@@ -49,6 +49,10 @@ import {
   Bone,
   Hourglass,
 } from 'lucide-react';
+// The catalogue is small (tens of stories), so the index loads it in one request:
+// counts, sorting, filtering and search then cover every story, not just page one.
+const INDEX_PAGE_SIZE = 100;
+
 const LikeDislike = lazy(() =>
   import('@/components/ui/like-dislike').then((m) => ({ default: m.LikeDislike })),
 );
@@ -100,11 +104,7 @@ export default function StoriesIndexContent() {
   const cardsGridRef = React.useRef<HTMLDivElement | null>(null);
   const breakpointRef = React.useRef<'mobile' | 'tablet' | 'desktop' | null>(null);
   const fetchedReactionIdsRef = React.useRef<Set<number>>(new Set());
-  const REACTIONS_BATCH_CHUNK_SIZE = 60;
-  const FLUSH_DEBOUNCE_MS = 200;
-  const INITIAL_BATCH_MIN_SIZE = 24;
-  // Track whether we've prefetched totals for all posts to avoid repeated work
-  const preloadedAllRef = React.useRef<boolean>(false);
+  const REACTIONS_BATCH_CHUNK_SIZE = 200;
   // Deduplicate zero-results analytics by query
   const lastZeroResultsQueryRef = React.useRef<string>('');
   // Fuzzy search offload to worker
@@ -113,21 +113,9 @@ export default function StoriesIndexContent() {
   const searchWorkerRef = React.useRef<Worker | null>(null);
   const sortedPostsRef = React.useRef<Post[]>([]);
 
-  // Defer only reaction widgets; render the rest immediately to avoid layout shifts
+  // Reaction widgets render once the batched totals request has settled, so each card
+  // gets its counts from one shared request instead of fetching its own.
   const [readyReactions, setReadyReactions] = useState(false);
-  useEffect(() => {
-    const start = () => {
-      setReadyReactions(true);
-    };
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void, opts?: { timeout?: number }) => void)
-      | undefined;
-    if (typeof ric === 'function') {
-      ric(() => start(), { timeout: 1200 });
-    } else {
-      setTimeout(start, 700);
-    }
-  }, []);
 
   // Viewport-aware container height for virtualization and sticky header spacing
   const [containerHeight, setContainerHeight] = useState<number>(() => {
@@ -298,7 +286,7 @@ export default function StoriesIndexContent() {
   // Read cached first page from localStorage (shell-first rendering without skeletons)
   const cachedPage1 = useMemo(() => {
     try {
-      const raw = localStorage.getItem('cache:index:page1:v2');
+      const raw = localStorage.getItem('cache:index:page1:v3');
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && Array.isArray(data.posts)) {
@@ -330,14 +318,14 @@ export default function StoriesIndexContent() {
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       const result = await getJson<{ posts?: Post[]; hasMore?: boolean }>(
-        `/api/posts?page=${page}&limit=18&includeContent=false`,
+        `/api/posts?page=${page}&limit=${INDEX_PAGE_SIZE}&includeContent=false`,
       );
       const posts = Array.isArray(result.posts) ? result.posts : [];
       const serverHasMore = typeof result.hasMore === 'boolean' ? result.hasMore : null;
       return {
         posts,
         // Keep pagination alive while we keep receiving full pages.
-        hasMore: serverHasMore === true || posts.length === 18,
+        hasMore: serverHasMore ?? posts.length === INDEX_PAGE_SIZE,
         page,
       };
     },
@@ -355,11 +343,11 @@ export default function StoriesIndexContent() {
       const first = (data as any)?.pages?.[0];
       if (first && Array.isArray(first.posts) && first.posts.length > 0) {
         const payload = {
-          posts: first.posts.slice(0, 18),
+          posts: first.posts.slice(0, INDEX_PAGE_SIZE),
           // Persist a conservative "may have more" flag so we don't lock pagination.
-          hasMore: Boolean(first.hasMore) || first.posts.length >= 18,
+          hasMore: Boolean(first.hasMore),
         };
-        localStorage.setItem('cache:index:page1:v2', JSON.stringify(payload));
+        localStorage.setItem('cache:index:page1:v3', JSON.stringify(payload));
       }
     } catch {}
   }, [data]);
@@ -820,181 +808,54 @@ export default function StoriesIndexContent() {
     Record<number, import('@/api/reactions').ReactionTotals>
   >({});
 
-  // Lazy-load reaction totals for visible posts using IntersectionObserver + batched fetches.
-  // This avoids opening SSE streams from the index page while still keeping counts fresh enough.
+  // Fetch reaction totals for every listed story in one batched request (the API caps a
+  // batch at 200 ids; the catalogue is far smaller). Previously this used an
+  // IntersectionObserver, a page-wide MutationObserver and three preload paths.
   useEffect(() => {
-    if (!readyReactions) return;
-    let mounted = true;
     const fetched = fetchedReactionIdsRef.current;
-    let io: IntersectionObserver | null = null;
-    let pending: number[] = [];
-    let flushTimer: any = null;
-
-    // Preload a small initial batch near the top of the list to avoid empty counts above the fold
-    const preloadInitial = async () => {
-      try {
-        const initialBatchSize = Math.max(
-          INITIAL_BATCH_MIN_SIZE,
-          Math.min(sortedPosts.length, (visibleCount || 0) + (gridCols || 1) * 6),
-        );
-        const candidateIds = sortedPosts
-          .slice(0, initialBatchSize)
-          .map((p: Post) => Number(p.id))
-          .filter((n: number) => Number.isFinite(n));
-        const idsToFetch = candidateIds.filter((id: number) => !fetched.has(id));
-        if (idsToFetch.length > 0) {
-          const { fetchReactionsBatch } = await import('@/api/reactions');
-          const totals = await fetchReactionsBatch(idsToFetch);
-          if (!mounted) return;
-          const map: Record<number, import('@/api/reactions').ReactionTotals> = {};
-          for (const t of totals) {
-            map[t.postId] = t;
-            fetched.add(t.postId);
-          }
-          setReactionTotals((prev) => ({ ...prev, ...map }));
-        }
-      } catch {
-        // best-effort: reactions are non-critical for index UX
-      }
-    };
-
-    const flush = async () => {
-      try {
-        if (!mounted) return;
-        const unique = Array.from(new Set(pending));
-        pending = [];
-        const toFetch = unique.filter((id) => Number.isFinite(id) && !fetched.has(id));
-        if (toFetch.length > 0) {
-          const { fetchReactionsBatch } = await import('@/api/reactions');
-          const totals = await fetchReactionsBatch(toFetch.slice(0, REACTIONS_BATCH_CHUNK_SIZE));
-          if (!mounted) return;
-          const update: Record<number, import('@/api/reactions').ReactionTotals> = {};
-          for (const t of totals) {
-            update[t.postId] = t;
-            fetched.add(t.postId);
-          }
-          setReactionTotals((prev) => ({ ...prev, ...update }));
-        }
-      } catch {
-        // best-effort
-      }
-    };
-
-    const schedule = (id: number) => {
-      pending.push(id);
-      if (flushTimer) return;
-      flushTimer = setTimeout(() => {
-        flushTimer = null;
-        void flush();
-      }, FLUSH_DEBOUNCE_MS);
-    };
-
-    try {
-      io = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const el = entry.target as HTMLElement;
-            const idAttr = el.getAttribute('data-post-id');
-            const id = idAttr ? Number(idAttr) : NaN;
-            if (entry.isIntersecting && Number.isFinite(id)) {
-              schedule(id);
-              try {
-                io?.unobserve(el);
-              } catch {}
-            }
-          }
-        },
-        { root: null, rootMargin: '200px', threshold: 0.01 },
-      );
-      // Observe current cards
-      document
-        .querySelectorAll<HTMLElement>('.story-card-container[data-post-id]')
-        .forEach((n) => io?.observe(n));
-    } catch {
-      // no-op
+    const ids = sortedPosts
+      .map((p: Post) => Number(p.id))
+      .filter((n: number) => Number.isFinite(n) && n > 0 && !fetched.has(n));
+    if (ids.length === 0) {
+      if (sortedPosts.length > 0) setReadyReactions(true);
+      return;
     }
-
-    // Observe DOM mutations to re-observe dynamically added cards (virtualization/dynamic mounts)
-    let mo: MutationObserver | null = null;
-    try {
-      mo = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          m.addedNodes.forEach((node) => {
-            if (node instanceof HTMLElement) {
-              if (node.matches?.('.story-card-container[data-post-id]')) {
-                io?.observe(node);
-              }
-              node
-                .querySelectorAll?.('.story-card-container[data-post-id]')
-                .forEach((el) => io?.observe(el as HTMLElement));
-            }
-          });
-        }
-      });
-      mo.observe(document.body, { childList: true, subtree: true });
-    } catch {
-      // non-critical
-    }
-
-    // Start with a small initial preload of reaction totals
-    void preloadInitial();
-
-    // Then, in the background, preload totals for remaining posts to avoid zero displays
-    const preloadRemaining = async () => {
-      if (preloadedAllRef.current) return;
+    let mounted = true;
+    let done = false;
+    ids.forEach((id) => fetched.add(id));
+    (async () => {
       try {
-        const ids = sortedPosts
-          .map((p: Post) => Number(p.id))
-          .filter((n: number) => Number.isFinite(n))
-          .filter((id: number) => !fetched.has(id));
-        if (ids.length === 0) {
-          preloadedAllRef.current = true;
-          return;
-        }
         const { fetchReactionsBatch } = await import('@/api/reactions');
-        // Chunk into batches to avoid large payloads
         for (let i = 0; i < ids.length; i += REACTIONS_BATCH_CHUNK_SIZE) {
-          if (!mounted) return;
-          const chunk = ids.slice(i, i + REACTIONS_BATCH_CHUNK_SIZE);
-          const totals = await fetchReactionsBatch(chunk);
+          const totals = await fetchReactionsBatch(ids.slice(i, i + REACTIONS_BATCH_CHUNK_SIZE));
           if (!mounted) return;
           const update: Record<number, import('@/api/reactions').ReactionTotals> = {};
-          for (const t of totals) {
-            update[t.postId] = t;
-            fetched.add(t.postId);
-          }
+          for (const t of totals) update[t.postId] = t;
           setReactionTotals((prev) => ({ ...prev, ...update }));
         }
-        preloadedAllRef.current = true;
+        done = true;
       } catch {
-        // ignore background failures
+        // Non-critical: cards fall back to fetching their own totals.
+      } finally {
+        if (mounted) {
+          if (!done) ids.forEach((id) => fetched.delete(id));
+          setReadyReactions(true);
+        }
       }
+    })();
+    return () => {
+      mounted = false;
+      // Superseded before finishing: let the next run fetch these ids again.
+      if (!done) ids.forEach((id) => fetched.delete(id));
     };
+  }, [sortedPosts]);
 
-    const idle = (window as any).requestIdleCallback as
-      | undefined
-      | ((cb: () => void, opts?: { timeout?: number }) => void);
-    if (typeof idle === 'function') {
-      idle(
-        () => {
-          if (mounted)
-            setTimeout(() => {
-              void preloadRemaining();
-            }, 400);
-        },
-        { timeout: 2500 },
-      );
-    } else {
-      setTimeout(() => {
-        if (mounted) void preloadRemaining();
-      }, 1200);
-    }
-
-    // Listen for reaction updates from LikeDislike
+  // Keep the totals map in sync when a card's reaction changes.
+  useEffect(() => {
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail as import('@/api/reactions').ReactionTotals;
       if (!detail || typeof detail.postId !== 'number') return;
-      fetched.add(detail.postId);
+      fetchedReactionIdsRef.current.add(detail.postId);
       setReactionTotals((prev) => {
         const cur = prev[detail.postId];
         // Same counts -> keep the existing object so cards don't re-render and re-sync.
@@ -1011,19 +872,8 @@ export default function StoriesIndexContent() {
       });
     };
     window.addEventListener('reaction:updated', onUpdate as EventListener);
-
-    return () => {
-      mounted = false;
-      window.removeEventListener('reaction:updated', onUpdate as EventListener);
-      try {
-        mo?.disconnect();
-      } catch {}
-      try {
-        io?.disconnect();
-      } catch {}
-      if (flushTimer) clearTimeout(flushTimer);
-    };
-  }, [sortedPosts, visibleCount, gridCols, readyReactions]);
+    return () => window.removeEventListener('reaction:updated', onUpdate as EventListener);
+  }, []);
 
   // Compute trending scores off the main thread when possible
   useEffect(() => {
@@ -1187,27 +1037,6 @@ export default function StoriesIndexContent() {
   }, [deferredSearch, sortedPosts, searchSuggestionsW]);
 
   // Latest Stories list - always sorted newest->oldest; search does NOT change this list
-  const latestPosts = useMemo(() => {
-    let list = [...sortedPosts];
-    if (categoryFilter !== 'all') {
-      list = list.filter((p) => {
-        const md = (p.metadata || {}) as Record<string, any>;
-        const raw = String(md.themeCategory || '').trim();
-        if (raw) return raw.toLowerCase() === categoryFilter.toLowerCase();
-        try {
-          const derived = sharedDetermineThemeCategory(
-            String(p.title || ''),
-            String((p as any).content || (p as any).excerpt || ''),
-          );
-          return String(derived || '').toLowerCase() === categoryFilter.toLowerCase();
-        } catch {
-          return false;
-        }
-      });
-    }
-    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return list;
-  }, [sortedPosts, categoryFilter]);
 
   // Precompute popular posts (top 6) with trending score map when available
   const popularPosts = useMemo(() => {
@@ -1408,6 +1237,14 @@ export default function StoriesIndexContent() {
     return sortedByEngagement[0];
   }, [sortedPosts, sort, reactionTotals, deferredSearch, closestTitleMatch, trendingScores]);
 
+  // Story grid: honours the category filter, title search and sort menu (filteredPosts).
+  // It used to always list newest-first and ignore search and sort entirely. When not
+  // searching, the featured story is left out so it isn't shown twice in a row.
+  const latestPosts = useMemo(() => {
+    if (deferredSearch.trim() || !featuredStory) return filteredPosts;
+    return filteredPosts.filter((p) => p.id !== featuredStory.id);
+  }, [filteredPosts, featuredStory, deferredSearch]);
+
   // Persist last featured theme for diversity in subsequent sessions
   useEffect(() => {
     if (!featuredStory) return;
@@ -1486,8 +1323,8 @@ export default function StoriesIndexContent() {
       {/* Continue Reading ribbon (local progress) */}
       <ContinueReadingBanner />
       <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
-        {/* Sticky controls header (mobile-first) */}
-        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 py-2 sm:py-3 mt-8 sm:mt-12">
+        {/* Search (not sticky: the page wrapper clips overflow, so sticky never engaged and only pushed the bar over the featured card) */}
+        <div className="mt-2 sm:mt-4 mb-4">
           <div className="grid grid-cols-1 items-center gap-6">
             <div className="relative w-full">
               <Input
@@ -1500,7 +1337,7 @@ export default function StoriesIndexContent() {
                 ⏎
               </span>
             </div>
-            {/* Removed duplicate sort dropdown above featured story; keeping the one inside the featured box */}
+            {/* Sort menu lives in the story-list header, next to the count. */}
           </div>
         </div>
 
@@ -1512,29 +1349,11 @@ export default function StoriesIndexContent() {
               <div>
                 <Card className="overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
                   <CardContent className="group p-4 lg:p-6">
-                    <div className="max-w-3xl mx-auto">
+                    <div className="w-full">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
                           <Award className="h-4 w-4 text-primary" />
                           <h2 className="text-lg font-decorative">Featured Story</h2>
-                        </div>
-                        <div className="flex items-center">
-                          <Select
-                            value={sort}
-                            onValueChange={(value) =>
-                              setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
-                            }
-                          >
-                            <SelectTrigger className="w-28 h-7 text-[11px]" aria-label="Sort stories">
-                              <SelectValue placeholder="Sort" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="newest">Newest</SelectItem>
-                              <SelectItem value="oldest">Oldest</SelectItem>
-                              <SelectItem value="popular">Popular</SelectItem>
-                              <SelectItem value="shortest">Shortest</SelectItem>
-                            </SelectContent>
-                          </Select>
                         </div>
                       </div>
                       <div className="flex items-start justify-between gap-3">
@@ -1638,9 +1457,11 @@ export default function StoriesIndexContent() {
                                 <span className="flex items-center gap-1">
                                   <Heart className="h-3 w-3" /> {likes}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3" /> {views}
-                                </span>
+                                {views > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3" /> {views}
+                                  </span>
+                                )}
                               </>
                             );
                           })()}
@@ -1673,11 +1494,31 @@ export default function StoriesIndexContent() {
             </div>
           )}
 
-        <div className="mt-2 mb-3">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-decorative uppercase">LATEST STORIES</h1>
-            <div className="text-sm md:text-base text-muted-foreground">
-              {latestPosts.length} stories
+        <div className="mt-2 mb-4">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-decorative uppercase">
+              {sort === 'newest' ? 'Latest stories' : 'All stories'}
+            </h1>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {filteredPosts.length} {filteredPosts.length === 1 ? 'story' : 'stories'}
+              </span>
+              <Select
+                value={sort}
+                onValueChange={(value) =>
+                  setSort(value as 'newest' | 'oldest' | 'popular' | 'shortest')
+                }
+              >
+                <SelectTrigger className="w-32 h-9 text-sm" aria-label="Sort stories">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="popular">Popular</SelectItem>
+                  <SelectItem value="shortest">Shortest</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

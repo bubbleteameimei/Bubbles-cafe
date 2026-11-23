@@ -29,7 +29,8 @@ export default function Home() {
     const previousAttachment = body.style.backgroundAttachment;
     const previousColor = body.style.backgroundColor;
 
-    const src = "/IMG_5890.jpeg";
+    // 1200px WebP (~1/3 the bytes of the original 1587x2901 JPEG).
+    const src = "/IMG_5890.webp";
     const img = new Image();
     let cancelled = false;
 
@@ -39,7 +40,11 @@ export default function Home() {
       body.style.backgroundSize = "cover";
       body.style.backgroundPosition = "center top";
       body.style.backgroundRepeat = "no-repeat";
-      body.style.backgroundAttachment = "fixed";
+      // "fixed" makes phones repaint the whole page on every scroll frame (and iOS
+      // ignores it anyway), so only use it on desktop-class pointers.
+      body.style.backgroundAttachment = window.matchMedia("(pointer: fine)").matches
+        ? "fixed"
+        : "scroll";
       body.style.backgroundColor = "transparent";
     };
     img.onerror = () => {

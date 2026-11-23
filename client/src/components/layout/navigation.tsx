@@ -2,9 +2,9 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Search, Moon, Sun, User, Cloud, Leaf } from "lucide-react";
+import { Menu, Search, Moon, Sun, User, Cloud, Leaf, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -319,10 +319,8 @@ export default function Navigation() {
     } catch {}
   }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Idle prefetch auth-related routes
-  useEffect(() => {
-    prefetchAuthPages();
-  }, []);
+  // Auth pages are prefetched on hover/focus of the sign-in button only; loading them
+  // on every page view also pulled in auth.css for visitors who never sign in.
 
   // Reader route progress state (for in-header progress bar)
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -415,7 +413,7 @@ export default function Navigation() {
   return (
     <>
       <header
-        className={`w-full bg-transparent supports-[backdrop-filter]:bg-transparent backdrop-blur-md shadow-sm`}
+        className={`w-full bg-transparent shadow-sm`}
         style={{
           position: "relative",
           margin: 0,
@@ -436,7 +434,6 @@ export default function Navigation() {
                   size="icon"
                   className="h-12 w-12 rounded-lg border border-border bg-card hover:bg-muted hover:-translate-y-[1px] will-change-transform text-foreground transition-colors transition-transform duration-200 ease-out active:scale-95"
                   aria-label="Open menu"
-                  onClick={() => setIsOpen((v) => !v)}
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
@@ -445,9 +442,16 @@ export default function Navigation() {
                 side="left"
                 data-sidebar="sidebar"
                 data-mobile="true"
-                className="p-0 w-[300px] max-w-[85vw] h-full bg-transparent backdrop-blur-md border-r border-border/50 shadow-2xl"
+                className="p-0 w-[300px] max-w-[85vw] h-full bg-background border-r border-border shadow-2xl"
               >
-                <div className="border-b border-border/30" />
+                <div className="flex items-center justify-between h-14 shrink-0 px-4 border-b border-border">
+                  <span className="font-semibold tracking-wide">Bubble&rsquo;s Cafe</span>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" aria-label="Close menu">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                </div>
                 <SidebarNavigation onNavigate={() => setIsOpen(false)} />
               </SheetContent>
             </Sheet>

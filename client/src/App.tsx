@@ -37,7 +37,6 @@ import LinkPrefetchObserver from './components/providers/LinkPrefetchObserver';
 import RouteScrollManager from './components/providers/RouteScrollManager';
 // Import our new refresh components
 import { RefreshProvider } from './contexts/refresh-context';
-const PostsPrefetcher = React.lazy(() => import('./components/providers/PostsPrefetcher'));
 import { initSmoothScroll } from './lib/smooth-scroll';
 import { useA11y } from '@/hooks/useA11y';
 import Footer from './components/layout/footer';
@@ -611,43 +610,8 @@ function App() {
 
   // CSRF protection is initialized in main.tsx via dynamic import
 
-  // Initialize WordPress sync service (keeps Supabase posts in sync with WordPress in the background)
-  // Defer this to idle/late in the session so it doesn't compete with critical
-  // page data (reader/index) on first load, while still keeping content fresh
-  // for subsequent navigations.
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        const { initWordPressSync } = await import('./lib/wordpress-sync');
-        if (!cancelled) {
-          initWordPressSync();
-        }
-      } catch {}
-    };
-
-    const win: any = typeof window !== 'undefined' ? window : null;
-    const ric: any = win && typeof win.requestIdleCallback === 'function'
-      ? win.requestIdleCallback
-      : null;
-
-    if (ric) {
-      ric(() => {
-        run();
-      }, { timeout: 5000 });
-    } else {
-      setTimeout(() => {
-        run();
-      }, 4000);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  
+  // WordPress -> database sync runs on the API server (every 30 minutes). The old
+  // per-browser sync re-downloaded every post every 5 minutes for each visitor.
 
   return (
     <GlobalErrorBoundary level="critical">
@@ -661,10 +625,7 @@ function App() {
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
                       <RefreshProvider>
-                        {/* Warm caches for common routes and data */}
-                        <React.Suspense fallback={null}>
-                          <PostsPrefetcher />
-                        </React.Suspense>
+                        {/* Warm the reader route chunk */}
                         <ReaderPrefetcher />
                         <LinkPrefetchObserver />
                         <RouteScrollManager />

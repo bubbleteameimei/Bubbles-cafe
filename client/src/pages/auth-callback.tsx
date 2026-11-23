@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, initSupabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
   const [, navigate] = useLocation();
@@ -14,6 +14,7 @@ export default function AuthCallbackPage() {
     const run = async () => {
       try {
         setError(null);
+        await initSupabase();
         const { data } = await supabase.auth.getSession();
         const access_token = data.session?.access_token;
         if (!access_token) {
