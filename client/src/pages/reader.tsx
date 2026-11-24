@@ -87,6 +87,21 @@ const sanitizeHtmlContent = (html: string): string => {
 };
 
 // Normalize WordPress fields (string or { rendered: string }) to a string
+
+/** Story list already held by the index page (memory) or its saved copy (this device). */
+function readerListFromCache(qc: { getQueryData: (key: unknown[]) => unknown }): { posts: Post[] } | undefined {
+  try {
+    const index = qc.getQueryData(['posts', 'index']) as { pages?: Array<{ posts?: Post[] }> } | undefined;
+    const fromIndex = (index?.pages ?? []).flatMap((pg) => pg?.posts ?? []);
+    if (fromIndex.length > 0) return { posts: fromIndex };
+  } catch {}
+  try {
+    const saved = JSON.parse(localStorage.getItem('cache:index:page1:v3') || 'null');
+    if (Array.isArray(saved?.posts) && saved.posts.length > 0) return { posts: saved.posts };
+  } catch {}
+  return undefined;
+}
+
 const getRenderedText = (value: any): string => {
   try {
     if (typeof value === 'string') return value;
@@ -451,7 +466,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         throw error;
       }
     },
-    // Keep previous content visible while background fetching occurs
+    // Show the stories other pages already loaded (the index holds the full list with
+    // text) while this list refreshes, instead of a spinner. Opening a story from the
+    // index used to take ~2.5s because the same list was downloaded again first.
+    placeholderData: () => (isCommunityContent ? undefined : readerListFromCache(queryClient)),
     // Reduce jank: avoid auto refetch on mount/focus to prevent flicker and network bursts
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
@@ -1096,81 +1114,83 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             </Dialog>
           </div>
 
-          {/* Integrated BookmarkButton in top controls */}
-          <BookmarkButton 
-            postId={currentPost.id} 
-            variant="reader"
-            showText={false}
-            className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2 cursor-pointer"
-          />
-
-          {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
-          <Dialog
-            open={contentsDialogOpen}
-            onOpenChange={(open) => {
-              if (debugEnabled) {
-                try {
-                  console.log('[Reader.debug] TOC Dialog openChange:', open);
-                } catch {}
-              }
-              setContentsDialogOpen(open);
-              try { setUIHidden(false); } catch {}
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
-                noOutline
-                aria-label="Table of Contents"
-                title="Table of Contents"
-              >
-                <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent 
-              className="max-w-md" 
-              aria-labelledby="toc-dialog-title" 
-              aria-describedby="toc-dialog-description"
-            >
-              <div className="flex items-center">
-                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
-              </div>
-              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
-              <TableOfContents 
-                currentPostId={currentPost.id}
-                posts={posts.map((p: any) => ({
-                  id: p.id,
-                  title: getRenderedText(p.title) || 'Untitled',
-                  slug: (p.slug || `post-${p.id}`) as string,
-                  date: (p.date || p.createdAt || new Date().toISOString()) as string
-                }))}
-                onSelect={(selected) => {
+          {/* Right side: bookmark + contents, grouped and the same size as the font
+              controls (the bookmark used to float alone mid-toolbar as a 48px square). */}
+          <div className="flex items-center gap-2">
+            <BookmarkButton
+              postId={currentPost.id}
+              variant="reader"
+              showText={false}
+              className="h-8 w-8 rounded-md"
+            />
+            {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
+            <Dialog
+              open={contentsDialogOpen}
+              onOpenChange={(open) => {
+                if (debugEnabled) {
                   try {
-                    // Prefer match by slug when available
-                    const foundIndex = posts.findIndex((p: any) =>
-                      (selected.slug && p.slug === selected.slug) || p.id === selected.id
-                    );
-                    if (foundIndex >= 0) {
-                      setCurrentIndex(foundIndex);
-                      // Keep URL in sync with selected story to fix TOC routing
-                      setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
-                      // Scroll to top for a clean transition
-                      window.scrollTo({ top: 0, behavior: 'auto' });
+                    console.log('[Reader.debug] TOC Dialog openChange:', open);
+                  } catch {}
+                }
+                setContentsDialogOpen(open);
+                try { setUIHidden(false); } catch {}
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 px-3 bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 rounded-md w-fit"
+                  noOutline
+                  aria-label="Table of Contents"
+                  title="Table of Contents"
+                >
+                  <BookText className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline text-xs font-semibold tracking-wide">TOC</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent 
+                className="max-w-md" 
+                aria-labelledby="toc-dialog-title" 
+                aria-describedby="toc-dialog-description"
+              >
+                <div className="flex items-center">
+                  <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                </div>
+                <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+                <TableOfContents 
+                  currentPostId={currentPost.id}
+                  posts={posts.map((p: any) => ({
+                    id: p.id,
+                    title: getRenderedText(p.title) || 'Untitled',
+                    slug: (p.slug || `post-${p.id}`) as string,
+                    date: (p.date || p.createdAt || new Date().toISOString()) as string
+                  }))}
+                  onSelect={(selected) => {
+                    try {
+                      // Prefer match by slug when available
+                      const foundIndex = posts.findIndex((p: any) =>
+                        (selected.slug && p.slug === selected.slug) || p.id === selected.id
+                      );
+                      if (foundIndex >= 0) {
+                        setCurrentIndex(foundIndex);
+                        // Keep URL in sync with selected story to fix TOC routing
+                        setLocation(`/reader/${encodeURIComponent(String(posts[foundIndex].slug || posts[foundIndex].id))}`);
+                        // Scroll to top for a clean transition
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                      }
+                    } catch (err) {
+                      console.error('[Reader] TOC onSelect error:', err);
+                      try { logReaderError('reader.toc.onSelect', err); } catch {}
+                    } finally {
+                      setContentsDialogOpen(false);
                     }
-                  } catch (err) {
-                    console.error('[Reader] TOC onSelect error:', err);
-                    try { logReaderError('reader.toc.onSelect', err); } catch {}
-                  } finally {
-                    setContentsDialogOpen(false);
-                  }
-                }}
-                onClose={() => setContentsDialogOpen(false)} 
-              />
-            </DialogContent>
-          </Dialog>
+                  }}
+                  onClose={() => setContentsDialogOpen(false)} 
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Full-bleed separator under controls row (thin, end-to-end) */}

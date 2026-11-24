@@ -85,6 +85,7 @@ import { motion } from 'framer-motion';
 import ContinueReadingBanner from '@/components/ContinueReadingBanner';
 import { VirtualScrollArea } from '@/components/ui/VirtualScrollArea';
 import { computeTrendingScores } from '@/lib/trending';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { useThemeCategories } from '@/hooks/use-theme-categories';
 
 export default function StoriesIndexContent() {
@@ -1280,11 +1281,7 @@ export default function StoriesIndexContent() {
   }, [featuredStory]);
 
   if (isPostsLoading && !data) {
-    return (
-      <motion.div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
-        <p className="text-muted-foreground">Loading stories…</p>
-      </motion.div>
-    );
+    return <LoadingScreen label="Loading stories…" />;
   }
 
   if (isPostsError) {

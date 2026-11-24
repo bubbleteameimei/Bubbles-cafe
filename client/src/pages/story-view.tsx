@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
-import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 import { motion } from "framer-motion";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import SEO from "@/components/SEO";
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { ShareButton } from "@/components/ui/share-button";
 
 interface StoryViewProps {
@@ -25,11 +25,7 @@ export default function StoryView({ slug }: StoryViewProps) {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen label="Loading story…" />;
   }
 
   if (error || !post) {
