@@ -36,7 +36,11 @@ export default defineConfig(({ mode }) => {
                                 navigateFallback: "/index.html",
                                 cleanupOutdatedCaches: true,
                                 // Vercel builds can place artifacts outside workbox's globDirectory; don't fail the build.
-                                globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,json,woff2,woff,ttf,otf}"],
+                                // App shell only. Images are cached when viewed (runtime rule below); precaching
+                                // every png/webp downloaded megabytes onto each visitor's phone on every deploy.
+                                globPatterns: ["**/*.{js,css,html,ico,svg,woff2}"],
+                                skipWaiting: true,
+                                clientsClaim: true,
                                 globIgnores: ["**/*.map"],
                                 runtimeCaching: [
                                         {
