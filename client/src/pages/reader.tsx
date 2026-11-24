@@ -795,6 +795,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const detectedThemes = detectThemes(getRenderedText(currentPost.content) || '');
 
   // Navigation helpers that integrate the horror overlay trigger.
+  // A newly opened story starts at its title. Previously the scroll position was kept, so
+  // tapping "Next" at the end of a story landed partway down the next one.
+  const scrollToStoryStart = () => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  };
+
   const goToRandomStory = () => {
     if (posts && posts.length > 1) {
       let randomIndex;
@@ -810,7 +820,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      // Do not force scroll position; let the browser preserve current position.
+      scrollToStoryStart();
     }
   };
   
@@ -825,7 +835,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      // Do not force scroll position; let the browser preserve current position.
+      scrollToStoryStart();
     }
   };
   
@@ -840,7 +850,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           setLocation(`/reader/${encodeURIComponent(nextSlug)}`);
         }
       } catch {}
-      // Do not force scroll position; let the browser preserve current position.
+      scrollToStoryStart();
     }
   };
   
@@ -1218,7 +1228,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
               )}
               <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                className="text-4xl md:text-5xl font-bold text-center mt-6 md:mt-8 mb-2 tracking-tight leading-tight"
                 style={{ minHeight: '48px' }}
                 dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(getRenderedText(currentPost.title) || 'Story') }}
               />
@@ -1739,60 +1749,38 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             className={`flex items-center justify-center gap-2 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''} debug-outline debug-outline-pager`}
             style={{ minHeight: '64px' }}
           >
-            <div className="relative overflow-visible flex items-center justify-center gap-1 bg-background/90 backdrop-blur-md border border-transparent rounded-full h-16 px-1.5 shadow-sm">
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{ border: '1px solid', borderColor: 'hsl(var(--border) / 0.4)', transform: 'translateY(-1px)' }}
-              />
-              <div className="flex items-center gap-1 translate-y-2">
-                {/* Previous story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToPreviousStory}
-                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                    isFirstStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
-                  } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
-                  aria-label="Previous story"
-                  disabled={posts.length <= 1 || isFirstStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                    <path d="m15 18-6-6 6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Previous Story
-                  </span>
-                </Button>
-                
-                {/* Story counter */}
-                <div className="px-1 h-5 flex items-center -translate-y-2.5 text-[10px] leading-none text-muted-foreground font-medium">
-                  {currentIndex + 1} of {posts.length}
-                </div>
-                
-                {/* Next story button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={goToNextStory}
-                  className={`h-5 w-5 rounded-full group relative transition-all duration-200 ${
-                    isLastStory 
-                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-foreground hover:bg-primary/60 hover:text-foreground dark:text-foreground dark:hover:bg-primary/35'
-                  } focus-visible:ring-2 focus-visible:ring-primary/70 hover:ring-2 hover:ring-primary/70 active:bg-primary/60`}
-                  aria-label="Next story"
-                  disabled={posts.length <= 1 || isLastStory}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Next Story
-                  </span>
-                </Button>
-              </div>
+            <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card px-1.5 py-1.5 shadow-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToPreviousStory}
+                className="h-10 w-10 rounded-full text-foreground disabled:opacity-30"
+                aria-label="Previous story"
+                title="Previous story"
+                disabled={posts.length <= 1 || isFirstStory}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+              </Button>
+
+              <span className="px-2 text-xs font-medium tabular-nums text-muted-foreground whitespace-nowrap">
+                {currentIndex + 1} of {posts.length}
+              </span>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goToNextStory}
+                className="h-10 w-10 rounded-full text-foreground disabled:opacity-30"
+                aria-label="Next story"
+                title="Next story"
+                disabled={posts.length <= 1 || isLastStory}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </Button>
             </div>
           </div>
 
@@ -1801,6 +1789,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               {/* Centered Like/Dislike buttons */}
               <div className="flex justify-center w-full">
                 <LikeDislike
+                  key={currentPost.id}
                   postId={currentPost.id}
                   slug={currentPost.slug}
                   source="wp"

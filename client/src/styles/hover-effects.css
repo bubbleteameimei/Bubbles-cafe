@@ -4,9 +4,6 @@
 a {
   transition: color 150ms ease, text-shadow 200ms ease;
 }
-a:hover {
-  text-shadow: 0 0 6px hsl(var(--primary) / 0.25);
-}
 a:focus-visible {
   outline: 2px solid hsl(var(--primary) / 0.6);
   outline-offset: 2px;
@@ -18,11 +15,6 @@ button,
 [role="button"] {
   transition: transform 120ms ease, box-shadow 180ms ease, background-color 120ms ease, color 120ms ease;
 }
-button:hover:not(:disabled),
-[role="button"]:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px -10px hsl(var(--primary) / 0.45);
-}
 button:active:not(:disabled),
 [role="button"]:active:not(:disabled) {
   transform: translateY(0);
@@ -33,16 +25,25 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
-/* Cards and interactive containers */
-.card-hover:hover {
-  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
-}
-
-/* Reader-specific subtle glow on headings */
-.reader-page h1:hover {
-  text-shadow: 0 0 10px hsl(var(--primary) / 0.2);
-  transition: text-shadow 200ms ease;
+/* Hover effects only for real pointers. On touch screens a tap leaves :hover applied,
+   so buttons stayed lifted/glowing after being tapped (e.g. like/dislike). */
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    text-shadow: 0 0 6px hsl(var(--primary) / 0.25);
+  }
+  button:hover:not(:disabled),
+  [role="button"]:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -10px hsl(var(--primary) / 0.45);
+  }
+  .card-hover:hover {
+    box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+  }
+  .reader-page h1:hover {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.2);
+    transition: text-shadow 200ms ease;
+  }
 }
 
 /* Reduced motion preferences */

@@ -748,13 +748,14 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-base font-medium">Comments ({rootComments.length})</h3>
           
-          {/* Comment controls: sorting and collapse toggle */}
+          {/* Comment controls: sorting and collapse toggle (only useful once there are comments) */}
+          {rootComments.length > 0 && (
           <div className="flex items-center gap-2">
             <Select 
               value={sortOrder} 
               onValueChange={(value: 'recent' | 'active') => setSortOrder(value)}
             >
-              <SelectTrigger className="h-6 text-[10px] w-[95px]">
+              <SelectTrigger className="h-8 w-auto gap-1.5 px-2.5 text-xs">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -776,7 +777,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   setCollapsedComments(rootComments.map(c => c.id));
                 }
               }}
-              className="h-6 px-1.5 text-[10px]"
+              className="h-8 px-2.5 text-xs"
             >
               {collapsedComments.length > 0 || autoCollapsing ? (
                 <><Expand className="h-3 w-3 mr-1" /> Expand All</>
@@ -785,6 +786,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               )}
             </Button>
           </div>
+          )}
         </div>
         {/* Comment form - ultra sleek design */}
         <Card className="mb-2 p-2 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
