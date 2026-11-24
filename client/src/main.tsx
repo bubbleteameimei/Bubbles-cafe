@@ -102,7 +102,25 @@ try {
         try {
           const res = await fetch("/sw.js", { method: "HEAD" });
           if (res.ok) {
-            navigator.serviceWorker.register("/sw.js").catch(() => {});
+            // When a new deploy's service worker takes over, reload once so visitors see
+            // the new version right away. Previously the old cached app kept showing until
+            // every tab was closed, so fixes looked "not deployed".
+            const hadController = !!navigator.serviceWorker.controller;
+            let reloaded = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (!hadController || reloaded) return; // first install: nothing stale to replace
+              reloaded = true;
+              window.location.reload();
+            });
+            navigator.serviceWorker
+              .register("/sw.js")
+              .then((reg) => {
+                // Check for a newer deploy when the visitor comes back to the tab.
+                document.addEventListener("visibilitychange", () => {
+                  if (document.visibilityState === "visible") reg.update().catch(() => {});
+                });
+              })
+              .catch(() => {});
           }
         } catch {
           // Silent: no service worker available
