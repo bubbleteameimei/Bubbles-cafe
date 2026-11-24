@@ -2,34 +2,16 @@ import React from 'react';
 import { BookmarkList } from '@/components/ui/BookmarkList';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { useLocation } from 'wouter';
 // import { useLoading } from '@/contexts/loading-context';
-import ApiLoader from '@/components/api-loader';
 
 export default function BookmarksPage() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Use ApiLoader to show global loading state via the portal-based system
   if (isLoading) {
-    return (
-      <div className="relative min-h-[200px]">
-        <ApiLoader 
-          isLoading={true}
-          message="Loading your bookmarks..."
-          minimumLoadTime={800}
-          debug={true}
-          overlayZIndex={100}
-          blockUi={true}
-        >
-          <div className="invisible">
-            <div className="h-[200px] w-full flex items-center justify-center">
-              <span className="sr-only">Loading bookmarks page...</span>
-            </div>
-          </div>
-        </ApiLoader>
-      </div>
-    );
+    return <LoadingScreen label="Loading your bookmarks…" />;
   }
 
   // Allow non-authenticated users to see the bookmark page

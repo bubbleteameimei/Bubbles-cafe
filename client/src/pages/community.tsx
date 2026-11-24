@@ -20,7 +20,6 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { CommunityReaderCard, ExtendedUser, ExtendedPost as CommunityReaderPost } from "@/components/community/community-reader-card";
 import { CategoryFilters } from "@/components/community/category-filters";
 import { useAuth } from "@/hooks/use-auth";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Pagination } from "@/components/ui/pagination";
 import { 
@@ -38,6 +37,7 @@ import {
 } from "lucide-react";
 
 // Import community reader styles
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import "@/styles/community-reader.css";
 
 // Extended Post interface with UI-specific properties - use same type as community-reader-card.tsx
@@ -287,29 +287,7 @@ export default function CommunityPage() {
           
           <TabsContent value={activeTab} className="mt-0">
             {isLoading ? (
-              // Loading skeleton
-              <div className={view === "list" ? "space-y-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
-                {Array(view === "list" ? 3 : 6).fill(0).map((_, i) => (
-                  <div key={i} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[200px]" />
-                        <Skeleton className="h-3 w-[150px]" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                    </div>
-                    <div className="flex justify-between pt-2">
-                      <Skeleton className="h-8 w-[100px]" />
-                      <Skeleton className="h-8 w-[100px]" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <LoadingScreen variant="inline" label="Loading community stories…" delayMs={0} />
             ) : isError ? (
               // Error state
               <Alert variant="destructive">

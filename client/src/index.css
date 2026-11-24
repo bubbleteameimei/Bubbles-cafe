@@ -549,3 +549,33 @@ body:not(.error-page-active):has(footer.site-footer ~ footer.site-footer) footer
 @media (prefers-reduced-motion: no-preference) {
   .reaction-pop { animation: reaction-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1); }
 }
+
+/* Site loading animation (components/ui/LoadingScreen.tsx): letters blur in and out. */
+.loading-letters {
+  display: flex;
+  gap: 0.5rem;
+}
+.loading-letters span {
+  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.2em;
+  color: hsl(var(--foreground));
+  animation: loading-letter-blur 2s linear infinite;
+  will-change: filter, opacity;
+}
+.dark .loading-letters span {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.35);
+}
+@keyframes loading-letter-blur {
+  0%, 100% { filter: blur(0); opacity: 1; }
+  50% { filter: blur(5px); opacity: 0.2; }
+}
+@keyframes loading-letter-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-letters span { animation-name: loading-letter-fade; will-change: opacity; }
+}

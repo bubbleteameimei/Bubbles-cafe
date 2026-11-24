@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 interface BookmarkButtonProps {
@@ -260,13 +261,14 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       <button
         type="button"
         onClick={() => (bookmarked ? handleRemoveBookmark() : createMutation.mutate({ notes: '', tags: [] }))}
-        className={`h-12 w-12 bg-background/80 rounded-lg border border-border/50 flex items-center justify-center transition-colors motion-safe:active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className ?? ''}`}
+        // cn() merges, so a caller's size (e.g. the reader toolbar's h-8 w-8) wins over the default.
+        className={cn('h-12 w-12 bg-background/80 rounded-lg border border-border/50 flex items-center justify-center transition-colors motion-safe:active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
         aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark this story'}
         aria-pressed={bookmarked}
         disabled={busy}
       >
         <svg
-          className={`h-7 w-7 ${bookmarked ? 'fill-current text-amber-400' : 'fill-none stroke-current'}`}
+          className={cn('h-[55%] w-[55%]', bookmarked ? 'fill-current text-amber-400' : 'fill-none stroke-current')}
           viewBox="0 0 24 24"
           strokeWidth={bookmarked ? 0 : 2}
           aria-hidden="true"

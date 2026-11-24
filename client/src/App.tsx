@@ -272,15 +272,9 @@ const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
 
-  // Show a lightweight loader on key routes during lazy/data load
-  const needRouteLoader =
-    locationStr.startsWith('/index') ||
-    locationStr.startsWith('/stories') ||
-    locationStr.startsWith('/reader') ||
-    locationStr.startsWith('/story');
-  const routeFallback = needRouteLoader ? (
-    <RouteLoader label="Loading" minHeight="60vh" />
-  ) : null;
+  // Every page shows the same loading animation while its code loads (other routes used
+  // to show a blank page). It appears only after a short delay, so fast loads don't flash.
+  const routeFallback = <RouteLoader label="Loading page" />;
   
 
   // Basic SEO: set canonical and defaults site-wide
