@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { useLocation, useSearch, Link } from "wouter";
 import { Loader2, BookOpen, SlidersHorizontal, ChevronDown, X, Search } from "lucide-react";
@@ -10,6 +10,13 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchWordPressPosts, getExcerpt } from "@/lib/wordpress-api";
+
+// Titles arrive as plain strings from our API but as { rendered } from WordPress; reading
+// only `.rendered` turned every title from our API into "Untitled".
+function titleText(t: unknown): string {
+  const raw = typeof t === "string" ? t : (t as { rendered?: string } | null)?.rendered || "";
+  return raw.replace(/<[^>]*>/g, "").trim() || "Untitled";
+}
 import { THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface SearchResult {
@@ -132,7 +139,7 @@ export default function SearchResultsPage() {
 
         const mapped: SearchResult[] = (results || []).map((r: any) => ({
           id: r.id,
-          title: r.title,
+          title: titleText(r.title),
           excerpt: r.excerpt,
           content: "",
           type: r.type === "post" || r.type === "page" ? r.type : "post",
@@ -163,17 +170,13 @@ export default function SearchResultsPage() {
           return d.getTime() >= cutoff;
         };
 
-        // Always sort by matches desc then date desc
+        // Apply the date filter (order comes from the server)
         const applyFiltersAndSort = (arr: SearchResult[]) => {
           let out = arr;
           if (from !== "all") out = out.filter((r) => withinRange(r.date));
-          out = [...out].sort((a, b) => {
-            const matchDiff = (b.matches?.length || 0) - (a.matches?.length || 0);
-            if (matchDiff !== 0) return matchDiff;
-            const da = a.date ? new Date(a.date).getTime() : 0;
-            const db = b.date ? new Date(b.date).getTime() : 0;
-            return db - da;
-          });
+          // Keep the server's order: it ranks title matches first. Re-sorting by match count
+          // then date pushed exact title hits (e.g. "RAIN") below stories that only contain
+          // the letters ("b-rain").
           return out;
         };
 
@@ -186,7 +189,7 @@ export default function SearchResultsPage() {
             const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
             const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
             const wpMapped: SearchResult[] = wpPosts.map((p: any) => {
-              const title = p?.title?.rendered || "Untitled";
+              const title = titleText(p?.title);
               const rawExcerpt = p?.excerpt?.rendered || "";
               const rawContent = p?.content?.rendered || "";
               const text = stripHtml(rawContent || rawExcerpt);
@@ -301,7 +304,7 @@ export default function SearchResultsPage() {
           const wp = await fetchWordPressPosts({ perPage: 20, includeContent: true, search: query });
           const wpPosts = Array.isArray((wp as any)?.posts) ? (wp as any).posts : [];
           const wpMapped: SearchResult[] = wpPosts.map((p: any) => {
-            const title = p?.title?.rendered || "Untitled";
+            const title = titleText(p?.title);
             const rawExcerpt = p?.excerpt?.rendered || "";
             const rawContent = p?.content?.rendered || "";
             const text = stripHtml(rawContent || rawExcerpt);
@@ -369,12 +372,27 @@ export default function SearchResultsPage() {
     }
   }, [search, performSearch]);
 
-  // Re-run search when filters change
+  // Re-run the current search when a filter changes. (It also depended on the typed text,
+  // so it searched on every keystroke and showed half-typed results.)
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
+  const filtersInitRef = useRef(true);
   useEffect(() => {
-    if (searchQuery.trim()) {
-      performSearch(searchQuery, 1);
+    if (filtersInitRef.current) {
+      filtersInitRef.current = false;
+      return;
     }
-  }, [from, category, performSearch, searchQuery]);
+    const q = searchQueryRef.current.trim();
+    if (q) performSearch(q, 1);
+  }, [from, category, performSearch]);
+
+  // Clearing the box clears the results instead of leaving stale ones on screen.
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setPopular([]);
+    }
+  }, [searchQuery]);
 
   // Preload posts for local suggestion scoring
   useEffect(() => {
@@ -388,7 +406,7 @@ export default function SearchResultsPage() {
           for (const wp of posts) {
             collected.push({
               id: wp.id,
-              title: String(wp?.title?.rendered || "Untitled"),
+              title: titleText(wp?.title),
               slug: String(wp?.slug || wp?.id)
             });
           }
@@ -441,7 +459,7 @@ export default function SearchResultsPage() {
           const posts = Array.isArray(data?.posts) ? data.posts : [];
           const top5: SearchResult[] = posts.slice(0, 5).map((p: any) => ({
             id: Number(p.id),
-            title: String(p?.title?.rendered || "Untitled"),
+            title: titleText(p?.title),
             excerpt: getExcerpt(String(p?.excerpt?.rendered || "")),
             content: "",
             type: "post",

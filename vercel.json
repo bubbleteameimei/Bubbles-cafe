@@ -10,7 +10,7 @@
       "destination": "https://api.bubblescafe.space/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!_vercel/).*)",
       "destination": "/index.html"
     }
   ],

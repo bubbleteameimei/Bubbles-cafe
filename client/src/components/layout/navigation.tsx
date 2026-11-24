@@ -309,11 +309,13 @@ export default function Navigation() {
     return dp[n];
   };
 
-  // Close the sidebar drawer proactively on route changes
+  // Close the sidebar drawer and the header search box on route changes (the search box
+  // stayed open over the next page, e.g. covering "Search Results").
   useEffect(() => {
     if (isOpen) {
       setIsOpen(false);
     }
+    setSearchOpen(false);
     try {
       document.body.style.paddingRight = "";
     } catch {}

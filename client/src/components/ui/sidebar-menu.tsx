@@ -537,12 +537,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
         {/* Interactive Experiences */}
-        <SidebarGroup className="mt-5 p-2 pt-1">
-          <SidebarGroupLabel className="h-6 px-4 text-sm font-medium text-[hsl(var(--sidebar-foreground))] mb-2 uppercase tracking-wider">
-            INTERACTIVE EXPERIENCES
+        <SidebarGroup className="mt-5 p-0">
+          <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-4 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
+            Interactive
           </SidebarGroupLabel>
           <SidebarGroupContent className="mt-0">
-            <SidebarMenu className="space-y-2.5">
+            <SidebarMenu className="space-y-1.5">
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={location === '/edens-hollow'}
@@ -552,8 +552,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   aria-current={location === '/edens-hollow' ? 'page' : undefined}
                 >
                   {renderActiveIndicator('/edens-hollow')}
-                  <Gamepad2 className="h-6 w-6 sm:h-7 sm:w-7" />
-                  <span className="text-[14px] sm:text-[15px] font-semibold">Eden - Experimental Game</span>
+                  <Gamepad2 className="h-4 w-4" />
+                  <span>EDEN - EXPERIMENTAL GAME</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -565,12 +565,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   className={menuItemClass}
                   aria-current={location === '/coming-soon' ? 'page' : undefined}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-semibold align-middle">
-                      ★
-                    </span>
-                    <span className="text-[13px] font-semibold">Coming Soon</span>
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-primary text-[10px] font-semibold" aria-hidden="true">
+                    ★
                   </span>
+                  <span>COMING SOON</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -578,9 +576,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroup>
 
         {/* Accessibility */}
-        <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroup className="mt-5 p-0">
+          <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-4 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
+            Settings &amp; help
+          </SidebarGroupLabel>
           <SidebarGroupContent className="mt-0">
-            <SidebarMenu className="space-y-4">
+            <SidebarMenu className="space-y-1.5">
               <SidebarMenuItem>
                 <Collapsible 
                   open={displayOpen} 
@@ -667,9 +668,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroup>
 
         {/* Account Settings */}
-        <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroup className="mt-1.5 p-0">
           <SidebarGroupContent className="mt-0">
-            <SidebarMenu className="space-y-4">
+            <SidebarMenu className="space-y-1.5">
               <SidebarMenuItem>
                 <Collapsible open={accountOpen} onOpenChange={setAccountOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>
@@ -766,9 +767,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroup>
 
         {/* Support & Legal */}
-        <SidebarGroup className="mt-2 p-2 pt-1">
+        <SidebarGroup className="mt-1.5 p-0">
           <SidebarGroupContent className="mt-0">
-            <SidebarMenu className="space-y-4">
+            <SidebarMenu className="space-y-1.5">
               <SidebarMenuItem>
                 <Collapsible open={supportOpen} onOpenChange={setSupportOpen} className="sidebar-dropdown-container">
                   <CollapsibleTrigger asChild>

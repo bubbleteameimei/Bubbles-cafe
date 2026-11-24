@@ -193,7 +193,7 @@ export default function Home() {
 
             <div
               ref={heroRef}
-              className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full min-h-screen"
+              className="relative z-20 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start pt-0 pb-10 sm:pb-12 md:pb-16 lg:pb-20 text-center w-full"
             >
               <div className="h-2 sm:h-3 md:h-4" aria-hidden="true"></div>
               <div className="relative">
@@ -234,7 +234,7 @@ export default function Home() {
                 className="w-full mt-2 sm:mt-3"
               >
                 <div className="w-full max-w-xl mx-auto px-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-0 sm:gap-y-0 sm:gap-x-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-x-6">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -283,7 +283,6 @@ export default function Home() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                      className="-mt-[8px] sm:mt-0 sm:ml-0"
                     >
                       <Button
                         size="lg"
@@ -328,13 +327,13 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              <div className="flex flex-col items-center gap-2 mt-1 sm:mt-2 mb-1 sm:mb-1 w-full px-4 max-w-4xl mx-auto">
+              <div className="flex flex-col items-center gap-2 mt-5 sm:mt-6 mb-2 w-full px-4 max-w-4xl mx-auto">
                 <BuyMeCoffeeButton authorId={Number((posts?.[0] as any)?.authorId) || undefined} />
                 <SupportWritingCard hideCard authorId={Number((posts?.[0] as any)?.authorId) || undefined} />
               </div>
 
               {posts.length > 0 && (
-                <div className="mt-2 sm:mt-3 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
+                <div className="mt-8 sm:mt-10 text-center space-y-4 sm:space-y-5 md:space-y-6 w-full px-4 max-w-4xl mx-auto">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-foreground uppercase tracking-wider font-sans">
                     Latest Story
                   </p>
