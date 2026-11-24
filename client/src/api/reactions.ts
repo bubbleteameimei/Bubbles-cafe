@@ -88,3 +88,28 @@ export async function submitReaction(
     body: JSON.stringify(payload),
   });
 }
+
+/**
+ * Count one view of a story. De-duplicated per browser session so refreshing or
+ * re-opening the same story doesn't inflate the number. Best-effort: failures are ignored.
+ */
+export function recordView(postId: number): void {
+  if (!Number.isInteger(postId) || postId <= 0) return;
+  const key = `viewed:${postId}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    // storage unavailable: still count it
+  }
+  void fetchWithFallback(`/api/posts/${postId}/view`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: '{}',
+  }).catch(() => {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {}
+  });
+}

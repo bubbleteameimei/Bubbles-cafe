@@ -11,12 +11,14 @@
  *   GET  /api/analytics/engagement      lightweight site stats
  *   GET  /api/analytics/reading-time    lightweight reading stats
  *   POST /api/analytics/interaction     best-effort client telemetry (no-op store)
+ *   POST /api/analytics/{pageview,vitals,performance}   same (no-op)
  */
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { analytics, posts, readingProgress, reportedContent } from '@shared/schema';
+import { withViews } from '../utils/post-views';
 import { requireAdmin, verifyAuthToken } from '../auth-google';
 
 const isPubliclyVisible = sql`coalesce(${posts.metadata}->>'status', 'publish') not in ('draft', 'hidden', 'pending')`;
@@ -39,9 +41,15 @@ function storyUrl(p: { slug: string; isAdminPost: boolean | null }) {
   return p.isAdminPost === false ? `/community-story/${p.slug}` : `/reader/${p.slug}`;
 }
 
+function escapeRegex(q: string) {
+  return q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Snippet around the first match that starts a word ("rain" in "rainy", not "brain"). */
 function snippetAround(text: string, q: string, radius = 80): string | null {
-  const i = text.toLowerCase().indexOf(q.toLowerCase());
-  if (i < 0) return null;
+  const m = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(q)}`, 'iu').exec(text);
+  if (!m) return null;
+  const i = m.index + m[1].length;
   const start = Math.max(0, i - radius);
   const end = Math.min(text.length, i + q.length + radius);
   return `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
@@ -61,7 +69,7 @@ export function registerReaderRoutes() {
         .where(and(eq(posts.slug, req.params.slug), eq(posts.isSecret, false), isPubliclyVisible))
         .limit(1);
       if (!post) return res.status(404).json({ error: 'Story not found' });
-      return res.json(post);
+      return res.json((await withViews([post]))[0]);
     } catch (error) {
       console.error('Error fetching post by slug:', error);
       return res.status(500).json({ error: 'Failed to fetch story' });
@@ -78,10 +86,16 @@ export function registerReaderRoutes() {
 
     try {
       const pattern = `%${escapeLike(q)}%`;
+      const wordStart = `\\m${escapeRegex(q)}`;
       const conditions: any[] = [
         eq(posts.isSecret, false),
         isPubliclyVisible,
-        or(ilike(posts.title, pattern), ilike(posts.content, pattern), ilike(posts.excerpt, pattern)),
+        // Match at the start of a word (\m): "rain" finds "rain"/"rainy" but not "brain".
+        or(
+          sql`${posts.title} ~* ${wordStart}`,
+          sql`${posts.content} ~* ${wordStart}`,
+          sql`${posts.excerpt} ~* ${wordStart}`,
+        ),
       ];
       if (from === 'community') conditions.push(eq(posts.isAdminPost, false));
       if (from === 'reader') conditions.push(sql`${posts.isAdminPost} is not false`);
@@ -268,6 +282,16 @@ export function registerReaderRoutes() {
   });
 
   // Client telemetry (search queries, zero-result searches). Accepted and dropped for now.
+  // Site-wide telemetry the client sends once analytics cookies are accepted. Not stored
+  // (story views have their own counter); answered so the browser doesn't log 404s.
+  router.post(
+    ['/analytics/pageview', '/analytics/vitals', '/analytics/performance'],
+    telemetryLimiter,
+    (_req: Request, res: Response) => {
+      res.status(204).end();
+    },
+  );
+
   router.post('/analytics/interaction', telemetryLimiter, (_req: Request, res: Response) => {
     res.status(204).end();
   });

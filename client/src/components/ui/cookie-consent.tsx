@@ -85,10 +85,10 @@ const overlay = (
       aria-describedby="cookie-consent-description"
     >
       {!isPreferencesModalOpen && (
-        <div className="pointer-events-auto max-w-[440px] w-full mx-auto bg-background/95 backdrop-blur-md rounded-xl shadow-2xl border border-border/60 p-3.5 sm:p-5 space-y-2.5 sm:space-y-3">
-          <div className="hidden sm:flex justify-center relative">
+        <div className="pointer-events-auto max-w-[340px] w-full mx-auto bg-background rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
+          <div className="flex justify-center relative">
             <svg
-              className="w-[36px] h-[36px] transition-all duration-300 hover:rotate-12 hover:scale-110"
+              className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110"
               viewBox="0 0 122.88 122.25"
               aria-hidden="true"
             >
@@ -107,8 +107,8 @@ const overlay = (
           </div>
 
           <div className="text-center space-y-2">
-            <h2 id="cookie-consent-title" className="text-base font-bold text-foreground">We use cookies</h2>
-            <p id="cookie-consent-description" className="text-xs sm:text-sm text-muted-foreground">
+            <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
+            <p id="cookie-consent-description" className="text-sm text-muted-foreground">
               This website uses cookies to personalize content, analyze traffic, and enhance your experience. Read our{" "}
               <Link
                 href="/privacy"
@@ -126,7 +126,7 @@ const overlay = (
                 Terms of Service
               </Link>.
             </p>
-            <div className="hidden sm:flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground/50">
                 Accept: won't show for 6 months • Decline: won't show for 3 months
               </p>
@@ -140,7 +140,7 @@ const overlay = (
               ref={acceptBtnRef}
               onClick={handleAccept}
               className={cn(
-                "px-5 py-1.5 sm:px-6 sm:py-2 rounded-full bg-primary text-primary-foreground font-medium",
+                "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 "transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               )}
@@ -151,7 +151,7 @@ const overlay = (
             <button
               onClick={handleDecline}
               className={cn(
-                "px-5 py-1.5 sm:px-6 sm:py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
+                "px-6 py-2 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/90",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               )}
             >

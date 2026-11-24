@@ -252,113 +252,28 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     deleteMutation.mutate();
   };
 
-  // Reader-style bookmark button
+  // Reader-style bookmark button: one tap saves, another tap removes. (It used to open a
+  // form with tags/notes and two different save buttons, so tapping it seemed to do nothing.)
   if (variant === 'reader') {
-    if (bookmarked) {
-      return (
-        <button
-          onClick={handleRemoveBookmark}
-          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
-          aria-label="Remove bookmark"
-          disabled={isLoading || deleteMutation.isPending}
-        >
-          <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-          </svg>
-        </button>
-      );
-    }
-    
+    const busy = isLoading || createMutation.isPending || deleteMutation.isPending;
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <button
-            className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${className}`}
-            aria-label="Bookmark post"
-            disabled={isLoading || createMutation.isPending}
-          >
-            <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-            </svg>
-          </button>
-        </DialogTrigger>
-        <DialogContent 
-          className="sm:max-w-[425px]"
-          aria-labelledby="bookmark-dialog-title-reader"
-          aria-describedby="bookmark-dialog-desc-reader"
+      <button
+        type="button"
+        onClick={() => (bookmarked ? handleRemoveBookmark() : createMutation.mutate({ notes: '', tags: [] }))}
+        className={`h-12 w-12 bg-background/80 rounded-lg border border-border/50 flex items-center justify-center transition-colors motion-safe:active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className ?? ''}`}
+        aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark this story'}
+        aria-pressed={bookmarked}
+        disabled={busy}
+      >
+        <svg
+          className={`h-7 w-7 ${bookmarked ? 'fill-current text-amber-400' : 'fill-none stroke-current'}`}
+          viewBox="0 0 24 24"
+          strokeWidth={bookmarked ? 0 : 2}
+          aria-hidden="true"
         >
-          <DialogHeader>
-            <DialogTitle id="bookmark-dialog-title-reader">Bookmark Story</DialogTitle>
-            <DialogDescription id="bookmark-dialog-desc-reader">
-              Add this story to your bookmarks. You can add notes and tags or simply bookmark it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex flex-col gap-3 mb-2">
-              <Button 
-                variant="default" 
-                className="w-full py-6 text-lg"
-                onClick={() => createMutation.mutate({ notes: '', tags: [] })}
-                disabled={createMutation.isPending}
-              >
-                <Bookmark className="h-5 w-5 mr-3" />
-                Simply Bookmark This Story
-              </Button>
-              <div className="flex items-center justify-center mt-1">
-                <Bookmark className="h-4 w-4 mr-1 fill-amber-400" />
-                <p className="text-sm text-center text-muted-foreground">
-                  Quick save without tags or notes
-                </p>
-              </div>
-            </div>
-            
-            <Separator className="my-3" />
-            
-            <p className="text-sm font-medium text-center">Or add details to organize your bookmarks</p>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tags-reader" className="text-right">
-                Tags
-              </Label>
-              <Input
-                id="tags-reader"
-                placeholder="horror, favorites (comma separated)"
-                className="col-span-3"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="notes-reader" className="text-right">
-                Notes
-              </Label>
-              <Textarea
-                id="notes-reader"
-                placeholder="Add your personal notes about this story"
-                className="col-span-3"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
-              Add Bookmark with Details
-            </Button>
-            <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setOpen(false);
-                  setLocation('/bookmarks');
-                }}
-                data-testid="bookmark-view-all"
-              >
-                View All Bookmarks
-              </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+        </svg>
+      </button>
     );
   }
 

@@ -15,6 +15,10 @@ interface LikeDislikeProps {
   className?: string;
   variant?: 'index' | 'reader';
   initialTotals?: ReactionTotals | null;
+  /** List pages pass totals in shortly; skip this card's own request until they give up. */
+  deferFetch?: boolean;
+  /** Show initialTotals immediately but still fetch fresh counts and the visitor's vote. */
+  refreshOnMount?: boolean;
 }
 
 type ReactionState = 'like' | 'dislike' | 'none';
@@ -124,6 +128,8 @@ function LikeDislikeInner({
   className,
   variant = 'index',
   initialTotals = null,
+  deferFetch = false,
+  refreshOnMount = false,
 }: LikeDislikeProps) {
   const storageKey = getStorageKey(postId, slug, source);
 
@@ -190,7 +196,7 @@ function LikeDislikeInner({
   // Without list totals (reader page), load counts and this visitor's saved vote.
   const hasInitialTotals = !!initialTotals;
   useEffect(() => {
-    if (hasInitialTotals) return;
+    if ((hasInitialTotals && !refreshOnMount) || deferFetch) return;
     let cancelled = false;
     fetchReactions(postId)
       .then((data) => {
@@ -210,7 +216,7 @@ function LikeDislikeInner({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId, hasInitialTotals]);
+  }, [postId, hasInitialTotals, deferFetch, refreshOnMount]);
 
   const flashError = (message: string) => {
     setError(message);

@@ -9,6 +9,7 @@ import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
 
 import ReaderHorrorOverlayPortal from "@/components/reader/ReaderHorrorOverlayPortal";
+import { recordView } from "@/api/reactions";
 import "@/styles/reader-fixes.css";
 import "@/styles/reader-typography.css";
 import { 
@@ -182,6 +183,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip, setUIHidden } = useReaderUIToggle();
+
+  // Mirror distraction-free mode onto <html> so the site navbar (outside this page) can fade too.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isUIHidden) root.setAttribute('data-reader-distraction-free', 'true');
+    else root.removeAttribute('data-reader-distraction-free');
+    return () => root.removeAttribute('data-reader-distraction-free');
+  }, [isUIHidden]);
 
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
@@ -690,6 +699,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [posts, validCurrentIndex, queryClient]);
 
+  // Count a view for the story being read (once per story per browser session).
+  const viewedPostId = Number(
+    (currentPostFull as any)?.id ??
+      (routeSlug
+        ? (posts.find((p: any) => p?.slug === routeSlug || String(p?.id) === String(routeSlug)) as any)?.id
+        : (posts[validCurrentIndex] as any)?.id) ??
+      0,
+  );
+  useEffect(() => {
+    if (viewedPostId > 0) recordView(viewedPostId);
+  }, [viewedPostId]);
+
   // Let's make sure we have posts data and current post before rendering
   // Keep previous story content visible while fetching; only return a loader if no data yet
   const hasAnyPosts = Array.isArray(posts) && posts.length > 0;
@@ -729,11 +750,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Get current post: prefer fully-fetched content
   // Avoid the "no content" phase for initial loads: if we're on a slug route,
   // wait for the full post fetch before rendering the reader.
-  if (routeSlug && isFetchingPost && !currentPostFull) {
+  // The story list already carries each story's text, so show it straight away instead of
+  // blanking the page with a spinner (that flash was the "broken animation" on Random).
+  const listPost: any = routeSlug
+    ? posts.find((p: any) => p?.slug === routeSlug || String(p?.id) === String(routeSlug))
+    : posts[validCurrentIndex];
+  const listPostHasText = Boolean(getRenderedText(listPost?.content || '')?.trim());
+
+  if (routeSlug && isFetchingPost && !currentPostFull && !listPostHasText) {
     return <RouteLoader label="Loading story" minHeight="60vh" />;
   }
 
-  const currentPost = (currentPostFull as any) || posts[validCurrentIndex];
+  const currentPost = (currentPostFull as any) || listPost || posts[validCurrentIndex];
 
   if (!currentPost && routeSlug) {
     return (
@@ -889,50 +917,22 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           will-change: opacity;
         }
+        /* Distraction-free: controls fade out completely but keep their space, so the
+           story text never jumps. Tapping the text again brings them back. */
         .ui-hidden {
-          opacity: 0.35;
-          pointer-events: auto;
+          opacity: 0;
+          pointer-events: none;
         }
         .story-content {
           transition: color 0.2s ease, background-color 0.2s ease;
         }
         
-        /* Distraction-free mode: keep navbar visible but subtle */
-        .reader-page[data-distraction-free="true"] header.main-header {
-          opacity: 0.55;
-          visibility: visible;
-          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: auto;
-          transform: none;
-          will-change: opacity;
-        }
-        
-        /* Tiny indicator for mobile when in distraction-free mode */
-        .reader-page[data-distraction-free="true"]::after {
-          content: "↑ Tap to exit";
-          position: fixed;
-          top: 5px;
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: hsl(var(--background));
-          color: hsl(var(--muted-foreground));
-          font-size: 0.65rem;
-          padding: 1px 6px;
-          border-radius: 4px;
-          opacity: 0.6;
+        /* Distraction-free mode: the fixed site navbar fades out too (it lives outside
+           .reader-page, so the flag is mirrored onto <html>). The progress bar stays. */
+        .navbar-root { transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        html[data-reader-distraction-free="true"] .navbar-root {
+          opacity: 0;
           pointer-events: none;
-          z-index: 30;
-          border: 1px solid hsl(var(--border));
-          box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-        }
-        
-        /* Ensure better mobile compatibility */
-        @media (max-width: 640px) {
-          .reader-page[data-distraction-free="true"]::after {
-            font-size: 0.6rem;
-            padding: 1px 5px;
-            top: 3px;
-          }
         }
         
         /* Set default cursor for everything */
@@ -1726,9 +1726,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           </div>
 
           <div className="story-container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+            {/* Tap-to-hide is a pointer/touch shortcut; keyboard users have Esc and the visible controls. */}
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
             <div 
               className="story-content text-justify"
+              data-story-slug={String(routeSlug || currentPost.slug || currentPost.id)}
               ref={contentRef}
+              // Tap/click the story text to enter or leave distraction-free mode. (The
+              // handler existed but was never attached, so tapping did nothing.)
+              onClick={handleReaderNoDistractionToggle}
               {...(isContentReady ? { dangerouslySetInnerHTML: { __html: contentHtml } } : {})}
             >
               {!isContentReady ? (
@@ -1794,6 +1800,24 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   slug={currentPost.slug}
                   source="wp"
                   variant="reader"
+                  // Counts come with the story, so they show instantly; a background
+                  // request then refreshes them and loads this visitor's own vote.
+                  initialTotals={
+                    typeof (currentPost as any).likesCount === 'number'
+                      ? {
+                          postId: currentPost.id,
+                          baselineLikes: Number((currentPost as any).baselineLikes ?? 0),
+                          baselineDislikes: Number((currentPost as any).baselineDislikes ?? 0),
+                          likesCount: Number((currentPost as any).likesCount ?? 0),
+                          dislikesCount: Number((currentPost as any).dislikesCount ?? 0),
+                          totals: {
+                            likes: Number((currentPost as any).baselineLikes ?? 0) + Number((currentPost as any).likesCount ?? 0),
+                            dislikes: Number((currentPost as any).baselineDislikes ?? 0) + Number((currentPost as any).dislikesCount ?? 0),
+                          },
+                        }
+                      : null
+                  }
+                  refreshOnMount
                 />
               </div>
 

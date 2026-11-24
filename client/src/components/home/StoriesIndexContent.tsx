@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { type posts } from '@shared/schema';
 type Post = typeof posts.$inferSelect;
@@ -13,6 +13,7 @@ import {
   Calendar,
   Award,
   Search,
+  X,
   Eye,
   Heart,
   Ghost,
@@ -53,9 +54,9 @@ import {
 // counts, sorting, filtering and search then cover every story, not just page one.
 const INDEX_PAGE_SIZE = 100;
 
-const LikeDislike = lazy(() =>
-  import('@/components/ui/like-dislike').then((m) => ({ default: m.LikeDislike })),
-);
+// Imported eagerly (it's small): lazy-loading it made every card render first without
+// its like/dislike buttons and then change shape when they popped in.
+import { LikeDislike } from '@/components/ui/like-dislike';
 import MostLikedList from '@/components/home/MostLikedList';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -116,6 +117,13 @@ export default function StoriesIndexContent() {
   // Reaction widgets render once the batched totals request has settled, so each card
   // gets its counts from one shared request instead of fetching its own.
   const [readyReactions, setReadyReactions] = useState(false);
+  const indexSearchRef = React.useRef<HTMLInputElement | null>(null);
+  const showSearchResults = React.useCallback(() => {
+    indexSearchRef.current?.blur();
+    requestAnimationFrame(() => {
+      document.getElementById('story-list-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
 
   // Viewport-aware container height for virtualization and sticky header spacing
   const [containerHeight, setContainerHeight] = useState<number>(() => {
@@ -1320,22 +1328,48 @@ export default function StoriesIndexContent() {
         canonical="/index"
         type="website"
       />
-      {/* Continue Reading ribbon (local progress) */}
-      <ContinueReadingBanner />
       <div className="w-full pb-12 pt-0 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
+        {/* Continue reading: an unfinished story, shown in a fixed, visible spot */}
+        <ContinueReadingBanner />
         {/* Search (not sticky: the page wrapper clips overflow, so sticky never engaged and only pushed the bar over the featured card) */}
         <div className="mt-2 sm:mt-4 mb-4">
           <div className="grid grid-cols-1 items-center gap-6">
             <div className="relative w-full">
               <Input
+                ref={indexSearchRef}
+                type="search"
+                enterKeyHint="search"
                 placeholder="Search stories..."
-                className="pl-3 pr-10 w-full"
+                aria-label="Search stories"
+                className="pl-3 pr-11 w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  // Results filter as you type; Enter closes the phone keyboard and shows them.
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    showSearchResults();
+                  }
+                }}
               />
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
-                ⏎
-              </span>
+              {/* Real button (the old "⏎" hint looked tappable but did nothing). */}
+              <button
+                type="button"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 inline-flex items-center justify-center rounded-md text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={search ? 'Clear search' : 'Search'}
+                onClick={() => {
+                  if (search) {
+                    setSearch('');
+                    indexSearchRef.current?.focus();
+                  } else if (indexSearchRef.current?.value) {
+                    showSearchResults();
+                  } else {
+                    indexSearchRef.current?.focus();
+                  }
+                }}
+              >
+                {search ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+              </button>
             </div>
             {/* Sort menu lives in the story-list header, next to the count. */}
           </div>
@@ -1438,34 +1472,14 @@ export default function StoriesIndexContent() {
                       </p>
 
                       <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {(() => {
-                            const md: any = (featuredStory as any)?.metadata || {};
-                            const totals = reactionTotals[featuredStory.id] || null;
-                            const likes = Number(totals?.totals?.likes ?? 0);
-                            const views =
-                              md && (md as any).pageViews ? Number((md as any).pageViews) : 0;
-                            const readingTimeStr = getReadingTime(
-                              String(
-                                (featuredStory as any).content ||
-                                  (featuredStory as any).excerpt ||
-                                  '',
-                              ),
-                            );
-                            return (
-                              <>
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3" /> {likes}
-                                </span>
-                                {views > 0 && (
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" /> {views}
-                                  </span>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
+                        <LikeDislike
+                          postId={featuredStory.id}
+                          slug={featuredStory.slug}
+                          source="wp"
+                          variant="index"
+                          initialTotals={reactionTotals[featuredStory.id] || null}
+                          deferFetch={!readyReactions}
+                        />
                         <Button
                           size="sm"
                           onClick={() => navigateToReader(featuredStory.slug || featuredStory.id)}
@@ -1496,7 +1510,7 @@ export default function StoriesIndexContent() {
 
         <div className="mt-2 mb-4">
           <div className="flex flex-wrap justify-between items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-decorative uppercase">
+            <h1 id="story-list-heading" className="scroll-mt-20 text-2xl md:text-3xl font-decorative uppercase">
               {sort === 'newest' ? 'Latest stories' : 'All stories'}
             </h1>
             <div className="flex items-center gap-3">
@@ -1912,18 +1926,17 @@ export default function StoriesIndexContent() {
                               </CardContent>
                               <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                                 <div className="w-full flex items-center justify-between">
-                                  {readyReactions && post && post.id && (
-                                    <Suspense fallback={null}>
-                                      <LikeDislike
+                                  {post && post.id && (
+<LikeDislike
                                         key={`like-${post.id}`}
                                         postId={post.id}
                                         slug={post.slug}
                                         source="wp"
                                         variant="index"
                                         initialTotals={reactionTotals[post.id] || null}
+                                  deferFetch={!readyReactions}
                                       />
-                                    </Suspense>
-                                  )}
+)}
                                   <Button
                                     size="sm"
                                     onClick={(e) => {
@@ -2057,18 +2070,17 @@ export default function StoriesIndexContent() {
                         </CardContent>
                         <CardFooter className="px-4 pb-4 pt-3 mt-auto border-t border-border/50">
                           <div className="w-full flex items-center justify-between">
-                            {readyReactions && post && post.id && (
-                              <Suspense fallback={null}>
-                                <LikeDislike
+                            {post && post.id && (
+<LikeDislike
                                   key={`like-${post.id}`}
                                   postId={post.id}
                                   slug={post.slug}
                                   source="wp"
                                   variant="index"
                                   initialTotals={reactionTotals[post.id] || null}
+                                  deferFetch={!readyReactions}
                                 />
-                              </Suspense>
-                            )}
+)}
                             <Button
                               size="sm"
                               onClick={(e) => {

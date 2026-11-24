@@ -29,6 +29,9 @@ import {
 } from '@shared/schema';
 import { getOptionalUser } from '../auth-google';
 import { sendEmail } from '../services/email';
+
+// Hidden/draft stories (incl. ones deleted in WordPress) stay out of public lists.
+const isPubliclyVisible = sql`coalesce(${posts.metadata}->>'status', 'publish') not in ('draft', 'hidden', 'pending')`;
 import { getGmailUser } from '../services/gmail';
 
 // ---------------------------------------------------------------------------
@@ -147,7 +150,7 @@ export function registerPublicRoutes() {
           })
           .from(analytics)
           .innerJoin(posts, eq(posts.id, analytics.postId))
-          .where(eq(posts.isSecret, false))
+          .where(and(eq(posts.isSecret, false), isPubliclyVisible))
           .orderBy(desc(analytics.pageViews))
           .limit(50);
 
@@ -201,7 +204,7 @@ export function registerPublicRoutes() {
       const rows = await db
         .select({ id: posts.id, title: posts.title, slug: posts.slug })
         .from(posts)
-        .where(and(eq(posts.isSecret, false), or(ilike(posts.title, pattern), ilike(posts.content, pattern))))
+        .where(and(eq(posts.isSecret, false), isPubliclyVisible, or(ilike(posts.title, pattern), ilike(posts.content, pattern))))
         .orderBy(sql`CASE WHEN ${posts.title} ILIKE ${pattern} THEN 0 ELSE 1 END`, desc(posts.createdAt))
         .limit(limit);
 

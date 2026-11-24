@@ -29,6 +29,8 @@ export interface SyncResult {
   created: number;
   updated: number;
   unchanged: number;
+  /** Stories hidden because they were deleted/unpublished in WordPress. */
+  removed: number;
   total: number;
   errors: string[];
   durationMs: number;
@@ -116,11 +118,11 @@ async function fetchAllWordPressPosts(): Promise<WordPressPost[]> {
 
 export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual'): Promise<SyncResult> {
   if (running) {
-    return { success: false, created: 0, updated: 0, unchanged: 0, total: 0, errors: ['A sync is already running'], durationMs: 0 };
+    return { success: false, created: 0, updated: 0, unchanged: 0, removed: 0, total: 0, errors: ['A sync is already running'], durationMs: 0 };
   }
   running = true;
   const started = Date.now();
-  const result: SyncResult = { success: true, created: 0, updated: 0, unchanged: 0, total: 0, errors: [], durationMs: 0 };
+  const result: SyncResult = { success: true, created: 0, updated: 0, unchanged: 0, removed: 0, total: 0, errors: [], durationMs: 0 };
 
   try {
     const [wpPosts, authorId] = await Promise.all([fetchAllWordPressPosts(), getSyncUserId()]);
@@ -168,8 +170,10 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
           continue;
         }
 
-        const prevModified = (existing.metadata as any)?.wpModified;
-        if (prevModified && prevModified === wp.modified) {
+        const existingMeta = (existing.metadata ?? {}) as Record<string, any>;
+        const wasRemoved = existingMeta.removedFromWordPress === true;
+        const prevModified = existingMeta.wpModified;
+        if (prevModified && prevModified === wp.modified && !wasRemoved) {
           result.unchanged++;
           continue;
         }
@@ -181,12 +185,39 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
             content,
             excerpt,
             readingTimeMinutes: readingMinutes(content),
-            metadata: { ...((existing.metadata ?? {}) as object), ...wpMeta, syncedAt: new Date().toISOString() },
+            metadata: {
+              ...existingMeta,
+              ...wpMeta,
+              // Republished in WordPress: make it visible again.
+              ...(wasRemoved ? { status: 'publish', removedFromWordPress: false } : {}),
+              syncedAt: new Date().toISOString(),
+            },
           })
           .where(eq(posts.id, existing.id));
         result.updated++;
       } catch (error) {
         result.errors.push(`Post ${wp.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    // Stories deleted or unpublished in WordPress: hide them here too. Hidden rather than
+    // deleted so their likes/comments survive if the story is republished. Only runs after
+    // a complete, non-empty fetch so a WordPress outage can't hide the whole catalogue.
+    if (wpPosts.length > 0) {
+      const liveIds = new Set(wpPosts.map((wp) => wp.id));
+      for (const row of existingRows as any[]) {
+        const meta = (row.metadata ?? {}) as Record<string, any>;
+        const wpId = Number(meta.wordpressId);
+        if (!wpId || liveIds.has(wpId) || meta.removedFromWordPress === true) continue;
+        try {
+          await db
+            .update(posts)
+            .set({ metadata: { ...meta, status: 'hidden', removedFromWordPress: true, removedAt: new Date().toISOString() } })
+            .where(eq(posts.id, row.id));
+          result.removed++;
+        } catch (error) {
+          result.errors.push(`Hide post ${row.id}: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
     }
   } catch (error) {
@@ -207,7 +238,7 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
     console.error('Failed to record WordPress sync log:', error);
   }
 
-  const summary = `${result.created} created, ${result.updated} updated, ${result.unchanged} unchanged of ${result.total}`;
+  const summary = `${result.created} created, ${result.updated} updated, ${result.unchanged} unchanged, ${result.removed} hidden (deleted in WordPress) of ${result.total}`;
   if (result.success) console.log(`[wordpress-sync] ${trigger}: ${summary} in ${result.durationMs}ms`);
   else console.error(`[wordpress-sync] ${trigger} failed: ${result.errors[0]}`);
   return result;

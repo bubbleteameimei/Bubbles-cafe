@@ -3,11 +3,13 @@ import { db } from '../db';
 import { posts, users, analytics, comments } from '@shared/schema';
 import { eq, desc, and, asc, sql } from 'drizzle-orm';
 import { verifyAuthToken } from '../auth-google';
+import { withViews } from '../utils/post-views';
 
 // Admin "unpublish"/"hide" set metadata.status; keep those out of public listings.
 const isPubliclyVisible = sql`coalesce(${posts.metadata}->>'status', 'publish') not in ('draft', 'hidden', 'pending')`;
 
-const PUBLIC_LIST_CACHE = 'public, max-age=30, stale-while-revalidate=300';
+// Short: the list carries like counts, so long caching showed other devices stale numbers.
+const PUBLIC_LIST_CACHE = 'public, max-age=10, stale-while-revalidate=30';
 
 export function registerPostsRoutes() {
   const router = Router();
@@ -39,7 +41,7 @@ export function registerPostsRoutes() {
       // Public catalogue: let browsers reuse it briefly instead of refetching on every
       // navigation. New stories still show up within a minute.
       res.set('Cache-Control', PUBLIC_LIST_CACHE);
-      res.json({ posts: allPosts, total: allPosts.length, page: page || 1, hasMore });
+      res.json({ posts: await withViews(allPosts), total: allPosts.length, page: page || 1, hasMore });
     } catch (error) {
       console.error('Error fetching posts:', error);
       res.status(500).json({ error: 'Failed to fetch posts' });
@@ -116,7 +118,7 @@ export function registerPostsRoutes() {
 
       if (!post.length) return res.status(404).json({ error: 'Post not found' });
       res.set('Cache-Control', PUBLIC_LIST_CACHE);
-      res.json(post[0]);
+      res.json((await withViews([post[0]]))[0]);
     } catch (error) {
       console.error('Error fetching post:', error);
       res.status(500).json({ error: 'Failed to fetch post' });

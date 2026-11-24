@@ -51,7 +51,9 @@ const DialogContent = React.forwardRef<
       if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
         // Small delay to ensure proper focus return after animations
         setTimeout(() => {
-          previousFocusRef.current?.focus();
+          // preventScroll: restoring focus must not move the page (closing the cookie
+          // banner used to scroll the home page so its title slid under the navbar).
+          previousFocusRef.current?.focus({ preventScroll: true });
         }, 50);
       }
     };

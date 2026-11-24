@@ -6,6 +6,8 @@
  *   GET  /api/posts/reactions-batch?ids=1,2,3   { results: ReactionTotals[] }
  *   GET  /api/posts/:id/reactions               ReactionTotals (+ the caller's state)
  *   POST /api/posts/:id/reaction                { nextState: 'like'|'dislike'|'none' } or legacy { isLike }
+ *   POST /api/posts/:id/view                    count a story view
+ *   GET  /api/posts/summary?ids=1,2             { results: [{ id, title, slug, excerpt, createdAt }] }
  *
  * One reaction per visitor (signed-in user id, or the anonymous cookie id).
  * Counts are recomputed from post_reactions, so clients can't inflate them by
@@ -15,7 +17,7 @@ import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { postReactions, posts } from '@shared/schema';
+import { analytics, postReactions, posts } from '@shared/schema';
 import { getOptionalUser } from '../auth-google';
 import { getAnonId, issueAnonId } from '../utils/anon-id';
 
@@ -71,11 +73,32 @@ export function registerReactionsRoutes() {
     if (ids.length === 0) return res.json({ results: [] });
     try {
       const rows = await db.select(countColumns).from(posts).where(inArray(posts.id, ids));
-      res.set('Cache-Control', 'public, max-age=30');
+      // Never cached: a like on one device must show on another straight away.
+      res.set('Cache-Control', 'no-store');
       return res.json({ results: rows.map(totalsOf) });
     } catch (error) {
       console.error('Error fetching reaction batch:', error);
       return res.status(500).json({ results: [], error: 'Failed to fetch reactions' });
+    }
+  });
+
+  // Story summaries by id, for bookmarks saved on a device without signing in.
+  router.get('/summary', async (req: Request, res: Response) => {
+    const ids = String(req.query.ids ?? '')
+      .split(',')
+      .map((v) => Number(v))
+      .filter((n) => Number.isInteger(n) && n > 0)
+      .slice(0, 200);
+    if (ids.length === 0) return res.json({ results: [] });
+    try {
+      const rows = await db
+        .select({ id: posts.id, title: posts.title, slug: posts.slug, excerpt: posts.excerpt, createdAt: posts.createdAt })
+        .from(posts)
+        .where(and(inArray(posts.id, ids), eq(posts.isSecret, false)));
+      return res.json({ results: rows });
+    } catch (error) {
+      console.error('Error fetching story summaries:', error);
+      return res.status(500).json({ results: [], error: 'Failed to fetch stories' });
     }
   });
 
@@ -95,6 +118,7 @@ export function registerReactionsRoutes() {
           .limit(1);
         if (mine?.state === 'like' || mine?.state === 'dislike') state = mine.state;
       }
+      res.set('Cache-Control', 'no-store');
       return res.json({ ...totalsOf(row), state });
     } catch (error) {
       console.error('Error fetching reactions:', error);
@@ -150,6 +174,31 @@ export function registerReactionsRoutes() {
     } catch (error) {
       console.error('Error saving reaction:', error);
       return res.status(500).json({ error: 'Failed to save reaction' });
+    }
+  });
+
+  // Story views: one per story per browser session (the client de-duplicates), stored in
+  // analytics.page_views. Previously nothing recorded views, so every count read 0.
+  const viewLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: 'draft-7', legacyHeaders: false });
+  router.post('/:id/view', viewLimiter, async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid post id' });
+    try {
+      const [exists] = await db.select({ id: posts.id }).from(posts).where(eq(posts.id, id)).limit(1);
+      if (!exists) return res.status(404).json({ error: 'Story not found' });
+      const [row] = await db
+        .insert(analytics)
+        .values({ postId: id, pageViews: 1, updatedAt: new Date() })
+        .onConflictDoUpdate({
+          target: analytics.postId,
+          set: { pageViews: sql`${analytics.pageViews} + 1`, updatedAt: new Date() },
+        })
+        .returning({ views: analytics.pageViews });
+      res.set('Cache-Control', 'no-store');
+      return res.json({ postId: id, views: Number(row?.views ?? 0) });
+    } catch (error) {
+      console.error('Error recording view:', error);
+      return res.status(500).json({ error: 'Failed to record view' });
     }
   });
 
