@@ -5,7 +5,7 @@ import {
   Mail, MessageSquare, Palette, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, Bookmark as BookmarkIcon,
   Gamepad2
-} from "lucide-react"
+, ShieldCheck } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
@@ -884,6 +884,74 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin: only for admins (there was no way into the admin area from the site) */}
+        {user?.isAdmin && (
+          <SidebarGroup className="mt-5 p-0">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced h-6 px-4 text-[12px] font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 font-sans">
+              Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="mt-0">
+              <SidebarMenu className="space-y-1.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={location === '/admin'}
+                    onClick={() => handleNavigation('/admin')}
+                    className={menuItemClass}
+                    aria-current={location === '/admin' ? 'page' : undefined}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>DASHBOARD</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={location === '/admin/manage-posts'}
+                    onClick={() => handleNavigation('/admin/manage-posts')}
+                    className={menuItemClass}
+                    aria-current={location === '/admin/manage-posts' ? 'page' : undefined}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>MANAGE POSTS</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={location === '/admin/wordpress-sync'}
+                    onClick={() => handleNavigation('/admin/wordpress-sync')}
+                    className={menuItemClass}
+                    aria-current={location === '/admin/wordpress-sync' ? 'page' : undefined}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>WORDPRESS SYNC</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={location === '/admin/users'}
+                    onClick={() => handleNavigation('/admin/users')}
+                    className={menuItemClass}
+                    aria-current={location === '/admin/users' ? 'page' : undefined}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>USERS</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={location === '/admin/feedback'}
+                    onClick={() => handleNavigation('/admin/feedback')}
+                    className={menuItemClass}
+                    aria-current={location === '/admin/feedback' ? 'page' : undefined}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>FEEDBACK</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Footer Buttons */}
         <div className="mb-0 pt-2">

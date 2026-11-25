@@ -34,6 +34,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const LAST_USER_KEY = 'auth:lastUser';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -66,6 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const serverUser = (data as any)?.user ?? null;
       setUser(serverUser);
+      // Remember the confirmed profile (incl. admin flag) for when the API is briefly
+      // unreachable on a later visit. Display only: the API checks admin on every request.
+      try {
+        if (serverUser) localStorage.setItem(LAST_USER_KEY, JSON.stringify(serverUser));
+      } catch {}
       return serverUser;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -104,12 +111,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // First, attempt to create/refresh the server session and load the mapped local user.
+      // Retry once: the API (Render free plan) may still be waking up.
       try {
         await finalizeServerSession(token);
         return;
       } catch (e) {
-        console.error('[Auth] finalizeServerSession error, falling back to Supabase user:', e);
+        console.error('[Auth] finalizeServerSession error, retrying once:', e);
       }
+      try {
+        await new Promise((r) => setTimeout(r, 3000));
+        await finalizeServerSession(token);
+        return;
+      } catch (e) {
+        console.error('[Auth] finalizeServerSession retry failed, using last known profile:', e);
+      }
+
+      // Still unreachable: reuse the profile the API last confirmed for this same account,
+      // so an admin doesn't lose their admin menu just because the API was asleep.
+      try {
+        const sessionEmail = String((data as any)?.session?.user?.email || '').toLowerCase();
+        const cached = JSON.parse(localStorage.getItem(LAST_USER_KEY) || 'null');
+        if (cached && sessionEmail && String(cached.email || '').toLowerCase() === sessionEmail) {
+          setUser(cached);
+          return;
+        }
+      } catch {}
 
       // Fallback: derive a minimal user object directly from Supabase auth if the
       // Worker-based session/user mapping is temporarily unavailable.
@@ -269,7 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       setUser(null);
-      try { localStorage.removeItem('auth_token'); } catch {}
+      try { localStorage.removeItem('auth_token'); localStorage.removeItem(LAST_USER_KEY); } catch {}
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(msg);

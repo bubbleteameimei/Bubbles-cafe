@@ -587,6 +587,22 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {user.isAdmin && (
+                    <>
+                      <button
+                        className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-muted rounded"
+                        onClick={() => {
+                          const href = "/admin";
+                          const done = prefetchRouteAsync(href).catch(() => {});
+                          const cap = new Promise<void>((resolve) => setTimeout(resolve, 100));
+                          Promise.race([done, cap]).then(() => setLocation(href));
+                        }}
+                      >
+                        Admin dashboard
+                      </button>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <button
                     className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted rounded"
                     onClick={() => {
