@@ -1,73 +1,53 @@
-import { useCallback, useMemo, useState } from 'react';
-import './SocialLoginButtons.css';
+import { useCallback, useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { initSupabase, supabase } from '@/lib/supabase';
 
 interface SocialLoginButtonsProps {
-  onSuccess?: (userData: any) => void;
+  onSuccess?: () => void;
   onError?: (error: Error) => void;
 }
 
-export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginButtonsProps) {
+/** Where to send the visitor after sign-in (read by /auth/callback). */
+export const AUTH_RETURN_KEY = 'auth:returnTo';
+/** Last page visited that isn't a sign-in page (kept by RouteScrollManager). */
+export const LAST_PAGE_KEY = 'nav:lastPage';
+
+export default function SocialLoginButtons({ onError }: SocialLoginButtonsProps) {
   const [isLaunching, setIsLaunching] = useState(false);
 
+  // Load the sign-in library as soon as the sign-in page opens, so tapping the button
+  // responds immediately instead of waiting for a download first.
+  useEffect(() => {
+    void initSupabase();
+  }, []);
+
   const handleGoogleLogin = useCallback(async () => {
+    setIsLaunching(true);
     try {
-      setIsLaunching(true);
-
       const ready = await initSupabase();
-      if (!ready) {
-        const msg =
-          'Supabase is not configured for Google sign-in. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
-        const err = new Error(msg);
-        if (onError) onError(err);
-        if (import.meta.env?.DEV) {
-          console.error('[SocialLoginButtons] Supabase init failed for Google OAuth');
-        }
-        return;
-      }
+      if (!ready) throw new Error('Google sign-in is unavailable right now. Please try again shortly.');
 
-      const redirectTo =
-        typeof window !== 'undefined' && window.location?.origin
-          ? `${window.location.origin}/auth/callback`
-          : undefined;
-
-      if (import.meta.env?.DEV) {
-        console.log('[SocialLoginButtons] Launching Supabase Google OAuth', {
-          redirectTo,
-        });
-      }
+      // Remember where the visitor was, so the callback can bring them back there.
+      try {
+        sessionStorage.setItem(AUTH_RETURN_KEY, sessionStorage.getItem(LAST_PAGE_KEY) || '/');
+      } catch {}
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { access_type: 'offline', prompt: 'consent' },
         },
       });
-
-      if (error) {
-        throw error;
-      }
-
-      // Supabase will redirect the browser; normally we don't render anything else here.
+      if (error) throw error;
+      // The browser is now leaving for Google; keep the button in its busy state.
     } catch (e) {
-      const err = e instanceof Error ? e : new Error('Google login failed');
-      if (onError) {
-        onError(err);
-      } else {
-        console.error('[SocialLoginButtons] Google login error:', err);
-      }
-    } finally {
       setIsLaunching(false);
+      const err = e instanceof Error ? e : new Error('Google sign-in failed');
+      if (onError) onError(err);
+      else console.error('[SocialLoginButtons] Google login error:', err);
     }
   }, [onError]);
-
-  const disabled = useMemo(() => {
-    return isLaunching;
-  }, [isLaunching]);
 
   return (
     <div className="social-auth-buttons">
@@ -75,17 +55,21 @@ export default function SocialLoginButtons({ onSuccess, onError }: SocialLoginBu
         className="social-button google-button"
         type="button"
         onClick={handleGoogleLogin}
-        disabled={disabled}
-        title={disabled ? 'Google login is not configured' : undefined}
+        disabled={isLaunching}
+        aria-busy={isLaunching}
       >
-        <img
-          src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
-          alt=""
-          width={18}
-          height={18}
-          style={{ marginRight: 8 }}
-        />
-        Sign in with Google
+        {isLaunching ? (
+          <Loader2 className="h-[18px] w-[18px] animate-spin" style={{ marginRight: 8 }} aria-hidden="true" />
+        ) : (
+          <img
+            src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
+            alt=""
+            width={18}
+            height={18}
+            style={{ marginRight: 8 }}
+          />
+        )}
+        {isLaunching ? 'Redirecting to Google…' : 'Sign in with Google'}
       </button>
     </div>
   );

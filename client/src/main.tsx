@@ -105,12 +105,23 @@ try {
             // When a new deploy's service worker takes over, reload once so visitors see
             // the new version right away. Previously the old cached app kept showing until
             // every tab was closed, so fixes looked "not deployed".
+            // When a new deploy's service worker takes over, switch to the new version on the
+            // visitor's next page change (a full page load instead of an in-app one). It used
+            // to reload immediately, which could interrupt things mid-way, e.g. completing
+            // Google sign-in on /auth/callback.
             const hadController = !!navigator.serviceWorker.controller;
-            let reloaded = false;
             navigator.serviceWorker.addEventListener("controllerchange", () => {
-              if (!hadController || reloaded) return; // first install: nothing stale to replace
-              reloaded = true;
-              window.location.reload();
+              if (!hadController) return; // first install: nothing stale to replace
+              const origPush = history.pushState.bind(history);
+              history.pushState = function (state: any, title: string, url?: string | URL | null) {
+                const target = url ? new URL(String(url), window.location.href) : null;
+                const onAuthPage = /^\/(auth|reset-password)/.test(window.location.pathname);
+                if (target && target.origin === window.location.origin && !onAuthPage) {
+                  window.location.assign(target.href);
+                  return;
+                }
+                return origPush(state, title, url);
+              } as typeof history.pushState;
             });
             navigator.serviceWorker
               .register("/sw.js")

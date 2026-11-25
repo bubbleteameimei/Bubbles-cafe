@@ -49,6 +49,12 @@ const RouteScrollManager: React.FC = () => {
   useLayoutEffect(() => {
     const prev = prevLocationRef.current;
     prevLocationRef.current = location;
+    // Remember the last ordinary page so sign-in can return the visitor to it.
+    if (!/^\/(auth|reset-password)/.test(location)) {
+      try {
+        sessionStorage.setItem('nav:lastPage', location + window.location.search);
+      } catch {}
+    }
     if (prev === null) return; // first render: the browser/initial load decides
     if (prev === location) return;
 
