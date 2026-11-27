@@ -31,6 +31,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bubblescafe.space';
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${FRONTEND_URL}/auth/callback/google`;
 const ADMIN_EMAIL = process.env.GMAIL_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@example.com';
 
+/** Site-owner email(s) that always get admin: ADMIN_EMAIL / GMAIL_ADMIN_EMAIL, plus comma-separated ADMIN_EMAILS. */
+function adminEmails(): string[] {
+  return [process.env.GMAIL_ADMIN_EMAIL, process.env.ADMIN_EMAIL, ...(process.env.ADMIN_EMAILS || '').split(',')]
+    .map((e) => (e || '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export interface TokenPayload {
   userId: number;
   email: string;
@@ -99,7 +106,14 @@ export async function findOrCreateAppUser(email: string, supabaseUser?: any): Pr
   try {
     const normalizedEmail = email.toLowerCase().trim();
     let user = await getUser(normalizedEmail);
-    if (user) return user;
+    if (user) {
+      // The configured site-owner email(s) are always admins, even if the flag was lost.
+      if (!user.isAdmin && adminEmails().includes(normalizedEmail)) {
+        const [promoted] = await db.update(users).set({ isAdmin: true }).where(eq(users.id, user.id)).returning();
+        if (promoted) user = promoted;
+      }
+      return user;
+    }
 
     // Create new user from Supabase profile
     const meta = supabaseUser?.user_metadata || {};
@@ -107,7 +121,7 @@ export async function findOrCreateAppUser(email: string, supabaseUser?: any): Pr
     const photoURL = meta.avatar_url || meta.picture || meta.photoURL || null;
     const username = (typeof meta.username === 'string' && meta.username.trim())
       || normalizedEmail.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '_');
-    const isAdminEmail = normalizedEmail === ADMIN_EMAIL.toLowerCase();
+    const isAdminEmail = adminEmails().includes(normalizedEmail);
 
     const newUser = await db
       .insert(users)
