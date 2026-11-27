@@ -12,6 +12,7 @@ import {
   handleLogout,
   getGoogleAuthUrl,
   findOrCreateAppUser,
+  isBanned,
   requireAdmin,
 } from './auth-google';
 import { getCsrfTokenHandler } from './middleware/csrf-signed-tokens';
@@ -163,6 +164,15 @@ app.post('/api/auth/supabase/login', async (req: Request, res: Response) => {
     if (!appUser) {
       return res.status(500).json({ error: 'Failed to find or create user' });
     }
+    if (isBanned(appUser)) {
+      return res.status(403).json({ error: 'banned', message: 'This account has been suspended. Contact the site owner if you think this is a mistake.' });
+    }
+    // Remember when they last signed in (shown in the admin user list).
+    try {
+      await db.update(users)
+        .set({ metadata: { ...((appUser.metadata ?? {}) as object), lastLogin: new Date().toISOString() } })
+        .where(eq(users.id, appUser.id));
+    } catch {}
 
     res.json({
       user: {

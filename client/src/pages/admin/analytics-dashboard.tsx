@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 "use client"
 
 import React, { useState } from 'react'
@@ -115,9 +116,11 @@ export default function AnalyticsDashboard() {
             <RefreshCcw className="mr-2 h-4 w-4" />
             Refresh Data
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
           </Button>
         </div>
       </div>

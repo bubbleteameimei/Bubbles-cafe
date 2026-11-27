@@ -125,7 +125,7 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
   const result: SyncResult = { success: true, created: 0, updated: 0, unchanged: 0, removed: 0, total: 0, errors: [], durationMs: 0 };
 
   try {
-    const [wpPosts, authorId] = await Promise.all([fetchAllWordPressPosts(), getSyncUserId()]);
+    const [wpPosts, authorId, deletedIds] = await Promise.all([fetchAllWordPressPosts(), getSyncUserId(), getDeletedWordPressIds()]);
     result.total = wpPosts.length;
 
     const existingRows = await db.select({ id: posts.id, slug: posts.slug, metadata: posts.metadata }).from(posts);
@@ -153,6 +153,10 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
         };
 
         const existing = byWpId.get(wp.id) ?? bySlug.get(slug);
+        if (!existing && deletedIds.has(wp.id)) {
+          result.unchanged++; // deleted here by an admin; leave it deleted
+          continue;
+        }
         if (!existing) {
           await db.insert(posts).values({
             title,
@@ -242,6 +246,39 @@ export async function runWordPressSync(trigger: 'manual' | 'scheduled' = 'manual
   if (result.success) console.log(`[wordpress-sync] ${trigger}: ${summary} in ${result.durationMs}ms`);
   else console.error(`[wordpress-sync] ${trigger} failed: ${result.errors[0]}`);
   return result;
+}
+
+// Stories an admin deleted here on purpose. Remembered by WordPress id so the next sync
+// doesn't quietly bring them back.
+const DELETED_KEY = 'wordpress_deleted_ids';
+
+async function getDeletedWordPressIds(): Promise<Set<number>> {
+  try {
+    const [row] = await db.select().from(siteSettings).where(eq(siteSettings.key, DELETED_KEY)).limit(1);
+    const ids = row ? JSON.parse(row.value) : [];
+    return new Set(Array.isArray(ids) ? ids.map(Number).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Call before deleting posts: any that came from WordPress won't be re-imported. */
+export async function rememberDeletedWordPressPosts(postIds: number[]): Promise<void> {
+  if (!postIds.length) return;
+  try {
+    const rows = await db.select({ metadata: posts.metadata }).from(posts).where(inArray(posts.id, postIds));
+    const wpIds = rows.map((r: any) => Number(r.metadata?.wordpressId)).filter(Boolean);
+    if (!wpIds.length) return;
+    const all = await getDeletedWordPressIds();
+    wpIds.forEach((id: number) => all.add(id));
+    const value = JSON.stringify([...all]);
+    await db
+      .insert(siteSettings)
+      .values({ key: DELETED_KEY, value, category: 'wordpress', description: 'WordPress stories deleted by an admin (not re-imported)' })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
+  } catch (error) {
+    console.error('[wordpress-sync] could not record deleted posts:', error);
+  }
 }
 
 export async function isSyncEnabled(): Promise<boolean> {

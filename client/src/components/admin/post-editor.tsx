@@ -25,7 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { X, Save, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Post } from "../../pages/admin/content";
+import type { Post } from "../../pages/admin/content";
+import { apiRequest } from "@/lib/queryClient";
 
 // Define the theme categories
 const themeCategories = [
@@ -50,7 +51,8 @@ const themeCategories = [
 const statusOptions = [
   { value: "published", label: "Published" },
   { value: "draft", label: "Draft" },
-  { value: "pending", label: "Pending Review" }
+  { value: "pending", label: "Pending Review" },
+  { value: "hidden", label: "Hidden" }
 ];
 
 // Define the form schema
@@ -59,8 +61,8 @@ const postSchema = z.object({
   slug: z.string().min(3, "Slug must be at least 3 characters long").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   excerpt: z.string().optional(),
   content: z.string().min(10, "Content must be at least 10 characters long"),
-  status: z.enum(["published", "draft", "pending"]),
-  categories: z.array(z.string()).min(1, "Select at least one category"),
+  status: z.enum(["published", "draft", "pending", "hidden"]),
+  categories: z.array(z.string()).default([]),
   featuredImage: z.string().optional(),
   allowComments: z.boolean().default(true),
   isFeatured: z.boolean().default(false)
@@ -92,7 +94,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
       categories: post?.categories || [],
       featuredImage: post?.featuredImage || "",
       allowComments: true,
-      isFeatured: false
+      isFeatured: post?.featured ?? false
     }
   });
 
@@ -128,22 +130,27 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
     setIsSaving(true);
     
     try {
-      // Determine if this is a create or update operation
-      const url = post ? `/api/posts/${post.id}` : '/api/posts';
-      const method = post ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
+      // Admin endpoints: create as the site author, or update any story (WordPress ones too).
+      const statusMap = { published: 'publish', draft: 'draft', pending: 'pending', hidden: 'hidden' } as const;
+      const body = {
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        excerpt: data.excerpt || null,
+        themeCategory: data.categories[0] ?? null,
+        metadata: {
+          status: statusMap[data.status],
+          featured: data.isFeatured,
+          categories: data.categories,
+          featuredImage: data.featuredImage || null,
+          allowComments: data.allowComments,
         },
-        body: JSON.stringify(data),
+      };
+      await apiRequest(post ? `/api/admin/posts/${post.id}` : '/api/admin/posts', {
+        method: post ? 'PATCH' : 'POST',
+        body: JSON.stringify(body),
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save post');
-      }
-      
+
       toast({
         title: post ? "Post Updated" : "Post Created",
         description: post ? "Your post has been updated successfully." : "Your post has been created successfully.",
@@ -157,7 +164,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save your post. Please try again.",
+        description: error instanceof Error && error.message ? error.message : "Failed to save your post. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -168,7 +175,16 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
   return (
     <div className="space-y-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            // Show the tab that has the problem; otherwise Save looks like it did nothing.
+            const fields = Object.keys(errors);
+            const settingsFields = ["status", "categories", "featuredImage", "allowComments", "isFeatured"];
+            setActiveTab(fields.every((f) => settingsFields.includes(f)) ? "settings" : "content");
+            const first = Object.values(errors)[0] as { message?: string } | undefined;
+            toast({ title: "Check the form", description: first?.message || "Some fields need attention.", variant: "destructive" });
+          })}
+        >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 mb-4 w-full">
               <TabsTrigger value="content" className="px-2 py-1.5 md:px-4 md:py-2">Content</TabsTrigger>
@@ -451,7 +467,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
             </TabsContent>
           </Tabs>
           
-          <div className="flex justify-end space-x-3 mt-6 sticky bottom-2 z-10">
+          <div className="flex justify-end space-x-3 mt-6 sticky bottom-0 z-10 -mx-1 px-1 py-3 bg-background/95 backdrop-blur border-t">
             <Button
               type="button"
               variant="outline"

@@ -398,9 +398,11 @@ export default function ContentModerationPage() {
             <RefreshCcw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button variant="default" size="sm">
-            <Shield className="mr-2 h-4 w-4" />
-            Moderation Guidelines
+          <Button variant="default" size="sm" asChild>
+            <a href="/legal/terms" target="_blank" rel="noopener noreferrer">
+              <Shield className="mr-2 h-4 w-4" />
+              Site Terms
+            </a>
           </Button>
         </div>
       </div>
