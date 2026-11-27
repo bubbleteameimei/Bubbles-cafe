@@ -17,6 +17,10 @@ export default defineConfig(({ mode }) => {
                 themePlugin(),
                 VitePWA({
                         registerType: "autoUpdate",
+                        // Ship a self-destroying worker: browsers that still have the old
+                        // caching worker install this one, which deletes its caches and
+                        // unregisters itself, so every visitor ends up on the live site.
+                        selfDestroying: true,
                         injectRegister: false,
                         includeAssets: ["icons/*", "favicon.ico"],
                         manifest: {
@@ -100,6 +104,10 @@ export default defineConfig(({ mode }) => {
         }
 
         return {
+                // Short build id shown in the footer, so "which version am I on?" is answerable.
+                define: {
+                        __BUILD_ID__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA || "local").slice(0, 7)),
+                },
                 plugins,
                 resolve: {
                         alias: {

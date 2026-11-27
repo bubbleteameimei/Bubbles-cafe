@@ -106,6 +106,7 @@ export default function Footer() {
         <div className="mt-0 w-full flex flex-col items-center justify-center">
           <div className="text-xs font-medium text-foreground/80 whitespace-nowrap mb-1.5">
             © Bubble’s Cafe {new Date().getFullYear()}. All rights reserved.
+            <span className="ml-2 font-normal text-foreground/40" title="Site version">v{__BUILD_ID__}</span>
           </div>
 
           <nav
