@@ -76,68 +76,31 @@ try {
   } catch {}
 })();
 
-// Service worker registration (enabled by default in production)
-// Can be disabled by setting VITE_ENABLE_SW=false at build time.
+// Service worker: removed. It cached the whole site on visitors' devices and kept serving
+// the old version after deploys (fixes looked "not deployed"; the admin menu didn't show).
+// Here we unregister any worker left from earlier visits and delete its caches; if one was
+// controlling this page, reload once so the page comes fresh from the network. Assets are
+// content-hashed and index.html is no-cache on Vercel, so nothing is lost without it.
 try {
-  const envAny: any = (import.meta as any)?.env || {};
-  const swFlag = envAny.VITE_ENABLE_SW;
-  const enableSw =
-    swFlag === undefined
-      ? true
-      : String(swFlag).toLowerCase() === "true";
-
-  if (import.meta.env.PROD && enableSw && "serviceWorker" in navigator) {
-    const hostname = location.hostname;
-    const isLocalhost = ["localhost", "127.0.0.1"].includes(hostname);
-    const isPreviewHost =
-      /\.vercel\.app$/.test(hostname) ||
-      /\.vercel\.dev$/.test(hostname) ||
-      /\.repl\.co$/.test(hostname) ||
-      /\.replit\.dev$/.test(hostname) ||
-      /\.replit\.app$/.test(hostname);
-
-    // Only register on HTTPS or localhost, and avoid ephemeral preview hosts by default
-    if (!isPreviewHost && (location.protocol === "https:" || isLocalhost)) {
-      (async () => {
-        try {
-          const res = await fetch("/sw.js", { method: "HEAD" });
-          if (res.ok) {
-            // When a new deploy's service worker takes over, reload once so visitors see
-            // the new version right away. Previously the old cached app kept showing until
-            // every tab was closed, so fixes looked "not deployed".
-            // When a new deploy's service worker takes over, switch to the new version on the
-            // visitor's next page change (a full page load instead of an in-app one). It used
-            // to reload immediately, which could interrupt things mid-way, e.g. completing
-            // Google sign-in on /auth/callback.
-            const hadController = !!navigator.serviceWorker.controller;
-            navigator.serviceWorker.addEventListener("controllerchange", () => {
-              if (!hadController) return; // first install: nothing stale to replace
-              const origPush = history.pushState.bind(history);
-              history.pushState = function (state: any, title: string, url?: string | URL | null) {
-                const target = url ? new URL(String(url), window.location.href) : null;
-                const onAuthPage = /^\/(auth|reset-password)/.test(window.location.pathname);
-                if (target && target.origin === window.location.origin && !onAuthPage) {
-                  window.location.assign(target.href);
-                  return;
-                }
-                return origPush(state, title, url);
-              } as typeof history.pushState;
-            });
-            navigator.serviceWorker
-              .register("/sw.js")
-              .then((reg) => {
-                // Check for a newer deploy when the visitor comes back to the tab.
-                document.addEventListener("visibilitychange", () => {
-                  if (document.visibilityState === "visible") reg.update().catch(() => {});
-                });
-              })
-              .catch(() => {});
-          }
-        } catch {
-          // Silent: no service worker available
+  if ("serviceWorker" in navigator) {
+    const wasControlled = !!navigator.serviceWorker.controller;
+    (async () => {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
         }
-      })();
-    }
+        const onAuthPage = /^\/(auth|reset-password)/.test(location.pathname);
+        if (wasControlled && regs.length > 0 && !onAuthPage && !sessionStorage.getItem("sw:cleared")) {
+          sessionStorage.setItem("sw:cleared", "1");
+          location.reload();
+        }
+      } catch {
+        // best effort
+      }
+    })();
   }
 } catch {}
 
