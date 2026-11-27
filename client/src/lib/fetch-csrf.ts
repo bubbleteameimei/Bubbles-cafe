@@ -55,14 +55,21 @@ async function withAuthHeader(init: RequestInit): Promise<RequestInit> {
 }
 
 async function fetchWithApiBase(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const method = (init?.method || 'GET').toUpperCase();
   const apiPath = apiPathOf(input);
+  // Only our own API gets the base URL, credentials and auth header. Everything else
+  // (Supabase, WordPress, fonts…) passes through untouched. Forcing
+  // `credentials: 'include'` on Supabase's requests made browsers block them after the
+  // CORS preflight (Supabase doesn't allow credentialed requests), so Google sign-in
+  // failed whenever supabase-js happened to pick up this wrapper.
+  if (!apiPath) return originalFetch(input, init);
+
+  const method = (init?.method || 'GET').toUpperCase();
   const url = resolveUrl(input);
   let withCreds: RequestInit = init
     ? { ...init, credentials: init.credentials || 'include' }
     : { credentials: 'include' };
 
-  if (apiPath && !NO_AUTH_PATHS.some((p) => apiPath.startsWith(p))) {
+  if (!NO_AUTH_PATHS.some((p) => apiPath.startsWith(p))) {
     withCreds = await withAuthHeader(withCreds);
   }
 
