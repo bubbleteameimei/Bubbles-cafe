@@ -1,3 +1,4 @@
+import { rememberDeletedWordPressPosts } from '../services/wordpress-sync';
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { posts, users, analytics, comments } from '@shared/schema';
@@ -229,6 +230,7 @@ export function registerPostsRoutes() {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
+      await rememberDeletedWordPressPosts([postId]);
       await db.delete(posts).where(eq(posts.id, postId));
       res.json({ success: true });
     } catch (error) {

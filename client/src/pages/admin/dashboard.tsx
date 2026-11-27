@@ -17,7 +17,8 @@ import {
   BookOpen,
   Flag
 } from "lucide-react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
+import { downloadJson, todayStamp } from "@/lib/download-json";
 import { 
   Card, 
   CardContent, 
@@ -55,6 +56,7 @@ import { useState } from "react";
 
 
 export default function AdminDashboard() {
+  const [, navigate] = useLocation();
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState("week");
   const isAdmin = !!user?.isAdmin;
@@ -132,11 +134,19 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Last 30 Days
-          </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              downloadJson(`bubbles-cafe-report-${todayStamp()}`, {
+                exportedAt: new Date().toISOString(),
+                info: data ?? null,
+                analytics: analyticsData ?? null,
+                weekly: weeklyData ?? null,
+                activity: activityLogs ?? null,
+              })
+            }
+          >
             <FileText className="mr-2 h-4 w-4" />
             Export Report
           </Button>
@@ -240,7 +250,7 @@ export default function AdminDashboard() {
                           <Badge variant="secondary" className="text-xs">
                             {post.metadata?.themeCategory || 'Story'}
                           </Badge>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open story">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open story" onClick={() => navigate(`/reader/${post.slug}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </div>
@@ -559,7 +569,7 @@ export default function AdminDashboard() {
               )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/content-moderation')}>
                 View All Activity
               </Button>
             </CardFooter>

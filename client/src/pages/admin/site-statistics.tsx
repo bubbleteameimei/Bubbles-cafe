@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
+import { downloadJson, todayStamp } from "@/lib/download-json";
 import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
@@ -219,7 +220,12 @@ export default function SiteStatisticsPage() {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!analytics}
+            onClick={() => downloadJson(`bubbles-cafe-statistics-${todayStamp()}`, analytics)}
+          >
             Export Data
           </Button>
         </div>

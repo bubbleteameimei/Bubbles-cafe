@@ -32,7 +32,7 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${FRONTEND_URL}/
 const ADMIN_EMAIL = process.env.GMAIL_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@example.com';
 
 /** Site-owner email(s) that always get admin: ADMIN_EMAIL / GMAIL_ADMIN_EMAIL, plus comma-separated ADMIN_EMAILS. */
-function adminEmails(): string[] {
+export function adminEmails(): string[] {
   return [process.env.GMAIL_ADMIN_EMAIL, process.env.ADMIN_EMAIL, ...(process.env.ADMIN_EMAILS || '').split(',')]
     .map((e) => (e || '').trim().toLowerCase())
     .filter(Boolean);
@@ -153,6 +153,18 @@ export async function findOrCreateAppUser(email: string, supabaseUser?: any): Pr
 // Simple in-memory cache for verified tokens (avoids repeated Supabase API calls)
 const tokenCache = new Map<string, { userId: number; email: string; isAdmin: boolean; exp: number }>();
 
+/** A banned account (users.metadata.banned) can't sign in or use the API. */
+export function isBanned(user: { metadata?: unknown } | null | undefined): boolean {
+  return !!(user?.metadata as any)?.banned;
+}
+
+/** Drop cached sign-ins for a user, so a ban, role change or deletion applies at once. */
+export function invalidateUserTokens(userId: number) {
+  for (const [k, v] of tokenCache.entries()) {
+    if (v.userId === userId) tokenCache.delete(k);
+  }
+}
+
 async function verifySupabaseToken(token: string): Promise<TokenPayload | null> {
   try {
     // Check cache first
@@ -166,7 +178,7 @@ async function verifySupabaseToken(token: string): Promise<TokenPayload | null> 
     if (error || !supabaseUser?.email) return null;
 
     const appUser = await findOrCreateAppUser(supabaseUser.email, supabaseUser);
-    if (!appUser) return null;
+    if (!appUser || isBanned(appUser)) return null;
 
     const payload: TokenPayload = {
       userId: appUser.id,

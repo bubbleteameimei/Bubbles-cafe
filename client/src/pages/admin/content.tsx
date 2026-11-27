@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Edit, Trash2, X, Loader2, BookOpen, ExternalLink } from "lucide-react";
+import { Eye, Edit, Trash2, X, Loader2, BookOpen, ExternalLink, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import PostEditor from "@/components/admin/post-editor";
-import { apiJson } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 
 export interface Post {
   id: string;
@@ -18,7 +18,7 @@ export interface Post {
   slug: string;
   excerpt: string;
   content: string;
-  status: "published" | "draft" | "pending";
+  status: "published" | "draft" | "pending" | "hidden";
   createdAt: string;
   updatedAt: string;
   categories: string[];
@@ -27,6 +27,32 @@ export interface Post {
   authorName?: string;
   views: number;
   sourceType: "wordpress" | "manual" | "community";
+  featured?: boolean;
+}
+
+/** Shape a raw posts row from /api/admin/posts into what this page and the editor use. */
+function toAdminPost(p: any): Post {
+  const meta = p.metadata ?? {};
+  const raw = String(meta.status || "publish").toLowerCase();
+  const status = raw === "publish" ? "published" : raw === "draft" || raw === "pending" || raw === "hidden" ? raw : "published";
+  return {
+    id: String(p.id),
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt ?? "",
+    content: p.content ?? "",
+    status,
+    createdAt: p.createdAt,
+    updatedAt: meta.syncedAt || p.createdAt,
+    categories: Array.isArray(meta.categories) && typeof meta.categories[0] === "string"
+      ? meta.categories
+      : p.themeCategory ? [p.themeCategory] : [],
+    featuredImage: meta.featuredImage || undefined,
+    authorId: p.authorId != null ? String(p.authorId) : undefined,
+    views: Number(meta.pageViews || 0),
+    sourceType: meta.wordpressId ? "wordpress" : p.isAdminPost ? "manual" : "community",
+    featured: meta.featured === true,
+  };
 }
 
 export default function ContentPage() {
@@ -40,17 +66,15 @@ export default function ContentPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   // Fetch posts with react-query
-  const { data, isLoading, isError, refetch } = useQuery<{posts: Post[], hasMore: boolean}>({
-    queryKey: ['/api/posts'],
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { data, isLoading, isError, refetch } = useQuery<{ posts: Post[] }>({
+    queryKey: ['/api/admin/posts', 'content-page'],
     queryFn: async () => {
-      const response = await fetch('/api/posts');
-      if (!response.ok) {
-        throw new Error("Failed to fetch posts");
-      }
-      return response.json();
-    }
+      const res = await apiRequest<{ posts: any[] }>('/api/admin/posts');
+      return { posts: (res.posts ?? []).map(toAdminPost) };
+    },
   });
-  
+
   // Handle editing a post
   const handleEdit = (post: Post) => {
     setSelectedPost(post);
@@ -74,21 +98,9 @@ export default function ContentPage() {
     
     setIsDeleteLoading(true);
     try {
-      // For WordPress posts, we'll just hide them from the UI
-      if (selectedPost.sourceType === 'wordpress') {
-        await apiJson<any>('PUT', `/api/posts/${selectedPost.id}/hide`);
-        toast({
-          title: "Hidden from listings",
-          description: "The WordPress post has been hidden from listings. You can re-enable it in the WordPress Sync settings.",
-        });
-      } else {
-        // For manual and community posts, we can delete them completely
-        await apiJson<any>('DELETE', `/api/posts/${selectedPost.id}`);
-        toast({
-          title: "Post deleted",
-          description: "The post has been permanently deleted.",
-        });
-      }
+      // WordPress stories are remembered as deleted, so the next sync won't bring them back.
+      await apiRequest(`/api/admin/posts/${selectedPost.id}`, { method: 'DELETE' });
+      toast({ title: "Story deleted", description: `"${selectedPost.title}" has been deleted.` });
       
       // Close dialog and refresh posts
       setIsDeleteDialogOpen(false);
@@ -112,9 +124,6 @@ export default function ContentPage() {
     
     return posts.filter(post => {
       // Hide posts explicitly marked hidden in metadata (e.g., hidden WP posts)
-      const isHidden = (post as any)?.metadata?.isHidden === true;
-      if (isHidden) return false;
-
       // Filter by status
       if (statusFilter !== "all" && post.status !== statusFilter) {
         return false;
@@ -142,11 +151,8 @@ export default function ContentPage() {
   // Handle successfully saving a post
   const handleSaveSuccess = () => {
     setIsEditDialogOpen(false);
+    setIsCreateOpen(false);
     refetch();
-    toast({
-      title: "Post updated",
-      description: "The post has been successfully updated.",
-    });
   };
 
   if (isLoading) {
@@ -179,6 +185,10 @@ export default function ContentPage() {
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <CardTitle>Story Management</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+              New story
+            </Button>
             <div className="relative">
               <input
                 type="text"
@@ -197,6 +207,7 @@ export default function ContentPage() {
               <option value="published">Published</option>
               <option value="draft">Draft</option>
               <option value="pending">Pending</option>
+              <option value="hidden">Hidden</option>
             </select>
             <select
               className="px-3 py-2 bg-background border rounded-md"
@@ -301,7 +312,7 @@ export default function ContentPage() {
       {/* Edit Post Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent 
-          className="sm:max-w-[800px]" 
+          className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto"
           aria-labelledby="edit-story-title"
           aria-describedby="edit-story-description"
         >
@@ -322,6 +333,17 @@ export default function ContentPage() {
 </DialogContent>
       </Dialog>
 
+      {/* New story */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New story</DialogTitle>
+            <DialogDescription>Write a story and publish it, or save it as a draft.</DialogDescription>
+          </DialogHeader>
+          {isCreateOpen && <PostEditor onClose={() => setIsCreateOpen(false)} onSaveSuccess={handleSaveSuccess} />}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Post Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent 
@@ -331,15 +353,15 @@ export default function ContentPage() {
           <DialogHeader>
             <DialogTitle id="delete-story-title">Confirm Deletion</DialogTitle>
             <DialogDescription id="delete-story-description">
-              {selectedPost?.sourceType === 'wordpress' 
-                ? "This story was imported from WordPress. It will be hidden from listings but can be re-synced later."
-                : "This action cannot be undone. The story will be permanently deleted from the system."}
+              {selectedPost?.sourceType === 'wordpress'
+                ? "This story came from WordPress. It's deleted here and won't be re-imported by the sync. Its likes and comments are removed too."
+                : "This can't be undone. The story, its likes and its comments are permanently deleted."}
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
             <p className="font-medium">
-              Are you sure you want to {selectedPost?.sourceType === 'wordpress' ? 'hide' : 'delete'} "{selectedPost?.title}"?
+              Are you sure you want to delete "{selectedPost?.title}"?
             </p>
           </div>
           
@@ -365,7 +387,7 @@ export default function ContentPage() {
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-1" />
-                  {selectedPost?.sourceType === 'wordpress' ? 'Hide' : 'Delete'}
+                  Delete
                 </>
               )}
             </Button>

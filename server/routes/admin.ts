@@ -19,10 +19,13 @@ import {
   userFeedback,
   users,
 } from '@shared/schema';
-import { requireAdmin } from '../auth-google';
+import { adminEmails, invalidateUserTokens, requireAdmin } from '../auth-google';
+import { createSupabaseServiceRoleClient } from '../utils/supabase';
+import crypto from 'node:crypto';
 import {
   getSyncLogs,
   getSyncStatus,
+  rememberDeletedWordPressPosts,
   runWordPressSync,
   setSyncEnabled,
 } from '../services/wordpress-sync';
@@ -122,13 +125,164 @@ export function registerAdminRoutes() {
           username: u.username,
           email: u.email,
           isAdmin: !!u.isAdmin,
+          isOwner: adminEmails().includes(String(u.email).toLowerCase()),
+          banned: !!(u.metadata as any)?.banned,
           createdAt: u.createdAt,
-          lastLogin: (u.metadata as any)?.lastLogin ?? null,
+          lastLogin:
+            (u.metadata as any)?.lastLogin ??
+            (u.metadata as any)?.oauth?.supabase?.lastLogin ??
+            (u.metadata as any)?.oauth?.google?.lastLogin ??
+            null,
         })),
       );
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+
+  // Guards shared by the user actions below: an admin can't lock themselves out, and the
+  // site owner (the configured admin email) can't be demoted, banned or deleted.
+  async function loadTargetUser(req: Request, res: Response) {
+    const id = idParam(req);
+    if (!id) {
+      res.status(400).json({ error: 'Invalid user id' });
+      return null;
+    }
+    const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (!target) {
+      res.status(404).json({ error: 'User not found' });
+      return null;
+    }
+    return target as any;
+  }
+  const isSelf = (req: Request, id: number) => (req as any).user?.userId === id;
+  const isOwnerEmail = (email: string) => adminEmails().includes(String(email).toLowerCase());
+
+  const createUserSchema = z.object({
+    email: z.string().trim().toLowerCase().email(),
+    username: z.string().trim().min(2).max(50).optional(),
+    isAdmin: z.boolean().optional(),
+  });
+
+  // Pre-register someone by email. Sign-in is Google-only, so there's no password: when
+  // they sign in with that address they get this account (and its role).
+  router.post('/users', async (req, res) => {
+    const parsed = createUserSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: 'Enter a valid email address' });
+    const { email, isAdmin } = parsed.data;
+    const username = parsed.data.username || email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '_');
+    try {
+      const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (existing) return res.status(409).json({ error: 'A user with that email already exists' });
+      const [created] = await db
+        .insert(users)
+        .values({
+          email,
+          username,
+          isAdmin: !!isAdmin,
+          password_hash: 'supabase_auth_' + crypto.randomBytes(16).toString('hex'),
+          metadata: { createdByAdmin: true },
+        })
+        .returning();
+      return res.status(201).json({ id: created.id, email: created.email, username: created.username, isAdmin: created.isAdmin });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+  });
+
+  const updateUserSchema = z.object({
+    username: z.string().trim().min(2).max(50).optional(),
+    isAdmin: z.boolean().optional(),
+    banned: z.boolean().optional(),
+    banReason: z.string().trim().max(300).optional(),
+  });
+
+  router.patch('/users/:id', async (req, res) => {
+    const parsed = updateUserSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid user data' });
+    try {
+      const target = await loadTargetUser(req, res);
+      if (!target) return undefined;
+      const { username, isAdmin, banned, banReason } = parsed.data;
+      const removingPower = isAdmin === false || banned === true;
+      if (removingPower && isSelf(req, target.id)) {
+        return res.status(400).json({ error: "You can't remove your own admin access or ban yourself" });
+      }
+      if (removingPower && isOwnerEmail(target.email)) {
+        return res.status(400).json({ error: 'The site owner account always stays an admin' });
+      }
+
+      const meta = { ...((target.metadata ?? {}) as Record<string, unknown>) };
+      if (banned === true) {
+        meta.banned = true;
+        meta.bannedAt = new Date().toISOString();
+        meta.banReason = banReason || null;
+      } else if (banned === false) {
+        delete meta.banned;
+        delete meta.bannedAt;
+        delete meta.banReason;
+      }
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...(username ? { username } : {}),
+          ...(isAdmin !== undefined ? { isAdmin } : {}),
+          ...(banned !== undefined ? { metadata: meta } : {}),
+        })
+        .where(eq(users.id, target.id))
+        .returning();
+      invalidateUserTokens(target.id);
+      if (banned === true) {
+        // End their stored sessions too.
+        await db.execute(sql`DELETE FROM sessions WHERE user_id = ${target.id}`).catch(() => {});
+      }
+      return res.json({
+        id: updated.id,
+        username: updated.username,
+        email: updated.email,
+        isAdmin: updated.isAdmin,
+        banned: !!(updated.metadata as any)?.banned,
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return res.status(500).json({ error: 'Failed to update user' });
+    }
+  });
+
+  // Delete an account. Their comments stay (shown as anonymous); any stories they wrote
+  // are handed to the admin doing the deletion rather than deleted with them.
+  router.delete('/users/:id', async (req, res) => {
+    try {
+      const target = await loadTargetUser(req, res);
+      if (!target) return undefined;
+      if (isSelf(req, target.id)) return res.status(400).json({ error: "You can't delete your own account here" });
+      if (isOwnerEmail(target.email)) return res.status(400).json({ error: "The site owner account can't be deleted" });
+      const adminId = (req as any).user.userId as number;
+
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`UPDATE posts SET author_id = ${adminId} WHERE author_id = ${target.id}`);
+        await tx.execute(sql`DELETE FROM author_stats WHERE author_id = ${target.id}`);
+        await tx.execute(sql`DELETE FROM reading_streaks WHERE user_id = ${target.id}`);
+        await tx.execute(sql`DELETE FROM user_preferences WHERE user_id = ${target.id}`);
+        await tx.delete(users).where(eq(users.id, target.id));
+      });
+      invalidateUserTokens(target.id);
+
+      // Remove their Google sign-in record as well, best effort.
+      const supabaseId = (target.metadata as any)?.supabaseId;
+      if (supabaseId) {
+        try {
+          await createSupabaseServiceRoleClient().auth.admin.deleteUser(supabaseId);
+        } catch (e) {
+          console.warn('Could not delete Supabase auth user:', e);
+        }
+      }
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return res.status(500).json({ error: 'Failed to delete user' });
     }
   });
 
@@ -203,7 +357,57 @@ export function registerAdminRoutes() {
     }
   });
 
+  const slugSchema = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,120}$/, 'Slug can only contain lowercase letters, numbers and hyphens');
+  const readingMinutes = (html: string) =>
+    Math.max(1, Math.ceil(html.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length / 200));
+
+  const postCreateSchema = z.object({
+    title: z.string().trim().min(1).max(300),
+    content: z.string().min(1),
+    excerpt: z.string().max(500).nullable().optional(),
+    slug: slugSchema.optional(),
+    themeCategory: z.string().max(50).nullable().optional(),
+    isSecret: z.boolean().optional(),
+    matureContent: z.boolean().optional(),
+    metadata: z.record(z.unknown()).optional(),
+  });
+
+  // Write a new story as the site (admin) author.
+  router.post('/posts', async (req, res) => {
+    const parsed = postCreateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid post data' });
+    const { title, content, excerpt, slug, themeCategory, isSecret, matureContent, metadata } = parsed.data;
+    const finalSlug =
+      slug ||
+      `${title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 80) || 'story'}-${Date.now().toString(36)}`;
+    try {
+      const [clash] = await db.select({ id: posts.id }).from(posts).where(eq(posts.slug, finalSlug)).limit(1);
+      if (clash) return res.status(409).json({ error: 'Another story already uses that slug' });
+      const [created] = await db
+        .insert(posts)
+        .values({
+          title,
+          content,
+          excerpt: excerpt || content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300),
+          slug: finalSlug,
+          authorId: (req as any).user.userId,
+          themeCategory: themeCategory || null,
+          isSecret: !!isSecret,
+          matureContent: !!matureContent,
+          isAdminPost: true,
+          readingTimeMinutes: readingMinutes(content),
+          metadata: { status: 'publish', source: 'admin', ...(metadata ?? {}) },
+        })
+        .returning();
+      return res.status(201).json(created);
+    } catch (error) {
+      console.error('Error creating post:', error);
+      return res.status(500).json({ error: 'Failed to create post' });
+    }
+  });
+
   const postPatchSchema = z.object({
+    slug: slugSchema.optional(),
     title: z.string().trim().min(1).max(300).optional(),
     content: z.string().min(1).optional(),
     excerpt: z.string().max(500).nullable().optional(),
@@ -222,6 +426,11 @@ export function registerAdminRoutes() {
       const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
       if (!post) return res.status(404).json({ error: 'Post not found' });
       const { metadata, ...fields } = parsed.data;
+      if (fields.slug && fields.slug !== post.slug) {
+        const [clash] = await db.select({ id: posts.id }).from(posts).where(eq(posts.slug, fields.slug)).limit(1);
+        if (clash) return res.status(409).json({ error: 'Another story already uses that slug' });
+      }
+      if (fields.content) (fields as any).readingTimeMinutes = readingMinutes(fields.content);
       const [updated] = await db
         .update(posts)
         .set({
@@ -241,6 +450,7 @@ export function registerAdminRoutes() {
     const id = idParam(req);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
     try {
+      await rememberDeletedWordPressPosts([id]);
       const deleted = await db.delete(posts).where(eq(posts.id, id)).returning({ id: posts.id });
       if (!deleted.length) return res.status(404).json({ error: 'Post not found' });
       return res.json({ success: true });
@@ -261,6 +471,7 @@ export function registerAdminRoutes() {
     const { action, postIds } = parsed.data;
     try {
       if (action === 'delete') {
+        await rememberDeletedWordPressPosts(postIds);
         const deleted = await db.delete(posts).where(inArray(posts.id, postIds)).returning({ id: posts.id });
         return res.json({ success: true, affected: deleted.length });
       }
@@ -456,6 +667,22 @@ export function registerAdminExtraRoutes() {
     try {
       const [row] = await db.update(reportedContent).set({ status }).where(eq(reportedContent.id, id)).returning();
       if (!row) return res.status(404).json({ error: 'Report not found' });
+      // Rejecting reported content takes it down: comments are deleted, stories hidden
+      // (hidden rather than deleted so the admin can bring a story back from Content).
+      if (status === 'rejected' || status === 'removed') {
+        const type = String(row.contentType).toLowerCase();
+        if (type === 'comment') {
+          await db.delete(comments).where(eq(comments.id, row.contentId));
+        } else if (type === 'post' || type === 'story') {
+          const [post] = await db.select().from(posts).where(eq(posts.id, row.contentId)).limit(1);
+          if (post) {
+            await db
+              .update(posts)
+              .set({ metadata: { ...((post.metadata ?? {}) as object), status: 'hidden', hiddenByModeration: true } })
+              .where(eq(posts.id, post.id));
+          }
+        }
+      }
       return res.json(row);
     } catch (error) {
       console.error('Error updating report:', error);

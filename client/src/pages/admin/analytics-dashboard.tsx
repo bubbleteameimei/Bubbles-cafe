@@ -1,4 +1,5 @@
 "use client"
+import { Link } from "wouter";
 
 import React, { useState } from 'react'
 const DeviceAnalytics = React.lazy(() => import('@/components/analytics/device-analytics').then(m => ({ default: m.DeviceAnalytics })));
@@ -115,9 +116,11 @@ export default function AnalyticsDashboard() {
             <RefreshCcw className="mr-2 h-4 w-4" />
             Refresh Data
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
           </Button>
         </div>
       </div>
