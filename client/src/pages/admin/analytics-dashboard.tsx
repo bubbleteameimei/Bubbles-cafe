@@ -1,5 +1,5 @@
-import { Link } from "wouter";
 "use client"
+import { Link } from "wouter";
 
 import React, { useState } from 'react'
 const DeviceAnalytics = React.lazy(() => import('@/components/analytics/device-analytics').then(m => ({ default: m.DeviceAnalytics })));
